@@ -1,0 +1,14 @@
+{
+  "dispatch": "bank04 $6459 saves mapper7/8, maps5/6, calls $6472 and restores original banks",
+  "types": {
+    "0x03": "fixed $5100 returns without changes",
+    "0x27": "bank05 $81AA; type4/7 arithmetic-shift incoming velocity twice and add to own velocity; type5/6 use selected impulse",
+    "0x4D": "bank05 $95DD; type4/7 arithmetic-shift incoming velocity once; type5/6 use selected velocity; status+03 masks05/0A inhibit Y/X replacement"
+  },
+  "tables": [
+    "type27_collision_impulses",
+    "type4D_collision_velocities"
+  ],
+  "other_types": "return without changes",
+  "limitations": "These callbacks alter velocity, not HP; broader custom handlers and natural encounters remain separate."
+}

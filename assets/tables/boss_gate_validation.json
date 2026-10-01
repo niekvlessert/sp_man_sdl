@@ -1,0 +1,183 @@
+{
+  "rom_sha256": "bca5696ebbf4a3493bb226baa03ba8f8c5cc4876a4ad0eaa9722f583a42192b0",
+  "provenance": {
+    "rom_sha256": "bca5696ebbf4a3493bb226baa03ba8f8c5cc4876a4ad0eaa9722f583a42192b0",
+    "openmsx_binary_sha256": "ac3ec4e0baeb4dd29b03976f1bd07838182f75acf1066d41ef981f3d74c82a46",
+    "machine": "Panasonic_FS-A1WSX",
+    "duration_seconds": 230,
+    "interventions": "Both: start space at8/10/12/14, CA53/54 invincibility after15, no firing. Assisted only: pending damage FF to first damage-enabled type64 after155; no ROM patches."
+  },
+  "trace_hashes": {
+    "control": "e53f144e575fe191efdf513cf873e14eab70fa856558a3da1420de348d5120ef",
+    "assisted": "c89b0583ba213b1bb6853244e1c292a54266eb91d3e8c81e736a8d20cd869602"
+  },
+  "checks": [
+    {
+      "name": "control remains at stage0 A438 through230 without type64 death",
+      "passed": true
+    },
+    {
+      "name": "exactly one pending FF injection and one type64 death",
+      "passed": true
+    },
+    {
+      "name": "death and stage-transition milestones strictly ordered",
+      "passed": true
+    },
+    {
+      "name": "type64 uses boss-damage continuation",
+      "passed": true
+    },
+    {
+      "name": "type6A eight selector steps followed by state1",
+      "passed": true
+    },
+    {
+      "name": "type6A timer descends2Fh..01h after immediate initialization decrement",
+      "passed": true
+    },
+    {
+      "name": "same object slot becomes6A",
+      "passed": true
+    },
+    {
+      "name": "stage1 checkpoint0 stream trigger and metatile base exact",
+      "passed": true
+    },
+    {
+      "name": "stage1 original graphics root selected",
+      "passed": true
+    },
+    {
+      "name": "stage1 original1536-byte spawn copy exact",
+      "passed": true
+    },
+    {
+      "name": "all traced command address/mode pairs present in static graph",
+      "passed": true
+    },
+    {
+      "name": "stage0 terminal stream was replaced rather than resumed",
+      "passed": true
+    }
+  ],
+  "passed": 12,
+  "total": 12,
+  "milestones": [
+    {
+      "tag": "INJECT",
+      "time": 155.00261821,
+      "fields": {
+        "base": "CEC0",
+        "pending": "FF",
+        "hp": "3C"
+      },
+      "evidence": "tools/probe_out/boss_gate_validation/assisted/trace.log:549"
+    },
+    {
+      "tag": "WRITE",
+      "time": 155.02212879,
+      "fields": {
+        "address": "CE52",
+        "value": "01",
+        "pc": "6E53",
+        "banks": "04,05,06",
+        "code": "c37cc34777083e013252ce3276ce3a6a"
+      },
+      "evidence": "tools/probe_out/boss_gate_validation/assisted/trace.log:550"
+    },
+    {
+      "tag": "WRITE",
+      "time": 155.022132701,
+      "fields": {
+        "address": "CE76",
+        "value": "01",
+        "pc": "6E56",
+        "banks": "04,05,06",
+        "code": "4777083e013252ce3276ce3a6acedd86"
+      },
+      "evidence": "tools/probe_out/boss_gate_validation/assisted/trace.log:551"
+    },
+    {
+      "tag": "DEATH",
+      "time": 155.0221774,
+      "fields": {
+        "base": "CEC0",
+        "type": "64",
+        "state": "04",
+        "hp": "3D",
+        "ret": "6E4D"
+      },
+      "evidence": "tools/probe_out/boss_gate_validation/assisted/trace.log:552"
+    },
+    {
+      "tag": "WRITE",
+      "time": 157.763173252,
+      "fields": {
+        "address": "CA0F",
+        "value": "01",
+        "pc": "9B04",
+        "banks": "04,05,06",
+        "code": "0101cdd26ac03e01320fcac3986e1a9b"
+      },
+      "evidence": "tools/probe_out/boss_gate_validation/assisted/trace.log:623"
+    },
+    {
+      "tag": "WRITE",
+      "time": 157.81000602,
+      "fields": {
+        "address": "CA10",
+        "value": "01",
+        "pc": "6318",
+        "banks": "01,02,03",
+        "code": "0fca3a10ca3cfe093210ca3e04d29664"
+      },
+      "evidence": "tools/probe_out/boss_gate_validation/assisted/trace.log:626"
+    },
+    {
+      "tag": "WRITE",
+      "time": 157.813677995,
+      "fields": {
+        "address": "CA1E",
+        "value": "00",
+        "pc": "459F",
+        "banks": "01,02,03",
+        "code": "c93a00c9fe05c8af321ecac900ffffff"
+      },
+      "evidence": "tools/probe_out/boss_gate_validation/assisted/trace.log:627"
+    },
+    {
+      "tag": "INIT",
+      "time": 158.891031961,
+      "fields": {
+        "stage": "01",
+        "stream": "A460",
+        "trigger": "0000",
+        "metatile": "8AE0"
+      },
+      "evidence": "tools/probe_out/boss_gate_validation/assisted/trace.log:635"
+    }
+  ],
+  "replacement_selector_cycle": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7
+  ],
+  "transition": {
+    "from_stage": 0,
+    "to_stage": 1,
+    "terminal_stream": 42040,
+    "next_stream": 42080,
+    "death_replacement_type": 106,
+    "death_animation_selector_count": 8,
+    "timer_initial": 48,
+    "timer_stored_terminal": 1,
+    "engine_completion_flag": 51727
+  },
+  "limitations": "One assisted stage0 encounter, not an unassisted kill or all bosses. C0D6 stays0; reaching A438 is not proof command16 executed. No post-A438 background fallthrough."
+}

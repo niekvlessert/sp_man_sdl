@@ -1,0 +1,2223 @@
+[
+  {
+    "offset": 221184,
+    "kind": "command",
+    "command": 27,
+    "payload": []
+  },
+  {
+    "offset": 221186,
+    "kind": "command",
+    "command": 0,
+    "payload": []
+  },
+  {
+    "offset": 221188,
+    "kind": "command",
+    "command": 17,
+    "payload": [
+      0,
+      64
+    ]
+  },
+  {
+    "offset": 221192,
+    "kind": "tiles",
+    "mode": 0,
+    "data": [
+      1,
+      17,
+      19,
+      23,
+      27,
+      2
+    ]
+  },
+  {
+    "offset": 221198,
+    "kind": "tiles",
+    "mode": 0,
+    "data": [
+      44,
+      46,
+      48,
+      50,
+      52,
+      3
+    ]
+  },
+  {
+    "offset": 221204,
+    "kind": "tiles",
+    "mode": 0,
+    "data": [
+      45,
+      47,
+      49,
+      51,
+      53,
+      2
+    ]
+  },
+  {
+    "offset": 221210,
+    "kind": "tiles",
+    "mode": 0,
+    "data": [
+      1,
+      28,
+      30,
+      32,
+      34,
+      3
+    ]
+  },
+  {
+    "offset": 221216,
+    "kind": "tiles",
+    "mode": 0,
+    "data": [
+      1,
+      29,
+      31,
+      33,
+      35,
+      2
+    ]
+  },
+  {
+    "offset": 221222,
+    "kind": "tiles",
+    "mode": 0,
+    "data": [
+      54,
+      56,
+      58,
+      60,
+      13,
+      3
+    ]
+  },
+  {
+    "offset": 221228,
+    "kind": "tiles",
+    "mode": 0,
+    "data": [
+      55,
+      57,
+      59,
+      61,
+      14,
+      2
+    ]
+  },
+  {
+    "offset": 221234,
+    "kind": "tiles",
+    "mode": 0,
+    "data": [
+      1,
+      20,
+      24,
+      22,
+      26,
+      3
+    ]
+  },
+  {
+    "offset": 221240,
+    "kind": "tiles",
+    "mode": 0,
+    "data": [
+      44,
+      46,
+      48,
+      50,
+      52,
+      2
+    ]
+  },
+  {
+    "offset": 221246,
+    "kind": "tiles",
+    "mode": 0,
+    "data": [
+      45,
+      47,
+      49,
+      51,
+      53,
+      3
+    ]
+  },
+  {
+    "offset": 221252,
+    "kind": "tiles",
+    "mode": 0,
+    "data": [
+      1,
+      36,
+      42,
+      40,
+      34,
+      2
+    ]
+  },
+  {
+    "offset": 221258,
+    "kind": "tiles",
+    "mode": 0,
+    "data": [
+      1,
+      37,
+      43,
+      41,
+      35,
+      3
+    ]
+  },
+  {
+    "offset": 221264,
+    "kind": "tiles",
+    "mode": 0,
+    "data": [
+      54,
+      56,
+      58,
+      60,
+      13,
+      2
+    ]
+  },
+  {
+    "offset": 221270,
+    "kind": "tiles",
+    "mode": 0,
+    "data": [
+      55,
+      57,
+      59,
+      61,
+      14,
+      3
+    ]
+  },
+  {
+    "offset": 221276,
+    "kind": "tiles",
+    "mode": 0,
+    "data": [
+      1,
+      16,
+      18,
+      22,
+      27,
+      2
+    ]
+  },
+  {
+    "offset": 221282,
+    "kind": "tiles",
+    "mode": 0,
+    "data": [
+      1,
+      17,
+      19,
+      23,
+      27,
+      3
+    ]
+  },
+  {
+    "offset": 221288,
+    "kind": "tiles",
+    "mode": 0,
+    "data": [
+      12,
+      6,
+      5,
+      6,
+      8,
+      2
+    ]
+  },
+  {
+    "offset": 221294,
+    "kind": "tiles",
+    "mode": 0,
+    "data": [
+      1,
+      20,
+      24,
+      22,
+      26,
+      3
+    ]
+  },
+  {
+    "offset": 221300,
+    "kind": "tiles",
+    "mode": 0,
+    "data": [
+      1,
+      21,
+      25,
+      23,
+      27,
+      2
+    ]
+  },
+  {
+    "offset": 221306,
+    "kind": "tiles",
+    "mode": 0,
+    "data": [
+      44,
+      46,
+      48,
+      50,
+      52,
+      3
+    ]
+  },
+  {
+    "offset": 221312,
+    "kind": "tiles",
+    "mode": 0,
+    "data": [
+      45,
+      47,
+      49,
+      51,
+      53,
+      2
+    ]
+  },
+  {
+    "offset": 221318,
+    "kind": "tiles",
+    "mode": 0,
+    "data": [
+      1,
+      36,
+      38,
+      40,
+      34,
+      3
+    ]
+  },
+  {
+    "offset": 221324,
+    "kind": "tiles",
+    "mode": 0,
+    "data": [
+      1,
+      37,
+      39,
+      41,
+      35,
+      2
+    ]
+  },
+  {
+    "offset": 221330,
+    "kind": "tiles",
+    "mode": 0,
+    "data": [
+      54,
+      56,
+      58,
+      60,
+      13,
+      3
+    ]
+  },
+  {
+    "offset": 221336,
+    "kind": "tiles",
+    "mode": 0,
+    "data": [
+      55,
+      57,
+      59,
+      61,
+      14,
+      2
+    ]
+  },
+  {
+    "offset": 221342,
+    "kind": "tiles",
+    "mode": 0,
+    "data": [
+      1,
+      21,
+      15,
+      22,
+      26,
+      3
+    ]
+  },
+  {
+    "offset": 221348,
+    "kind": "tiles",
+    "mode": 0,
+    "data": [
+      44,
+      46,
+      48,
+      50,
+      52,
+      2
+    ]
+  },
+  {
+    "offset": 221354,
+    "kind": "tiles",
+    "mode": 0,
+    "data": [
+      45,
+      47,
+      49,
+      51,
+      53,
+      3
+    ]
+  },
+  {
+    "offset": 221360,
+    "kind": "tiles",
+    "mode": 0,
+    "data": [
+      1,
+      28,
+      30,
+      32,
+      34,
+      2
+    ]
+  },
+  {
+    "offset": 221366,
+    "kind": "tiles",
+    "mode": 0,
+    "data": [
+      1,
+      29,
+      31,
+      33,
+      35,
+      3
+    ]
+  },
+  {
+    "offset": 221372,
+    "kind": "tiles",
+    "mode": 0,
+    "data": [
+      54,
+      56,
+      58,
+      60,
+      13,
+      2
+    ]
+  },
+  {
+    "offset": 221378,
+    "kind": "tiles",
+    "mode": 0,
+    "data": [
+      55,
+      57,
+      59,
+      61,
+      14,
+      3
+    ]
+  },
+  {
+    "offset": 221384,
+    "kind": "tiles",
+    "mode": 0,
+    "data": [
+      1,
+      21,
+      25,
+      22,
+      26,
+      2
+    ]
+  },
+  {
+    "offset": 221390,
+    "kind": "tiles",
+    "mode": 0,
+    "data": [
+      44,
+      46,
+      48,
+      50,
+      52,
+      3
+    ]
+  },
+  {
+    "offset": 221396,
+    "kind": "tiles",
+    "mode": 0,
+    "data": [
+      45,
+      47,
+      49,
+      51,
+      53,
+      2
+    ]
+  },
+  {
+    "offset": 221402,
+    "kind": "tiles",
+    "mode": 0,
+    "data": [
+      1,
+      44,
+      46,
+      48,
+      52,
+      3
+    ]
+  },
+  {
+    "offset": 221408,
+    "kind": "tiles",
+    "mode": 0,
+    "data": [
+      1,
+      45,
+      47,
+      49,
+      53,
+      2
+    ]
+  },
+  {
+    "offset": 221414,
+    "kind": "tiles",
+    "mode": 0,
+    "data": [
+      1,
+      1,
+      9,
+      10,
+      11,
+      166
+    ]
+  },
+  {
+    "offset": 221420,
+    "kind": "tiles",
+    "mode": 0,
+    "data": [
+      1,
+      1,
+      1,
+      1,
+      1,
+      165
+    ]
+  },
+  {
+    "offset": 221426,
+    "kind": "tiles",
+    "mode": 0,
+    "data": [
+      1,
+      1,
+      1,
+      1,
+      1,
+      167
+    ]
+  },
+  {
+    "offset": 221432,
+    "kind": "command",
+    "command": 28,
+    "payload": [
+      58,
+      164
+    ]
+  },
+  {
+    "offset": 221436,
+    "kind": "command",
+    "command": 17,
+    "payload": [
+      0,
+      64
+    ]
+  },
+  {
+    "offset": 221440,
+    "kind": "command",
+    "command": 0,
+    "payload": []
+  },
+  {
+    "offset": 221442,
+    "kind": "tiles",
+    "mode": 0,
+    "data": [
+      1,
+      1,
+      1,
+      1,
+      1,
+      165
+    ]
+  },
+  {
+    "offset": 221448,
+    "kind": "tiles",
+    "mode": 0,
+    "data": [
+      1,
+      1,
+      1,
+      1,
+      1,
+      167
+    ]
+  },
+  {
+    "offset": 221454,
+    "kind": "tiles",
+    "mode": 0,
+    "data": [
+      1,
+      1,
+      1,
+      1,
+      1,
+      165
+    ]
+  },
+  {
+    "offset": 221460,
+    "kind": "tiles",
+    "mode": 0,
+    "data": [
+      1,
+      1,
+      1,
+      1,
+      1,
+      167
+    ]
+  },
+  {
+    "offset": 221466,
+    "kind": "tiles",
+    "mode": 0,
+    "data": [
+      1,
+      1,
+      1,
+      1,
+      1,
+      165
+    ]
+  },
+  {
+    "offset": 221472,
+    "kind": "tiles",
+    "mode": 0,
+    "data": [
+      1,
+      1,
+      1,
+      1,
+      1,
+      167
+    ]
+  },
+  {
+    "offset": 221478,
+    "kind": "tiles",
+    "mode": 0,
+    "data": [
+      1,
+      1,
+      1,
+      1,
+      1,
+      165
+    ]
+  },
+  {
+    "offset": 221484,
+    "kind": "command",
+    "command": 19,
+    "payload": [
+      58,
+      164
+    ]
+  },
+  {
+    "offset": 221488,
+    "kind": "tiles",
+    "mode": 0,
+    "data": [
+      1,
+      1,
+      1,
+      1,
+      1,
+      167
+    ]
+  },
+  {
+    "offset": 221494,
+    "kind": "command",
+    "command": 26,
+    "payload": []
+  },
+  {
+    "offset": 221496,
+    "kind": "command",
+    "command": 23,
+    "payload": [
+      1
+    ]
+  },
+  {
+    "offset": 221499,
+    "kind": "command",
+    "command": 17,
+    "payload": [
+      5,
+      56
+    ]
+  },
+  {
+    "offset": 221503,
+    "kind": "tiles",
+    "mode": 0,
+    "data": [
+      1,
+      1,
+      1,
+      89,
+      62,
+      165
+    ]
+  },
+  {
+    "offset": 221509,
+    "kind": "tiles",
+    "mode": 0,
+    "data": [
+      1,
+      1,
+      88,
+      90,
+      63,
+      69
+    ]
+  },
+  {
+    "offset": 221515,
+    "kind": "tiles",
+    "mode": 0,
+    "data": [
+      1,
+      1,
+      1,
+      85,
+      64,
+      70
+    ]
+  },
+  {
+    "offset": 221521,
+    "kind": "tiles",
+    "mode": 0,
+    "data": [
+      1,
+      1,
+      1,
+      86,
+      65,
+      71
+    ]
+  },
+  {
+    "offset": 221527,
+    "kind": "tiles",
+    "mode": 0,
+    "data": [
+      1,
+      1,
+      87,
+      91,
+      68,
+      72
+    ]
+  },
+  {
+    "offset": 221533,
+    "kind": "tiles",
+    "mode": 0,
+    "data": [
+      1,
+      1,
+      1,
+      94,
+      80,
+      167
+    ]
+  },
+  {
+    "offset": 221539,
+    "kind": "tiles",
+    "mode": 0,
+    "data": [
+      1,
+      1,
+      1,
+      95,
+      81,
+      165
+    ]
+  },
+  {
+    "offset": 221545,
+    "kind": "tiles",
+    "mode": 0,
+    "data": [
+      1,
+      136,
+      104,
+      110,
+      73,
+      69
+    ]
+  },
+  {
+    "offset": 221551,
+    "kind": "tiles",
+    "mode": 0,
+    "data": [
+      1,
+      137,
+      168,
+      111,
+      64,
+      70
+    ]
+  },
+  {
+    "offset": 221557,
+    "kind": "tiles",
+    "mode": 0,
+    "data": [
+      1,
+      138,
+      169,
+      108,
+      65,
+      71
+    ]
+  },
+  {
+    "offset": 221563,
+    "kind": "tiles",
+    "mode": 0,
+    "data": [
+      1,
+      1,
+      1,
+      109,
+      68,
+      72
+    ]
+  },
+  {
+    "offset": 221569,
+    "kind": "tiles",
+    "mode": 0,
+    "data": [
+      1,
+      1,
+      1,
+      97,
+      77,
+      167
+    ]
+  },
+  {
+    "offset": 221575,
+    "kind": "tiles",
+    "mode": 0,
+    "data": [
+      1,
+      1,
+      1,
+      1,
+      78,
+      165
+    ]
+  },
+  {
+    "offset": 221581,
+    "kind": "tiles",
+    "mode": 0,
+    "data": [
+      1,
+      1,
+      1,
+      1,
+      76,
+      167
+    ]
+  },
+  {
+    "offset": 221587,
+    "kind": "tiles",
+    "mode": 0,
+    "data": [
+      1,
+      1,
+      1,
+      1,
+      79,
+      165
+    ]
+  },
+  {
+    "offset": 221593,
+    "kind": "tiles",
+    "mode": 0,
+    "data": [
+      1,
+      1,
+      1,
+      1,
+      78,
+      167
+    ]
+  },
+  {
+    "offset": 221599,
+    "kind": "tiles",
+    "mode": 0,
+    "data": [
+      1,
+      1,
+      1,
+      1,
+      79,
+      165
+    ]
+  },
+  {
+    "offset": 221605,
+    "kind": "tiles",
+    "mode": 0,
+    "data": [
+      1,
+      1,
+      1,
+      112,
+      83,
+      167
+    ]
+  },
+  {
+    "offset": 221611,
+    "kind": "tiles",
+    "mode": 0,
+    "data": [
+      1,
+      1,
+      1,
+      98,
+      84,
+      165
+    ]
+  },
+  {
+    "offset": 221617,
+    "kind": "tiles",
+    "mode": 0,
+    "data": [
+      1,
+      1,
+      1,
+      1,
+      79,
+      167
+    ]
+  },
+  {
+    "offset": 221623,
+    "kind": "tiles",
+    "mode": 0,
+    "data": [
+      1,
+      1,
+      1,
+      1,
+      78,
+      165
+    ]
+  },
+  {
+    "offset": 221629,
+    "kind": "tiles",
+    "mode": 0,
+    "data": [
+      1,
+      1,
+      1,
+      1,
+      79,
+      167
+    ]
+  },
+  {
+    "offset": 221635,
+    "kind": "tiles",
+    "mode": 0,
+    "data": [
+      1,
+      1,
+      1,
+      112,
+      83,
+      167
+    ]
+  },
+  {
+    "offset": 221641,
+    "kind": "tiles",
+    "mode": 0,
+    "data": [
+      1,
+      1,
+      1,
+      173,
+      172,
+      165
+    ]
+  },
+  {
+    "offset": 221647,
+    "kind": "tiles",
+    "mode": 0,
+    "data": [
+      1,
+      1,
+      1,
+      1,
+      79,
+      167
+    ]
+  },
+  {
+    "offset": 221653,
+    "kind": "tiles",
+    "mode": 0,
+    "data": [
+      1,
+      1,
+      1,
+      1,
+      79,
+      165
+    ]
+  },
+  {
+    "offset": 221659,
+    "kind": "tiles",
+    "mode": 0,
+    "data": [
+      1,
+      1,
+      1,
+      170,
+      171,
+      167
+    ]
+  },
+  {
+    "offset": 221665,
+    "kind": "tiles",
+    "mode": 0,
+    "data": [
+      1,
+      1,
+      1,
+      173,
+      172,
+      165
+    ]
+  },
+  {
+    "offset": 221671,
+    "kind": "tiles",
+    "mode": 0,
+    "data": [
+      1,
+      1,
+      1,
+      1,
+      79,
+      167
+    ]
+  },
+  {
+    "offset": 221677,
+    "kind": "tiles",
+    "mode": 0,
+    "data": [
+      1,
+      1,
+      1,
+      1,
+      78,
+      165
+    ]
+  },
+  {
+    "offset": 221683,
+    "kind": "tiles",
+    "mode": 0,
+    "data": [
+      1,
+      1,
+      1,
+      1,
+      79,
+      167
+    ]
+  },
+  {
+    "offset": 221689,
+    "kind": "tiles",
+    "mode": 0,
+    "data": [
+      1,
+      1,
+      1,
+      112,
+      83,
+      165
+    ]
+  },
+  {
+    "offset": 221695,
+    "kind": "tiles",
+    "mode": 0,
+    "data": [
+      1,
+      1,
+      1,
+      92,
+      66,
+      69
+    ]
+  },
+  {
+    "offset": 221701,
+    "kind": "tiles",
+    "mode": 0,
+    "data": [
+      1,
+      1,
+      1,
+      93,
+      67,
+      70
+    ]
+  },
+  {
+    "offset": 221707,
+    "kind": "tiles",
+    "mode": 0,
+    "data": [
+      1,
+      1,
+      99,
+      103,
+      65,
+      71
+    ]
+  },
+  {
+    "offset": 221713,
+    "kind": "tiles",
+    "mode": 0,
+    "data": [
+      1,
+      1,
+      100,
+      107,
+      68,
+      72
+    ]
+  },
+  {
+    "offset": 221719,
+    "kind": "tiles",
+    "mode": 0,
+    "data": [
+      1,
+      136,
+      104,
+      111,
+      75,
+      167
+    ]
+  },
+  {
+    "offset": 221725,
+    "kind": "tiles",
+    "mode": 0,
+    "data": [
+      1,
+      137,
+      105,
+      108,
+      74,
+      165
+    ]
+  },
+  {
+    "offset": 221731,
+    "kind": "tiles",
+    "mode": 0,
+    "data": [
+      1,
+      138,
+      106,
+      109,
+      73,
+      69
+    ]
+  },
+  {
+    "offset": 221737,
+    "kind": "tiles",
+    "mode": 0,
+    "data": [
+      1,
+      1,
+      1,
+      85,
+      64,
+      70
+    ]
+  },
+  {
+    "offset": 221743,
+    "kind": "tiles",
+    "mode": 0,
+    "data": [
+      1,
+      1,
+      1,
+      102,
+      65,
+      71
+    ]
+  },
+  {
+    "offset": 221749,
+    "kind": "tiles",
+    "mode": 0,
+    "data": [
+      1,
+      1,
+      1,
+      113,
+      68,
+      72
+    ]
+  },
+  {
+    "offset": 221755,
+    "kind": "tiles",
+    "mode": 0,
+    "data": [
+      1,
+      1,
+      1,
+      98,
+      84,
+      167
+    ]
+  },
+  {
+    "offset": 221761,
+    "kind": "tiles",
+    "mode": 0,
+    "data": [
+      1,
+      1,
+      1,
+      1,
+      79,
+      165
+    ]
+  },
+  {
+    "offset": 221767,
+    "kind": "tiles",
+    "mode": 0,
+    "data": [
+      1,
+      1,
+      1,
+      1,
+      76,
+      167
+    ]
+  },
+  {
+    "offset": 221773,
+    "kind": "tiles",
+    "mode": 0,
+    "data": [
+      1,
+      1,
+      1,
+      112,
+      83,
+      165
+    ]
+  },
+  {
+    "offset": 221779,
+    "kind": "tiles",
+    "mode": 0,
+    "data": [
+      1,
+      1,
+      1,
+      98,
+      84,
+      165
+    ]
+  },
+  {
+    "offset": 221785,
+    "kind": "tiles",
+    "mode": 0,
+    "data": [
+      1,
+      1,
+      1,
+      1,
+      82,
+      165
+    ]
+  },
+  {
+    "offset": 221791,
+    "kind": "command",
+    "command": 31,
+    "payload": [
+      5
+    ]
+  },
+  {
+    "offset": 221794,
+    "kind": "command",
+    "command": 18,
+    "payload": [
+      1,
+      1,
+      1,
+      1,
+      79,
+      167,
+      1,
+      1,
+      1,
+      112,
+      83,
+      165,
+      1,
+      1,
+      1,
+      96,
+      73,
+      69,
+      1,
+      1,
+      1,
+      85,
+      64,
+      70,
+      1,
+      1,
+      1,
+      86,
+      65,
+      71,
+      1,
+      1,
+      87,
+      91,
+      68,
+      72
+    ]
+  },
+  {
+    "offset": 221832,
+    "kind": "tiles",
+    "mode": 2,
+    "data": [
+      1,
+      1,
+      1,
+      95,
+      75,
+      167
+    ]
+  },
+  {
+    "offset": 221838,
+    "kind": "tiles",
+    "mode": 2,
+    "data": [
+      1,
+      139,
+      1,
+      110,
+      74,
+      165
+    ]
+  },
+  {
+    "offset": 221844,
+    "kind": "tiles",
+    "mode": 2,
+    "data": [
+      1,
+      140,
+      114,
+      111,
+      73,
+      69
+    ]
+  },
+  {
+    "offset": 221850,
+    "kind": "tiles",
+    "mode": 2,
+    "data": [
+      1,
+      141,
+      115,
+      108,
+      64,
+      70
+    ]
+  },
+  {
+    "offset": 221856,
+    "kind": "tiles",
+    "mode": 2,
+    "data": [
+      122,
+      142,
+      117,
+      111,
+      65,
+      0
+    ]
+  },
+  {
+    "offset": 221862,
+    "kind": "tiles",
+    "mode": 2,
+    "data": [
+      123,
+      143,
+      101,
+      108,
+      0,
+      0
+    ]
+  },
+  {
+    "offset": 221868,
+    "kind": "tiles",
+    "mode": 2,
+    "data": [
+      124,
+      143,
+      101,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "offset": 221874,
+    "kind": "tiles",
+    "mode": 2,
+    "data": [
+      124,
+      143,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "offset": 221880,
+    "kind": "tiles",
+    "mode": 2,
+    "data": [
+      124,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  },
+  {
+    "offset": 221886,
+    "kind": "skip"
+  },
+  {
+    "offset": 221887,
+    "kind": "command",
+    "command": 17,
+    "payload": [
+      1,
+      56
+    ]
+  },
+  {
+    "offset": 221891,
+    "kind": "command",
+    "command": 4,
+    "payload": []
+  },
+  {
+    "offset": 221893,
+    "kind": "command",
+    "command": 27,
+    "payload": []
+  },
+  {
+    "offset": 221895,
+    "kind": "tiles",
+    "mode": 4,
+    "data": [
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      118,
+      119,
+      120,
+      121,
+      126,
+      127,
+      125
+    ]
+  },
+  {
+    "offset": 221910,
+    "kind": "tiles",
+    "mode": 4,
+    "data": [
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      132,
+      133,
+      133,
+      133,
+      144,
+      133
+    ]
+  },
+  {
+    "offset": 221925,
+    "kind": "command",
+    "command": 17,
+    "payload": [
+      2,
+      56
+    ]
+  },
+  {
+    "offset": 221929,
+    "kind": "tiles",
+    "mode": 4,
+    "data": [
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1
+    ]
+  },
+  {
+    "offset": 221944,
+    "kind": "tiles",
+    "mode": 4,
+    "data": [
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1
+    ]
+  },
+  {
+    "offset": 221959,
+    "kind": "command",
+    "command": 17,
+    "payload": [
+      3,
+      56
+    ]
+  },
+  {
+    "offset": 221963,
+    "kind": "tiles",
+    "mode": 4,
+    "data": [
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1
+    ]
+  },
+  {
+    "offset": 221978,
+    "kind": "tiles",
+    "mode": 4,
+    "data": [
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1
+    ]
+  },
+  {
+    "offset": 221993,
+    "kind": "command",
+    "command": 27,
+    "payload": []
+  },
+  {
+    "offset": 221995,
+    "kind": "command",
+    "command": 23,
+    "payload": [
+      1
+    ]
+  },
+  {
+    "offset": 221998,
+    "kind": "command",
+    "command": 0,
+    "payload": []
+  },
+  {
+    "offset": 222000,
+    "kind": "command",
+    "command": 17,
+    "payload": [
+      4,
+      56
+    ]
+  },
+  {
+    "offset": 222004,
+    "kind": "command",
+    "command": 29,
+    "payload": []
+  },
+  {
+    "offset": 222006,
+    "kind": "tiles",
+    "mode": 0,
+    "data": [
+      1,
+      1,
+      1,
+      1,
+      144,
+      125
+    ]
+  },
+  {
+    "offset": 222012,
+    "kind": "tiles",
+    "mode": 0,
+    "data": [
+      1,
+      1,
+      1,
+      1,
+      133,
+      121
+    ]
+  },
+  {
+    "offset": 222018,
+    "kind": "tiles",
+    "mode": 0,
+    "data": [
+      1,
+      1,
+      1,
+      1,
+      145,
+      125
+    ]
+  },
+  {
+    "offset": 222024,
+    "kind": "tiles",
+    "mode": 0,
+    "data": [
+      1,
+      1,
+      1,
+      1,
+      133,
+      126
+    ]
+  },
+  {
+    "offset": 222030,
+    "kind": "tiles",
+    "mode": 0,
+    "data": [
+      1,
+      1,
+      1,
+      1,
+      134,
+      127
+    ]
+  },
+  {
+    "offset": 222036,
+    "kind": "tiles",
+    "mode": 0,
+    "data": [
+      1,
+      1,
+      148,
+      152,
+      156,
+      128
+    ]
+  },
+  {
+    "offset": 222042,
+    "kind": "tiles",
+    "mode": 0,
+    "data": [
+      1,
+      1,
+      149,
+      153,
+      157,
+      129
+    ]
+  },
+  {
+    "offset": 222048,
+    "kind": "tiles",
+    "mode": 0,
+    "data": [
+      1,
+      1,
+      150,
+      154,
+      158,
+      130
+    ]
+  },
+  {
+    "offset": 222054,
+    "kind": "tiles",
+    "mode": 0,
+    "data": [
+      1,
+      1,
+      151,
+      155,
+      159,
+      131
+    ]
+  },
+  {
+    "offset": 222060,
+    "kind": "tiles",
+    "mode": 0,
+    "data": [
+      1,
+      1,
+      1,
+      1,
+      135,
+      126
+    ]
+  },
+  {
+    "offset": 222066,
+    "kind": "tiles",
+    "mode": 0,
+    "data": [
+      1,
+      1,
+      1,
+      1,
+      134,
+      127
+    ]
+  },
+  {
+    "offset": 222072,
+    "kind": "tiles",
+    "mode": 0,
+    "data": [
+      1,
+      1,
+      1,
+      1,
+      160,
+      128
+    ]
+  },
+  {
+    "offset": 222078,
+    "kind": "tiles",
+    "mode": 0,
+    "data": [
+      1,
+      1,
+      1,
+      1,
+      161,
+      129
+    ]
+  },
+  {
+    "offset": 222084,
+    "kind": "tiles",
+    "mode": 0,
+    "data": [
+      1,
+      1,
+      1,
+      1,
+      162,
+      130
+    ]
+  },
+  {
+    "offset": 222090,
+    "kind": "tiles",
+    "mode": 0,
+    "data": [
+      1,
+      1,
+      1,
+      1,
+      163,
+      131
+    ]
+  },
+  {
+    "offset": 222096,
+    "kind": "command",
+    "command": 16,
+    "payload": [
+      166,
+      163
+    ]
+  },
+  {
+    "offset": 222100,
+    "kind": "tiles",
+    "mode": 0,
+    "data": [
+      1,
+      1,
+      1,
+      1,
+      146,
+      147
+    ]
+  },
+  {
+    "offset": 222106,
+    "kind": "tiles",
+    "mode": 0,
+    "data": [
+      1,
+      1,
+      1,
+      1,
+      1,
+      164
+    ]
+  },
+  {
+    "offset": 222112,
+    "kind": "tiles",
+    "mode": 0,
+    "data": [
+      1,
+      1,
+      1,
+      1,
+      1,
+      146
+    ]
+  },
+  {
+    "offset": 222118,
+    "kind": "command",
+    "command": 24,
+    "payload": []
+  },
+  {
+    "offset": 222120,
+    "kind": "command",
+    "command": 27,
+    "payload": []
+  },
+  {
+    "offset": 222122,
+    "kind": "command",
+    "command": 23,
+    "payload": [
+      1
+    ]
+  },
+  {
+    "offset": 222125,
+    "kind": "command",
+    "command": 11,
+    "payload": []
+  },
+  {
+    "offset": 222127,
+    "kind": "command",
+    "command": 25,
+    "payload": [
+      0
+    ]
+  },
+  {
+    "offset": 222130,
+    "kind": "tiles",
+    "mode": 1,
+    "data": [
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1
+    ]
+  },
+  {
+    "offset": 222145,
+    "kind": "command",
+    "command": 19,
+    "payload": [
+      77,
+      164
+    ]
+  },
+  {
+    "offset": 222149,
+    "kind": "tiles",
+    "mode": 1,
+    "data": [
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1
+    ]
+  },
+  {
+    "offset": 222164,
+    "kind": "command",
+    "command": 17,
+    "payload": [
+      5,
+      184
+    ]
+  },
+  {
+    "offset": 222168,
+    "kind": "tiles",
+    "mode": 1,
+    "data": [
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1
+    ]
+  },
+  {
+    "offset": 222183,
+    "kind": "tiles",
+    "mode": 1,
+    "data": [
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1
+    ]
+  },
+  {
+    "offset": 222198,
+    "kind": "tiles",
+    "mode": 1,
+    "data": [
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1
+    ]
+  },
+  {
+    "offset": 222213,
+    "kind": "tiles",
+    "mode": 1,
+    "data": [
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1
+    ]
+  },
+  {
+    "offset": 222228,
+    "kind": "command",
+    "command": 23,
+    "payload": [
+      2
+    ]
+  },
+  {
+    "offset": 222231,
+    "kind": "command",
+    "command": 0,
+    "payload": []
+  },
+  {
+    "offset": 222233,
+    "kind": "tiles",
+    "mode": 0,
+    "data": [
+      1,
+      1,
+      1,
+      1,
+      1,
+      1
+    ]
+  },
+  {
+    "offset": 222239,
+    "kind": "tiles",
+    "mode": 0,
+    "data": [
+      1,
+      1,
+      1,
+      1,
+      1,
+      1
+    ]
+  },
+  {
+    "offset": 222245,
+    "kind": "tiles",
+    "mode": 0,
+    "data": [
+      1,
+      1,
+      1,
+      1,
+      1,
+      1
+    ]
+  },
+  {
+    "offset": 222251,
+    "kind": "tiles",
+    "mode": 0,
+    "data": [
+      1,
+      1,
+      1,
+      1,
+      1,
+      1
+    ]
+  },
+  {
+    "offset": 222257,
+    "kind": "command",
+    "command": 17,
+    "payload": [
+      6,
+      8
+    ]
+  },
+  {
+    "offset": 222261,
+    "kind": "skip"
+  },
+  {
+    "offset": 222262,
+    "kind": "command",
+    "command": 30,
+    "payload": []
+  },
+  {
+    "offset": 222264,
+    "kind": "command",
+    "command": 22,
+    "payload": []
+  }
+]

@@ -1,0 +1,3616 @@
+[
+  {
+    "stage": 0,
+    "definitions": [
+      {
+        "id": 0,
+        "definition": "metatile_032000"
+      },
+      {
+        "id": 1,
+        "definition": "metatile_032010"
+      },
+      {
+        "id": 2,
+        "definition": "metatile_032020"
+      },
+      {
+        "id": 3,
+        "definition": "metatile_032030"
+      },
+      {
+        "id": 5,
+        "definition": "metatile_032050"
+      },
+      {
+        "id": 6,
+        "definition": "metatile_032060"
+      },
+      {
+        "id": 8,
+        "definition": "metatile_032080"
+      },
+      {
+        "id": 9,
+        "definition": "metatile_032090"
+      },
+      {
+        "id": 10,
+        "definition": "metatile_0320A0"
+      },
+      {
+        "id": 11,
+        "definition": "metatile_0320B0"
+      },
+      {
+        "id": 12,
+        "definition": "metatile_0320C0"
+      },
+      {
+        "id": 13,
+        "definition": "metatile_0320D0"
+      },
+      {
+        "id": 14,
+        "definition": "metatile_0320E0"
+      },
+      {
+        "id": 15,
+        "definition": "metatile_0320F0"
+      },
+      {
+        "id": 16,
+        "definition": "metatile_032100"
+      },
+      {
+        "id": 17,
+        "definition": "metatile_032110"
+      },
+      {
+        "id": 18,
+        "definition": "metatile_032120"
+      },
+      {
+        "id": 19,
+        "definition": "metatile_032130"
+      },
+      {
+        "id": 20,
+        "definition": "metatile_032140"
+      },
+      {
+        "id": 21,
+        "definition": "metatile_032150"
+      },
+      {
+        "id": 22,
+        "definition": "metatile_032160"
+      },
+      {
+        "id": 23,
+        "definition": "metatile_032170"
+      },
+      {
+        "id": 24,
+        "definition": "metatile_032180"
+      },
+      {
+        "id": 25,
+        "definition": "metatile_032190"
+      },
+      {
+        "id": 26,
+        "definition": "metatile_0321A0"
+      },
+      {
+        "id": 27,
+        "definition": "metatile_0321B0"
+      },
+      {
+        "id": 28,
+        "definition": "metatile_0321C0"
+      },
+      {
+        "id": 29,
+        "definition": "metatile_0321D0"
+      },
+      {
+        "id": 30,
+        "definition": "metatile_0321E0"
+      },
+      {
+        "id": 31,
+        "definition": "metatile_0321F0"
+      },
+      {
+        "id": 32,
+        "definition": "metatile_032200"
+      },
+      {
+        "id": 33,
+        "definition": "metatile_032210"
+      },
+      {
+        "id": 34,
+        "definition": "metatile_032220"
+      },
+      {
+        "id": 35,
+        "definition": "metatile_032230"
+      },
+      {
+        "id": 36,
+        "definition": "metatile_032240"
+      },
+      {
+        "id": 37,
+        "definition": "metatile_032250"
+      },
+      {
+        "id": 38,
+        "definition": "metatile_032260"
+      },
+      {
+        "id": 39,
+        "definition": "metatile_032270"
+      },
+      {
+        "id": 40,
+        "definition": "metatile_032280"
+      },
+      {
+        "id": 41,
+        "definition": "metatile_032290"
+      },
+      {
+        "id": 42,
+        "definition": "metatile_0322A0"
+      },
+      {
+        "id": 43,
+        "definition": "metatile_0322B0"
+      },
+      {
+        "id": 44,
+        "definition": "metatile_0322C0"
+      },
+      {
+        "id": 45,
+        "definition": "metatile_0322D0"
+      },
+      {
+        "id": 46,
+        "definition": "metatile_0322E0"
+      },
+      {
+        "id": 47,
+        "definition": "metatile_0322F0"
+      },
+      {
+        "id": 48,
+        "definition": "metatile_032300"
+      },
+      {
+        "id": 49,
+        "definition": "metatile_032310"
+      },
+      {
+        "id": 50,
+        "definition": "metatile_032320"
+      },
+      {
+        "id": 51,
+        "definition": "metatile_032330"
+      },
+      {
+        "id": 52,
+        "definition": "metatile_032340"
+      },
+      {
+        "id": 53,
+        "definition": "metatile_032350"
+      },
+      {
+        "id": 54,
+        "definition": "metatile_032360"
+      },
+      {
+        "id": 55,
+        "definition": "metatile_032370"
+      },
+      {
+        "id": 56,
+        "definition": "metatile_032380"
+      },
+      {
+        "id": 57,
+        "definition": "metatile_032390"
+      },
+      {
+        "id": 58,
+        "definition": "metatile_0323A0"
+      },
+      {
+        "id": 59,
+        "definition": "metatile_0323B0"
+      },
+      {
+        "id": 60,
+        "definition": "metatile_0323C0"
+      },
+      {
+        "id": 61,
+        "definition": "metatile_0323D0"
+      },
+      {
+        "id": 62,
+        "definition": "metatile_0323E0"
+      },
+      {
+        "id": 63,
+        "definition": "metatile_0323F0"
+      },
+      {
+        "id": 64,
+        "definition": "metatile_032400"
+      },
+      {
+        "id": 65,
+        "definition": "metatile_032410"
+      },
+      {
+        "id": 66,
+        "definition": "metatile_032420"
+      },
+      {
+        "id": 67,
+        "definition": "metatile_032430"
+      },
+      {
+        "id": 68,
+        "definition": "metatile_032440"
+      },
+      {
+        "id": 69,
+        "definition": "metatile_032450"
+      },
+      {
+        "id": 70,
+        "definition": "metatile_032460"
+      },
+      {
+        "id": 71,
+        "definition": "metatile_032470"
+      },
+      {
+        "id": 72,
+        "definition": "metatile_032480"
+      },
+      {
+        "id": 73,
+        "definition": "metatile_032490"
+      },
+      {
+        "id": 74,
+        "definition": "metatile_0324A0"
+      },
+      {
+        "id": 75,
+        "definition": "metatile_0324B0"
+      },
+      {
+        "id": 76,
+        "definition": "metatile_0324C0"
+      },
+      {
+        "id": 77,
+        "definition": "metatile_0324D0"
+      },
+      {
+        "id": 78,
+        "definition": "metatile_0324E0"
+      },
+      {
+        "id": 79,
+        "definition": "metatile_0324F0"
+      },
+      {
+        "id": 80,
+        "definition": "metatile_032500"
+      },
+      {
+        "id": 81,
+        "definition": "metatile_032510"
+      },
+      {
+        "id": 82,
+        "definition": "metatile_032520"
+      },
+      {
+        "id": 83,
+        "definition": "metatile_032530"
+      },
+      {
+        "id": 84,
+        "definition": "metatile_032540"
+      },
+      {
+        "id": 85,
+        "definition": "metatile_032550"
+      },
+      {
+        "id": 86,
+        "definition": "metatile_032560"
+      },
+      {
+        "id": 87,
+        "definition": "metatile_032570"
+      },
+      {
+        "id": 88,
+        "definition": "metatile_032580"
+      },
+      {
+        "id": 89,
+        "definition": "metatile_032590"
+      },
+      {
+        "id": 90,
+        "definition": "metatile_0325A0"
+      },
+      {
+        "id": 91,
+        "definition": "metatile_0325B0"
+      },
+      {
+        "id": 92,
+        "definition": "metatile_0325C0"
+      },
+      {
+        "id": 93,
+        "definition": "metatile_0325D0"
+      },
+      {
+        "id": 94,
+        "definition": "metatile_0325E0"
+      },
+      {
+        "id": 95,
+        "definition": "metatile_0325F0"
+      },
+      {
+        "id": 96,
+        "definition": "metatile_032600"
+      },
+      {
+        "id": 97,
+        "definition": "metatile_032610"
+      },
+      {
+        "id": 98,
+        "definition": "metatile_032620"
+      },
+      {
+        "id": 99,
+        "definition": "metatile_032630"
+      },
+      {
+        "id": 100,
+        "definition": "metatile_032640"
+      },
+      {
+        "id": 101,
+        "definition": "metatile_032650"
+      },
+      {
+        "id": 102,
+        "definition": "metatile_032660"
+      },
+      {
+        "id": 103,
+        "definition": "metatile_032670"
+      },
+      {
+        "id": 104,
+        "definition": "metatile_032680"
+      },
+      {
+        "id": 105,
+        "definition": "metatile_032690"
+      },
+      {
+        "id": 106,
+        "definition": "metatile_0326A0"
+      },
+      {
+        "id": 107,
+        "definition": "metatile_0326B0"
+      },
+      {
+        "id": 108,
+        "definition": "metatile_0326C0"
+      },
+      {
+        "id": 109,
+        "definition": "metatile_0326D0"
+      },
+      {
+        "id": 110,
+        "definition": "metatile_0326E0"
+      },
+      {
+        "id": 111,
+        "definition": "metatile_0326F0"
+      },
+      {
+        "id": 112,
+        "definition": "metatile_032700"
+      },
+      {
+        "id": 113,
+        "definition": "metatile_032710"
+      },
+      {
+        "id": 114,
+        "definition": "metatile_032720"
+      },
+      {
+        "id": 115,
+        "definition": "metatile_032730"
+      },
+      {
+        "id": 117,
+        "definition": "metatile_032750"
+      },
+      {
+        "id": 118,
+        "definition": "metatile_032760"
+      },
+      {
+        "id": 119,
+        "definition": "metatile_032770"
+      },
+      {
+        "id": 120,
+        "definition": "metatile_032780"
+      },
+      {
+        "id": 121,
+        "definition": "metatile_032790"
+      },
+      {
+        "id": 122,
+        "definition": "metatile_0327A0"
+      },
+      {
+        "id": 123,
+        "definition": "metatile_0327B0"
+      },
+      {
+        "id": 124,
+        "definition": "metatile_0327C0"
+      },
+      {
+        "id": 125,
+        "definition": "metatile_0327D0"
+      },
+      {
+        "id": 126,
+        "definition": "metatile_0327E0"
+      },
+      {
+        "id": 127,
+        "definition": "metatile_0327F0"
+      },
+      {
+        "id": 128,
+        "definition": "metatile_032800"
+      },
+      {
+        "id": 129,
+        "definition": "metatile_032810"
+      },
+      {
+        "id": 130,
+        "definition": "metatile_032820"
+      },
+      {
+        "id": 131,
+        "definition": "metatile_032830"
+      },
+      {
+        "id": 132,
+        "definition": "metatile_032840"
+      },
+      {
+        "id": 133,
+        "definition": "metatile_032850"
+      },
+      {
+        "id": 134,
+        "definition": "metatile_032860"
+      },
+      {
+        "id": 135,
+        "definition": "metatile_032870"
+      },
+      {
+        "id": 136,
+        "definition": "metatile_032880"
+      },
+      {
+        "id": 137,
+        "definition": "metatile_032890"
+      },
+      {
+        "id": 138,
+        "definition": "metatile_0328A0"
+      },
+      {
+        "id": 139,
+        "definition": "metatile_0328B0"
+      },
+      {
+        "id": 140,
+        "definition": "metatile_0328C0"
+      },
+      {
+        "id": 141,
+        "definition": "metatile_0328D0"
+      },
+      {
+        "id": 142,
+        "definition": "metatile_0328E0"
+      },
+      {
+        "id": 143,
+        "definition": "metatile_0328F0"
+      },
+      {
+        "id": 144,
+        "definition": "metatile_032900"
+      },
+      {
+        "id": 145,
+        "definition": "metatile_032910"
+      },
+      {
+        "id": 146,
+        "definition": "metatile_032920"
+      },
+      {
+        "id": 147,
+        "definition": "metatile_032930"
+      },
+      {
+        "id": 148,
+        "definition": "metatile_032940"
+      },
+      {
+        "id": 149,
+        "definition": "metatile_032950"
+      },
+      {
+        "id": 150,
+        "definition": "metatile_032960"
+      },
+      {
+        "id": 151,
+        "definition": "metatile_032970"
+      },
+      {
+        "id": 152,
+        "definition": "metatile_032980"
+      },
+      {
+        "id": 153,
+        "definition": "metatile_032990"
+      },
+      {
+        "id": 154,
+        "definition": "metatile_0329A0"
+      },
+      {
+        "id": 155,
+        "definition": "metatile_0329B0"
+      },
+      {
+        "id": 156,
+        "definition": "metatile_0329C0"
+      },
+      {
+        "id": 157,
+        "definition": "metatile_0329D0"
+      },
+      {
+        "id": 158,
+        "definition": "metatile_0329E0"
+      },
+      {
+        "id": 159,
+        "definition": "metatile_0329F0"
+      },
+      {
+        "id": 160,
+        "definition": "metatile_032A00"
+      },
+      {
+        "id": 161,
+        "definition": "metatile_032A10"
+      },
+      {
+        "id": 162,
+        "definition": "metatile_032A20"
+      },
+      {
+        "id": 163,
+        "definition": "metatile_032A30"
+      },
+      {
+        "id": 164,
+        "definition": "metatile_032A40"
+      },
+      {
+        "id": 165,
+        "definition": "metatile_032A50"
+      },
+      {
+        "id": 166,
+        "definition": "metatile_032A60"
+      },
+      {
+        "id": 167,
+        "definition": "metatile_032A70"
+      },
+      {
+        "id": 168,
+        "definition": "metatile_032A80"
+      },
+      {
+        "id": 169,
+        "definition": "metatile_032A90"
+      },
+      {
+        "id": 170,
+        "definition": "metatile_032AA0"
+      },
+      {
+        "id": 171,
+        "definition": "metatile_032AB0"
+      },
+      {
+        "id": 172,
+        "definition": "metatile_032AC0"
+      },
+      {
+        "id": 173,
+        "definition": "metatile_032AD0"
+      }
+    ],
+    "limitation": "IDs reachable in static checkpoint/branch paths; external gate continuations remain outside this map."
+  },
+  {
+    "stage": 1,
+    "definitions": [
+      {
+        "id": 0,
+        "definition": "metatile_032AE0"
+      },
+      {
+        "id": 1,
+        "definition": "metatile_032AF0"
+      },
+      {
+        "id": 2,
+        "definition": "metatile_032B00"
+      },
+      {
+        "id": 3,
+        "definition": "metatile_032B10"
+      },
+      {
+        "id": 4,
+        "definition": "metatile_032B20"
+      },
+      {
+        "id": 5,
+        "definition": "metatile_032B30"
+      },
+      {
+        "id": 6,
+        "definition": "metatile_032B40"
+      },
+      {
+        "id": 7,
+        "definition": "metatile_032B50"
+      },
+      {
+        "id": 8,
+        "definition": "metatile_032B60"
+      },
+      {
+        "id": 9,
+        "definition": "metatile_032B70"
+      },
+      {
+        "id": 10,
+        "definition": "metatile_032B80"
+      },
+      {
+        "id": 11,
+        "definition": "metatile_032B90"
+      },
+      {
+        "id": 12,
+        "definition": "metatile_032BA0"
+      },
+      {
+        "id": 13,
+        "definition": "metatile_032BB0"
+      },
+      {
+        "id": 14,
+        "definition": "metatile_032BC0"
+      },
+      {
+        "id": 15,
+        "definition": "metatile_032BD0"
+      },
+      {
+        "id": 16,
+        "definition": "metatile_032BE0"
+      },
+      {
+        "id": 17,
+        "definition": "metatile_032BF0"
+      },
+      {
+        "id": 18,
+        "definition": "metatile_032C00"
+      },
+      {
+        "id": 19,
+        "definition": "metatile_032C10"
+      },
+      {
+        "id": 20,
+        "definition": "metatile_032C20"
+      },
+      {
+        "id": 21,
+        "definition": "metatile_032C30"
+      },
+      {
+        "id": 22,
+        "definition": "metatile_032C40"
+      },
+      {
+        "id": 23,
+        "definition": "metatile_032C50"
+      },
+      {
+        "id": 24,
+        "definition": "metatile_032C60"
+      },
+      {
+        "id": 25,
+        "definition": "metatile_032C70"
+      },
+      {
+        "id": 26,
+        "definition": "metatile_032C80"
+      },
+      {
+        "id": 27,
+        "definition": "metatile_032C90"
+      },
+      {
+        "id": 28,
+        "definition": "metatile_032CA0"
+      },
+      {
+        "id": 29,
+        "definition": "metatile_032CB0"
+      },
+      {
+        "id": 30,
+        "definition": "metatile_032CC0"
+      },
+      {
+        "id": 31,
+        "definition": "metatile_032CD0"
+      },
+      {
+        "id": 32,
+        "definition": "metatile_032CE0"
+      },
+      {
+        "id": 33,
+        "definition": "metatile_032CF0"
+      },
+      {
+        "id": 34,
+        "definition": "metatile_032D00"
+      },
+      {
+        "id": 35,
+        "definition": "metatile_032D10"
+      },
+      {
+        "id": 36,
+        "definition": "metatile_032D20"
+      },
+      {
+        "id": 37,
+        "definition": "metatile_032D30"
+      },
+      {
+        "id": 38,
+        "definition": "metatile_032D40"
+      },
+      {
+        "id": 39,
+        "definition": "metatile_032D50"
+      },
+      {
+        "id": 40,
+        "definition": "metatile_032D60"
+      },
+      {
+        "id": 41,
+        "definition": "metatile_032D70"
+      },
+      {
+        "id": 42,
+        "definition": "metatile_032D80"
+      },
+      {
+        "id": 43,
+        "definition": "metatile_032D90"
+      },
+      {
+        "id": 44,
+        "definition": "metatile_032DA0"
+      },
+      {
+        "id": 45,
+        "definition": "metatile_032DB0"
+      },
+      {
+        "id": 46,
+        "definition": "metatile_032DC0"
+      },
+      {
+        "id": 47,
+        "definition": "metatile_032DD0"
+      },
+      {
+        "id": 48,
+        "definition": "metatile_032DE0"
+      },
+      {
+        "id": 49,
+        "definition": "metatile_032DF0"
+      },
+      {
+        "id": 50,
+        "definition": "metatile_032E00"
+      },
+      {
+        "id": 51,
+        "definition": "metatile_032E10"
+      },
+      {
+        "id": 52,
+        "definition": "metatile_032E20"
+      },
+      {
+        "id": 53,
+        "definition": "metatile_032E30"
+      },
+      {
+        "id": 54,
+        "definition": "metatile_032E40"
+      },
+      {
+        "id": 55,
+        "definition": "metatile_032E50"
+      },
+      {
+        "id": 56,
+        "definition": "metatile_032E60"
+      },
+      {
+        "id": 57,
+        "definition": "metatile_032E70"
+      },
+      {
+        "id": 58,
+        "definition": "metatile_032E80"
+      },
+      {
+        "id": 59,
+        "definition": "metatile_032E90"
+      },
+      {
+        "id": 60,
+        "definition": "metatile_032EA0"
+      },
+      {
+        "id": 61,
+        "definition": "metatile_032EB0"
+      },
+      {
+        "id": 62,
+        "definition": "metatile_032EC0"
+      },
+      {
+        "id": 63,
+        "definition": "metatile_032ED0"
+      },
+      {
+        "id": 64,
+        "definition": "metatile_032EE0"
+      },
+      {
+        "id": 65,
+        "definition": "metatile_032EF0"
+      },
+      {
+        "id": 66,
+        "definition": "metatile_032F00"
+      },
+      {
+        "id": 67,
+        "definition": "metatile_032F10"
+      },
+      {
+        "id": 68,
+        "definition": "metatile_032F20"
+      },
+      {
+        "id": 69,
+        "definition": "metatile_032F30"
+      },
+      {
+        "id": 70,
+        "definition": "metatile_032F40"
+      },
+      {
+        "id": 71,
+        "definition": "metatile_032F50"
+      },
+      {
+        "id": 72,
+        "definition": "metatile_032F60"
+      },
+      {
+        "id": 73,
+        "definition": "metatile_032F70"
+      },
+      {
+        "id": 74,
+        "definition": "metatile_032F80"
+      },
+      {
+        "id": 75,
+        "definition": "metatile_032F90"
+      },
+      {
+        "id": 76,
+        "definition": "metatile_032FA0"
+      },
+      {
+        "id": 77,
+        "definition": "metatile_032FB0"
+      },
+      {
+        "id": 78,
+        "definition": "metatile_032FC0"
+      },
+      {
+        "id": 79,
+        "definition": "metatile_032FD0"
+      },
+      {
+        "id": 80,
+        "definition": "metatile_032FE0"
+      },
+      {
+        "id": 81,
+        "definition": "metatile_032FF0"
+      },
+      {
+        "id": 82,
+        "definition": "metatile_033000"
+      },
+      {
+        "id": 83,
+        "definition": "metatile_033010"
+      },
+      {
+        "id": 84,
+        "definition": "metatile_033020"
+      },
+      {
+        "id": 85,
+        "definition": "metatile_033030"
+      },
+      {
+        "id": 86,
+        "definition": "metatile_033040"
+      },
+      {
+        "id": 87,
+        "definition": "metatile_033050"
+      },
+      {
+        "id": 144,
+        "definition": "metatile_0333E0"
+      },
+      {
+        "id": 148,
+        "definition": "metatile_033420"
+      },
+      {
+        "id": 176,
+        "definition": "metatile_0335E0"
+      },
+      {
+        "id": 192,
+        "definition": "metatile_0336E0"
+      },
+      {
+        "id": 195,
+        "definition": "metatile_033710"
+      }
+    ],
+    "limitation": "IDs reachable in static checkpoint/branch paths; external gate continuations remain outside this map."
+  },
+  {
+    "stage": 2,
+    "definitions": [
+      {
+        "id": 0,
+        "definition": "metatile_033060"
+      },
+      {
+        "id": 1,
+        "definition": "metatile_033070"
+      },
+      {
+        "id": 2,
+        "definition": "metatile_033080"
+      },
+      {
+        "id": 3,
+        "definition": "metatile_033090"
+      },
+      {
+        "id": 4,
+        "definition": "metatile_0330A0"
+      },
+      {
+        "id": 5,
+        "definition": "metatile_0330B0"
+      },
+      {
+        "id": 6,
+        "definition": "metatile_0330C0"
+      },
+      {
+        "id": 7,
+        "definition": "metatile_0330D0"
+      },
+      {
+        "id": 8,
+        "definition": "metatile_0330E0"
+      },
+      {
+        "id": 9,
+        "definition": "metatile_0330F0"
+      },
+      {
+        "id": 10,
+        "definition": "metatile_033100"
+      },
+      {
+        "id": 11,
+        "definition": "metatile_033110"
+      },
+      {
+        "id": 13,
+        "definition": "metatile_033130"
+      },
+      {
+        "id": 14,
+        "definition": "metatile_033140"
+      },
+      {
+        "id": 15,
+        "definition": "metatile_033150"
+      },
+      {
+        "id": 16,
+        "definition": "metatile_033160"
+      },
+      {
+        "id": 17,
+        "definition": "metatile_033170"
+      },
+      {
+        "id": 18,
+        "definition": "metatile_033180"
+      },
+      {
+        "id": 19,
+        "definition": "metatile_033190"
+      },
+      {
+        "id": 20,
+        "definition": "metatile_0331A0"
+      },
+      {
+        "id": 21,
+        "definition": "metatile_0331B0"
+      },
+      {
+        "id": 22,
+        "definition": "metatile_0331C0"
+      },
+      {
+        "id": 23,
+        "definition": "metatile_0331D0"
+      },
+      {
+        "id": 24,
+        "definition": "metatile_0331E0"
+      },
+      {
+        "id": 25,
+        "definition": "metatile_0331F0"
+      },
+      {
+        "id": 26,
+        "definition": "metatile_033200"
+      },
+      {
+        "id": 27,
+        "definition": "metatile_033210"
+      },
+      {
+        "id": 28,
+        "definition": "metatile_033220"
+      },
+      {
+        "id": 29,
+        "definition": "metatile_033230"
+      },
+      {
+        "id": 30,
+        "definition": "metatile_033240"
+      },
+      {
+        "id": 31,
+        "definition": "metatile_033250"
+      },
+      {
+        "id": 32,
+        "definition": "metatile_033260"
+      },
+      {
+        "id": 33,
+        "definition": "metatile_033270"
+      },
+      {
+        "id": 34,
+        "definition": "metatile_033280"
+      },
+      {
+        "id": 35,
+        "definition": "metatile_033290"
+      },
+      {
+        "id": 36,
+        "definition": "metatile_0332A0"
+      },
+      {
+        "id": 37,
+        "definition": "metatile_0332B0"
+      },
+      {
+        "id": 38,
+        "definition": "metatile_0332C0"
+      },
+      {
+        "id": 39,
+        "definition": "metatile_0332D0"
+      },
+      {
+        "id": 40,
+        "definition": "metatile_0332E0"
+      },
+      {
+        "id": 41,
+        "definition": "metatile_0332F0"
+      },
+      {
+        "id": 42,
+        "definition": "metatile_033300"
+      },
+      {
+        "id": 43,
+        "definition": "metatile_033310"
+      },
+      {
+        "id": 44,
+        "definition": "metatile_033320"
+      },
+      {
+        "id": 45,
+        "definition": "metatile_033330"
+      },
+      {
+        "id": 46,
+        "definition": "metatile_033340"
+      },
+      {
+        "id": 47,
+        "definition": "metatile_033350"
+      },
+      {
+        "id": 48,
+        "definition": "metatile_033360"
+      },
+      {
+        "id": 49,
+        "definition": "metatile_033370"
+      },
+      {
+        "id": 50,
+        "definition": "metatile_033380"
+      },
+      {
+        "id": 51,
+        "definition": "metatile_033390"
+      },
+      {
+        "id": 52,
+        "definition": "metatile_0333A0"
+      },
+      {
+        "id": 53,
+        "definition": "metatile_0333B0"
+      },
+      {
+        "id": 54,
+        "definition": "metatile_0333C0"
+      },
+      {
+        "id": 55,
+        "definition": "metatile_0333D0"
+      },
+      {
+        "id": 56,
+        "definition": "metatile_0333E0"
+      },
+      {
+        "id": 57,
+        "definition": "metatile_0333F0"
+      },
+      {
+        "id": 58,
+        "definition": "metatile_033400"
+      },
+      {
+        "id": 59,
+        "definition": "metatile_033410"
+      },
+      {
+        "id": 60,
+        "definition": "metatile_033420"
+      },
+      {
+        "id": 61,
+        "definition": "metatile_033430"
+      },
+      {
+        "id": 62,
+        "definition": "metatile_033440"
+      },
+      {
+        "id": 63,
+        "definition": "metatile_033450"
+      },
+      {
+        "id": 64,
+        "definition": "metatile_033460"
+      },
+      {
+        "id": 65,
+        "definition": "metatile_033470"
+      },
+      {
+        "id": 66,
+        "definition": "metatile_033480"
+      },
+      {
+        "id": 67,
+        "definition": "metatile_033490"
+      },
+      {
+        "id": 68,
+        "definition": "metatile_0334A0"
+      },
+      {
+        "id": 69,
+        "definition": "metatile_0334B0"
+      },
+      {
+        "id": 70,
+        "definition": "metatile_0334C0"
+      },
+      {
+        "id": 71,
+        "definition": "metatile_0334D0"
+      },
+      {
+        "id": 72,
+        "definition": "metatile_0334E0"
+      },
+      {
+        "id": 73,
+        "definition": "metatile_0334F0"
+      },
+      {
+        "id": 74,
+        "definition": "metatile_033500"
+      },
+      {
+        "id": 75,
+        "definition": "metatile_033510"
+      },
+      {
+        "id": 76,
+        "definition": "metatile_033520"
+      },
+      {
+        "id": 77,
+        "definition": "metatile_033530"
+      },
+      {
+        "id": 78,
+        "definition": "metatile_033540"
+      },
+      {
+        "id": 80,
+        "definition": "metatile_033560"
+      },
+      {
+        "id": 81,
+        "definition": "metatile_033570"
+      },
+      {
+        "id": 82,
+        "definition": "metatile_033580"
+      },
+      {
+        "id": 83,
+        "definition": "metatile_033590"
+      },
+      {
+        "id": 84,
+        "definition": "metatile_0335A0"
+      },
+      {
+        "id": 85,
+        "definition": "metatile_0335B0"
+      },
+      {
+        "id": 86,
+        "definition": "metatile_0335C0"
+      }
+    ],
+    "limitation": "IDs reachable in static checkpoint/branch paths; external gate continuations remain outside this map."
+  },
+  {
+    "stage": 3,
+    "definitions": [
+      {
+        "id": 1,
+        "definition": "metatile_0335E0"
+      },
+      {
+        "id": 2,
+        "definition": "metatile_0335F0"
+      },
+      {
+        "id": 3,
+        "definition": "metatile_033600"
+      },
+      {
+        "id": 4,
+        "definition": "metatile_033610"
+      },
+      {
+        "id": 5,
+        "definition": "metatile_033620"
+      },
+      {
+        "id": 6,
+        "definition": "metatile_033630"
+      },
+      {
+        "id": 7,
+        "definition": "metatile_033640"
+      },
+      {
+        "id": 8,
+        "definition": "metatile_033650"
+      },
+      {
+        "id": 9,
+        "definition": "metatile_033660"
+      },
+      {
+        "id": 10,
+        "definition": "metatile_033670"
+      },
+      {
+        "id": 11,
+        "definition": "metatile_033680"
+      },
+      {
+        "id": 13,
+        "definition": "metatile_0336A0"
+      },
+      {
+        "id": 15,
+        "definition": "metatile_0336C0"
+      },
+      {
+        "id": 16,
+        "definition": "metatile_0336D0"
+      },
+      {
+        "id": 17,
+        "definition": "metatile_0336E0"
+      },
+      {
+        "id": 18,
+        "definition": "metatile_0336F0"
+      },
+      {
+        "id": 19,
+        "definition": "metatile_033700"
+      },
+      {
+        "id": 20,
+        "definition": "metatile_033710"
+      },
+      {
+        "id": 21,
+        "definition": "metatile_033720"
+      },
+      {
+        "id": 22,
+        "definition": "metatile_033730"
+      },
+      {
+        "id": 23,
+        "definition": "metatile_033740"
+      },
+      {
+        "id": 24,
+        "definition": "metatile_033750"
+      },
+      {
+        "id": 25,
+        "definition": "metatile_033760"
+      },
+      {
+        "id": 26,
+        "definition": "metatile_033770"
+      },
+      {
+        "id": 27,
+        "definition": "metatile_033780"
+      },
+      {
+        "id": 28,
+        "definition": "metatile_033790"
+      },
+      {
+        "id": 29,
+        "definition": "metatile_0337A0"
+      },
+      {
+        "id": 30,
+        "definition": "metatile_0337B0"
+      },
+      {
+        "id": 31,
+        "definition": "metatile_0337C0"
+      },
+      {
+        "id": 32,
+        "definition": "metatile_0337D0"
+      },
+      {
+        "id": 33,
+        "definition": "metatile_0337E0"
+      },
+      {
+        "id": 34,
+        "definition": "metatile_0337F0"
+      },
+      {
+        "id": 36,
+        "definition": "metatile_033810"
+      },
+      {
+        "id": 37,
+        "definition": "metatile_033820"
+      },
+      {
+        "id": 38,
+        "definition": "metatile_033830"
+      },
+      {
+        "id": 39,
+        "definition": "metatile_033840"
+      },
+      {
+        "id": 40,
+        "definition": "metatile_033850"
+      },
+      {
+        "id": 41,
+        "definition": "metatile_033860"
+      },
+      {
+        "id": 42,
+        "definition": "metatile_033870"
+      },
+      {
+        "id": 43,
+        "definition": "metatile_033880"
+      },
+      {
+        "id": 45,
+        "definition": "metatile_0338A0"
+      },
+      {
+        "id": 46,
+        "definition": "metatile_0338B0"
+      },
+      {
+        "id": 47,
+        "definition": "metatile_0338C0"
+      },
+      {
+        "id": 48,
+        "definition": "metatile_0338D0"
+      },
+      {
+        "id": 49,
+        "definition": "metatile_0338E0"
+      },
+      {
+        "id": 50,
+        "definition": "metatile_0338F0"
+      },
+      {
+        "id": 51,
+        "definition": "metatile_033900"
+      },
+      {
+        "id": 52,
+        "definition": "metatile_033910"
+      },
+      {
+        "id": 53,
+        "definition": "metatile_033920"
+      },
+      {
+        "id": 54,
+        "definition": "metatile_033930"
+      },
+      {
+        "id": 55,
+        "definition": "metatile_033940"
+      },
+      {
+        "id": 56,
+        "definition": "metatile_033950"
+      },
+      {
+        "id": 57,
+        "definition": "metatile_033960"
+      },
+      {
+        "id": 58,
+        "definition": "metatile_033970"
+      },
+      {
+        "id": 59,
+        "definition": "metatile_033980"
+      },
+      {
+        "id": 60,
+        "definition": "metatile_033990"
+      },
+      {
+        "id": 61,
+        "definition": "metatile_0339A0"
+      },
+      {
+        "id": 62,
+        "definition": "metatile_0339B0"
+      },
+      {
+        "id": 63,
+        "definition": "metatile_0339C0"
+      },
+      {
+        "id": 64,
+        "definition": "metatile_0339D0"
+      },
+      {
+        "id": 65,
+        "definition": "metatile_0339E0"
+      },
+      {
+        "id": 67,
+        "definition": "metatile_033A00"
+      },
+      {
+        "id": 68,
+        "definition": "metatile_033A10"
+      },
+      {
+        "id": 69,
+        "definition": "metatile_033A20"
+      },
+      {
+        "id": 70,
+        "definition": "metatile_033A30"
+      },
+      {
+        "id": 71,
+        "definition": "metatile_033A40"
+      },
+      {
+        "id": 72,
+        "definition": "metatile_033A50"
+      },
+      {
+        "id": 73,
+        "definition": "metatile_033A60"
+      },
+      {
+        "id": 74,
+        "definition": "metatile_033A70"
+      },
+      {
+        "id": 75,
+        "definition": "metatile_033A80"
+      },
+      {
+        "id": 79,
+        "definition": "metatile_033AC0"
+      },
+      {
+        "id": 80,
+        "definition": "metatile_033AD0"
+      },
+      {
+        "id": 81,
+        "definition": "metatile_033AE0"
+      },
+      {
+        "id": 82,
+        "definition": "metatile_033AF0"
+      },
+      {
+        "id": 83,
+        "definition": "metatile_033B00"
+      },
+      {
+        "id": 84,
+        "definition": "metatile_033B10"
+      },
+      {
+        "id": 85,
+        "definition": "metatile_033B20"
+      },
+      {
+        "id": 86,
+        "definition": "metatile_033B30"
+      },
+      {
+        "id": 87,
+        "definition": "metatile_033B40"
+      },
+      {
+        "id": 88,
+        "definition": "metatile_033B50"
+      },
+      {
+        "id": 89,
+        "definition": "metatile_033B60"
+      },
+      {
+        "id": 90,
+        "definition": "metatile_033B70"
+      },
+      {
+        "id": 91,
+        "definition": "metatile_033B80"
+      },
+      {
+        "id": 92,
+        "definition": "metatile_033B90"
+      },
+      {
+        "id": 93,
+        "definition": "metatile_033BA0"
+      },
+      {
+        "id": 94,
+        "definition": "metatile_033BB0"
+      },
+      {
+        "id": 95,
+        "definition": "metatile_033BC0"
+      },
+      {
+        "id": 96,
+        "definition": "metatile_033BD0"
+      },
+      {
+        "id": 97,
+        "definition": "metatile_033BE0"
+      },
+      {
+        "id": 98,
+        "definition": "metatile_033BF0"
+      },
+      {
+        "id": 99,
+        "definition": "metatile_033C00"
+      },
+      {
+        "id": 100,
+        "definition": "metatile_033C10"
+      },
+      {
+        "id": 101,
+        "definition": "metatile_033C20"
+      },
+      {
+        "id": 102,
+        "definition": "metatile_033C30"
+      },
+      {
+        "id": 103,
+        "definition": "metatile_033C40"
+      },
+      {
+        "id": 104,
+        "definition": "metatile_033C50"
+      },
+      {
+        "id": 105,
+        "definition": "metatile_033C60"
+      },
+      {
+        "id": 106,
+        "definition": "metatile_033C70"
+      },
+      {
+        "id": 107,
+        "definition": "metatile_033C80"
+      },
+      {
+        "id": 108,
+        "definition": "metatile_033C90"
+      },
+      {
+        "id": 109,
+        "definition": "metatile_033CA0"
+      },
+      {
+        "id": 110,
+        "definition": "metatile_033CB0"
+      },
+      {
+        "id": 111,
+        "definition": "metatile_033CC0"
+      },
+      {
+        "id": 112,
+        "definition": "metatile_033CD0"
+      },
+      {
+        "id": 113,
+        "definition": "metatile_033CE0"
+      },
+      {
+        "id": 114,
+        "definition": "metatile_033CF0"
+      },
+      {
+        "id": 115,
+        "definition": "metatile_033D00"
+      },
+      {
+        "id": 116,
+        "definition": "metatile_033D10"
+      },
+      {
+        "id": 117,
+        "definition": "metatile_033D20"
+      },
+      {
+        "id": 118,
+        "definition": "metatile_033D30"
+      },
+      {
+        "id": 119,
+        "definition": "metatile_033D40"
+      },
+      {
+        "id": 120,
+        "definition": "metatile_033D50"
+      },
+      {
+        "id": 121,
+        "definition": "metatile_033D60"
+      },
+      {
+        "id": 122,
+        "definition": "metatile_033D70"
+      },
+      {
+        "id": 123,
+        "definition": "metatile_033D80"
+      },
+      {
+        "id": 124,
+        "definition": "metatile_033D90"
+      },
+      {
+        "id": 125,
+        "definition": "metatile_033DA0"
+      }
+    ],
+    "limitation": "IDs reachable in static checkpoint/branch paths; external gate continuations remain outside this map."
+  },
+  {
+    "stage": 4,
+    "definitions": [
+      {
+        "id": 0,
+        "definition": "metatile_033DB0"
+      },
+      {
+        "id": 1,
+        "definition": "metatile_033DC0"
+      },
+      {
+        "id": 2,
+        "definition": "metatile_033DD0"
+      },
+      {
+        "id": 3,
+        "definition": "metatile_033DE0"
+      },
+      {
+        "id": 4,
+        "definition": "metatile_033DF0"
+      },
+      {
+        "id": 5,
+        "definition": "metatile_033E00"
+      },
+      {
+        "id": 6,
+        "definition": "metatile_033E10"
+      },
+      {
+        "id": 7,
+        "definition": "metatile_033E20"
+      },
+      {
+        "id": 8,
+        "definition": "metatile_033E30"
+      },
+      {
+        "id": 9,
+        "definition": "metatile_033E40"
+      },
+      {
+        "id": 10,
+        "definition": "metatile_033E50"
+      },
+      {
+        "id": 11,
+        "definition": "metatile_033E60"
+      },
+      {
+        "id": 13,
+        "definition": "metatile_033E80"
+      },
+      {
+        "id": 14,
+        "definition": "metatile_033E90"
+      },
+      {
+        "id": 15,
+        "definition": "metatile_033EA0"
+      },
+      {
+        "id": 17,
+        "definition": "metatile_033EC0"
+      },
+      {
+        "id": 18,
+        "definition": "metatile_033ED0"
+      },
+      {
+        "id": 19,
+        "definition": "metatile_033EE0"
+      },
+      {
+        "id": 20,
+        "definition": "metatile_033EF0"
+      },
+      {
+        "id": 21,
+        "definition": "metatile_033F00"
+      },
+      {
+        "id": 22,
+        "definition": "metatile_033F10"
+      },
+      {
+        "id": 23,
+        "definition": "metatile_033F20"
+      },
+      {
+        "id": 24,
+        "definition": "metatile_033F30"
+      },
+      {
+        "id": 25,
+        "definition": "metatile_033F40"
+      },
+      {
+        "id": 26,
+        "definition": "metatile_033F50"
+      },
+      {
+        "id": 27,
+        "definition": "metatile_033F60"
+      },
+      {
+        "id": 28,
+        "definition": "metatile_033F70"
+      },
+      {
+        "id": 29,
+        "definition": "metatile_033F80"
+      },
+      {
+        "id": 30,
+        "definition": "metatile_033F90"
+      },
+      {
+        "id": 32,
+        "definition": "metatile_033FB0"
+      },
+      {
+        "id": 33,
+        "definition": "metatile_033FC0"
+      },
+      {
+        "id": 34,
+        "definition": "metatile_033FD0"
+      },
+      {
+        "id": 35,
+        "definition": "metatile_033FE0"
+      },
+      {
+        "id": 36,
+        "definition": "metatile_033FF0"
+      },
+      {
+        "id": 37,
+        "definition": "metatile_034000"
+      },
+      {
+        "id": 38,
+        "definition": "metatile_034010"
+      },
+      {
+        "id": 39,
+        "definition": "metatile_034020"
+      },
+      {
+        "id": 40,
+        "definition": "metatile_034030"
+      },
+      {
+        "id": 41,
+        "definition": "metatile_034040"
+      },
+      {
+        "id": 43,
+        "definition": "metatile_034060"
+      }
+    ],
+    "limitation": "IDs reachable in static checkpoint/branch paths; external gate continuations remain outside this map."
+  },
+  {
+    "stage": 5,
+    "definitions": [
+      {
+        "id": 0,
+        "definition": "metatile_034070"
+      },
+      {
+        "id": 1,
+        "definition": "metatile_034080"
+      },
+      {
+        "id": 2,
+        "definition": "metatile_034090"
+      },
+      {
+        "id": 3,
+        "definition": "metatile_0340A0"
+      },
+      {
+        "id": 4,
+        "definition": "metatile_0340B0"
+      },
+      {
+        "id": 5,
+        "definition": "metatile_0340C0"
+      },
+      {
+        "id": 6,
+        "definition": "metatile_0340D0"
+      },
+      {
+        "id": 7,
+        "definition": "metatile_0340E0"
+      },
+      {
+        "id": 8,
+        "definition": "metatile_0340F0"
+      },
+      {
+        "id": 9,
+        "definition": "metatile_034100"
+      },
+      {
+        "id": 10,
+        "definition": "metatile_034110"
+      },
+      {
+        "id": 11,
+        "definition": "metatile_034120"
+      },
+      {
+        "id": 12,
+        "definition": "metatile_034130"
+      },
+      {
+        "id": 13,
+        "definition": "metatile_034140"
+      },
+      {
+        "id": 14,
+        "definition": "metatile_034150"
+      },
+      {
+        "id": 15,
+        "definition": "metatile_034160"
+      },
+      {
+        "id": 16,
+        "definition": "metatile_034170"
+      },
+      {
+        "id": 17,
+        "definition": "metatile_034180"
+      },
+      {
+        "id": 18,
+        "definition": "metatile_034190"
+      },
+      {
+        "id": 19,
+        "definition": "metatile_0341A0"
+      },
+      {
+        "id": 20,
+        "definition": "metatile_0341B0"
+      },
+      {
+        "id": 21,
+        "definition": "metatile_0341C0"
+      },
+      {
+        "id": 22,
+        "definition": "metatile_0341D0"
+      },
+      {
+        "id": 23,
+        "definition": "metatile_0341E0"
+      },
+      {
+        "id": 24,
+        "definition": "metatile_0341F0"
+      },
+      {
+        "id": 25,
+        "definition": "metatile_034200"
+      },
+      {
+        "id": 26,
+        "definition": "metatile_034210"
+      },
+      {
+        "id": 27,
+        "definition": "metatile_034220"
+      },
+      {
+        "id": 28,
+        "definition": "metatile_034230"
+      },
+      {
+        "id": 31,
+        "definition": "metatile_034260"
+      },
+      {
+        "id": 32,
+        "definition": "metatile_034270"
+      },
+      {
+        "id": 33,
+        "definition": "metatile_034280"
+      },
+      {
+        "id": 34,
+        "definition": "metatile_034290"
+      },
+      {
+        "id": 37,
+        "definition": "metatile_0342C0"
+      },
+      {
+        "id": 38,
+        "definition": "metatile_0342D0"
+      },
+      {
+        "id": 39,
+        "definition": "metatile_0342E0"
+      },
+      {
+        "id": 40,
+        "definition": "metatile_0342F0"
+      },
+      {
+        "id": 41,
+        "definition": "metatile_034300"
+      },
+      {
+        "id": 42,
+        "definition": "metatile_034310"
+      },
+      {
+        "id": 43,
+        "definition": "metatile_034320"
+      },
+      {
+        "id": 44,
+        "definition": "metatile_034330"
+      },
+      {
+        "id": 45,
+        "definition": "metatile_034340"
+      },
+      {
+        "id": 46,
+        "definition": "metatile_034350"
+      },
+      {
+        "id": 47,
+        "definition": "metatile_034360"
+      },
+      {
+        "id": 48,
+        "definition": "metatile_034370"
+      },
+      {
+        "id": 49,
+        "definition": "metatile_034380"
+      },
+      {
+        "id": 50,
+        "definition": "metatile_034390"
+      },
+      {
+        "id": 51,
+        "definition": "metatile_0343A0"
+      },
+      {
+        "id": 52,
+        "definition": "metatile_0343B0"
+      },
+      {
+        "id": 53,
+        "definition": "metatile_0343C0"
+      },
+      {
+        "id": 54,
+        "definition": "metatile_0343D0"
+      },
+      {
+        "id": 55,
+        "definition": "metatile_0343E0"
+      },
+      {
+        "id": 56,
+        "definition": "metatile_0343F0"
+      },
+      {
+        "id": 57,
+        "definition": "metatile_034400"
+      },
+      {
+        "id": 58,
+        "definition": "metatile_034410"
+      },
+      {
+        "id": 59,
+        "definition": "metatile_034420"
+      },
+      {
+        "id": 60,
+        "definition": "metatile_034430"
+      },
+      {
+        "id": 61,
+        "definition": "metatile_034440"
+      },
+      {
+        "id": 62,
+        "definition": "metatile_034450"
+      },
+      {
+        "id": 63,
+        "definition": "metatile_034460"
+      },
+      {
+        "id": 64,
+        "definition": "metatile_034470"
+      },
+      {
+        "id": 65,
+        "definition": "metatile_034480"
+      },
+      {
+        "id": 66,
+        "definition": "metatile_034490"
+      },
+      {
+        "id": 67,
+        "definition": "metatile_0344A0"
+      },
+      {
+        "id": 69,
+        "definition": "metatile_0344C0"
+      },
+      {
+        "id": 70,
+        "definition": "metatile_0344D0"
+      },
+      {
+        "id": 71,
+        "definition": "metatile_0344E0"
+      },
+      {
+        "id": 72,
+        "definition": "metatile_0344F0"
+      },
+      {
+        "id": 73,
+        "definition": "metatile_034500"
+      },
+      {
+        "id": 74,
+        "definition": "metatile_034510"
+      },
+      {
+        "id": 75,
+        "definition": "metatile_034520"
+      },
+      {
+        "id": 76,
+        "definition": "metatile_034530"
+      },
+      {
+        "id": 77,
+        "definition": "metatile_034540"
+      },
+      {
+        "id": 78,
+        "definition": "metatile_034550"
+      },
+      {
+        "id": 79,
+        "definition": "metatile_034560"
+      },
+      {
+        "id": 80,
+        "definition": "metatile_034570"
+      },
+      {
+        "id": 81,
+        "definition": "metatile_034580"
+      },
+      {
+        "id": 82,
+        "definition": "metatile_034590"
+      },
+      {
+        "id": 83,
+        "definition": "metatile_0345A0"
+      },
+      {
+        "id": 84,
+        "definition": "metatile_0345B0"
+      },
+      {
+        "id": 85,
+        "definition": "metatile_0345C0"
+      },
+      {
+        "id": 86,
+        "definition": "metatile_0345D0"
+      },
+      {
+        "id": 87,
+        "definition": "metatile_0345E0"
+      },
+      {
+        "id": 88,
+        "definition": "metatile_0345F0"
+      },
+      {
+        "id": 90,
+        "definition": "metatile_034610"
+      },
+      {
+        "id": 91,
+        "definition": "metatile_034620"
+      },
+      {
+        "id": 92,
+        "definition": "metatile_034630"
+      },
+      {
+        "id": 93,
+        "definition": "metatile_034640"
+      },
+      {
+        "id": 94,
+        "definition": "metatile_034650"
+      },
+      {
+        "id": 95,
+        "definition": "metatile_034660"
+      },
+      {
+        "id": 96,
+        "definition": "metatile_034670"
+      },
+      {
+        "id": 97,
+        "definition": "metatile_034680"
+      },
+      {
+        "id": 98,
+        "definition": "metatile_034690"
+      },
+      {
+        "id": 99,
+        "definition": "metatile_0346A0"
+      },
+      {
+        "id": 100,
+        "definition": "metatile_0346B0"
+      },
+      {
+        "id": 101,
+        "definition": "metatile_0346C0"
+      },
+      {
+        "id": 102,
+        "definition": "metatile_0346D0"
+      },
+      {
+        "id": 103,
+        "definition": "metatile_0346E0"
+      },
+      {
+        "id": 104,
+        "definition": "metatile_0346F0"
+      },
+      {
+        "id": 105,
+        "definition": "metatile_034700"
+      },
+      {
+        "id": 106,
+        "definition": "metatile_034710"
+      },
+      {
+        "id": 107,
+        "definition": "metatile_034720"
+      },
+      {
+        "id": 108,
+        "definition": "metatile_034730"
+      },
+      {
+        "id": 109,
+        "definition": "metatile_034740"
+      },
+      {
+        "id": 110,
+        "definition": "metatile_034750"
+      },
+      {
+        "id": 111,
+        "definition": "metatile_034760"
+      },
+      {
+        "id": 112,
+        "definition": "metatile_034770"
+      },
+      {
+        "id": 113,
+        "definition": "metatile_034780"
+      },
+      {
+        "id": 114,
+        "definition": "metatile_034790"
+      },
+      {
+        "id": 115,
+        "definition": "metatile_0347A0"
+      },
+      {
+        "id": 116,
+        "definition": "metatile_0347B0"
+      }
+    ],
+    "limitation": "IDs reachable in static checkpoint/branch paths; external gate continuations remain outside this map."
+  },
+  {
+    "stage": 6,
+    "definitions": [
+      {
+        "id": 0,
+        "definition": "metatile_0347C0"
+      },
+      {
+        "id": 1,
+        "definition": "metatile_0347D0"
+      },
+      {
+        "id": 2,
+        "definition": "metatile_0347E0"
+      },
+      {
+        "id": 3,
+        "definition": "metatile_0347F0"
+      },
+      {
+        "id": 4,
+        "definition": "metatile_034800"
+      },
+      {
+        "id": 5,
+        "definition": "metatile_034810"
+      },
+      {
+        "id": 6,
+        "definition": "metatile_034820"
+      },
+      {
+        "id": 7,
+        "definition": "metatile_034830"
+      },
+      {
+        "id": 8,
+        "definition": "metatile_034840"
+      },
+      {
+        "id": 9,
+        "definition": "metatile_034850"
+      },
+      {
+        "id": 10,
+        "definition": "metatile_034860"
+      },
+      {
+        "id": 11,
+        "definition": "metatile_034870"
+      },
+      {
+        "id": 12,
+        "definition": "metatile_034880"
+      },
+      {
+        "id": 13,
+        "definition": "metatile_034890"
+      },
+      {
+        "id": 14,
+        "definition": "metatile_0348A0"
+      },
+      {
+        "id": 15,
+        "definition": "metatile_0348B0"
+      },
+      {
+        "id": 16,
+        "definition": "metatile_0348C0"
+      },
+      {
+        "id": 17,
+        "definition": "metatile_0348D0"
+      },
+      {
+        "id": 18,
+        "definition": "metatile_0348E0"
+      },
+      {
+        "id": 19,
+        "definition": "metatile_0348F0"
+      },
+      {
+        "id": 20,
+        "definition": "metatile_034900"
+      },
+      {
+        "id": 21,
+        "definition": "metatile_034910"
+      },
+      {
+        "id": 22,
+        "definition": "metatile_034920"
+      },
+      {
+        "id": 23,
+        "definition": "metatile_034930"
+      },
+      {
+        "id": 24,
+        "definition": "metatile_034940"
+      },
+      {
+        "id": 25,
+        "definition": "metatile_034950"
+      },
+      {
+        "id": 26,
+        "definition": "metatile_034960"
+      },
+      {
+        "id": 27,
+        "definition": "metatile_034970"
+      },
+      {
+        "id": 28,
+        "definition": "metatile_034980"
+      },
+      {
+        "id": 29,
+        "definition": "metatile_034990"
+      },
+      {
+        "id": 30,
+        "definition": "metatile_0349A0"
+      },
+      {
+        "id": 32,
+        "definition": "metatile_0349C0"
+      },
+      {
+        "id": 33,
+        "definition": "metatile_0349D0"
+      },
+      {
+        "id": 34,
+        "definition": "metatile_0349E0"
+      },
+      {
+        "id": 35,
+        "definition": "metatile_0349F0"
+      },
+      {
+        "id": 36,
+        "definition": "metatile_034A00"
+      },
+      {
+        "id": 37,
+        "definition": "metatile_034A10"
+      },
+      {
+        "id": 38,
+        "definition": "metatile_034A20"
+      },
+      {
+        "id": 39,
+        "definition": "metatile_034A30"
+      },
+      {
+        "id": 40,
+        "definition": "metatile_034A40"
+      },
+      {
+        "id": 41,
+        "definition": "metatile_034A50"
+      },
+      {
+        "id": 42,
+        "definition": "metatile_034A60"
+      },
+      {
+        "id": 43,
+        "definition": "metatile_034A70"
+      },
+      {
+        "id": 44,
+        "definition": "metatile_034A80"
+      },
+      {
+        "id": 45,
+        "definition": "metatile_034A90"
+      },
+      {
+        "id": 46,
+        "definition": "metatile_034AA0"
+      },
+      {
+        "id": 47,
+        "definition": "metatile_034AB0"
+      },
+      {
+        "id": 48,
+        "definition": "metatile_034AC0"
+      },
+      {
+        "id": 49,
+        "definition": "metatile_034AD0"
+      },
+      {
+        "id": 50,
+        "definition": "metatile_034AE0"
+      },
+      {
+        "id": 51,
+        "definition": "metatile_034AF0"
+      },
+      {
+        "id": 52,
+        "definition": "metatile_034B00"
+      },
+      {
+        "id": 53,
+        "definition": "metatile_034B10"
+      },
+      {
+        "id": 54,
+        "definition": "metatile_034B20"
+      },
+      {
+        "id": 55,
+        "definition": "metatile_034B30"
+      },
+      {
+        "id": 56,
+        "definition": "metatile_034B40"
+      },
+      {
+        "id": 57,
+        "definition": "metatile_034B50"
+      },
+      {
+        "id": 58,
+        "definition": "metatile_034B60"
+      },
+      {
+        "id": 59,
+        "definition": "metatile_034B70"
+      },
+      {
+        "id": 60,
+        "definition": "metatile_034B80"
+      },
+      {
+        "id": 61,
+        "definition": "metatile_034B90"
+      },
+      {
+        "id": 62,
+        "definition": "metatile_034BA0"
+      },
+      {
+        "id": 63,
+        "definition": "metatile_034BB0"
+      },
+      {
+        "id": 64,
+        "definition": "metatile_034BC0"
+      },
+      {
+        "id": 65,
+        "definition": "metatile_034BD0"
+      },
+      {
+        "id": 66,
+        "definition": "metatile_034BE0"
+      },
+      {
+        "id": 67,
+        "definition": "metatile_034BF0"
+      },
+      {
+        "id": 68,
+        "definition": "metatile_034C00"
+      },
+      {
+        "id": 69,
+        "definition": "metatile_034C10"
+      },
+      {
+        "id": 70,
+        "definition": "metatile_034C20"
+      },
+      {
+        "id": 71,
+        "definition": "metatile_034C30"
+      },
+      {
+        "id": 73,
+        "definition": "metatile_034C50"
+      },
+      {
+        "id": 74,
+        "definition": "metatile_034C60"
+      },
+      {
+        "id": 75,
+        "definition": "metatile_034C70"
+      },
+      {
+        "id": 76,
+        "definition": "metatile_034C80"
+      },
+      {
+        "id": 77,
+        "definition": "metatile_034C90"
+      },
+      {
+        "id": 78,
+        "definition": "metatile_034CA0"
+      },
+      {
+        "id": 79,
+        "definition": "metatile_034CB0"
+      },
+      {
+        "id": 80,
+        "definition": "metatile_034CC0"
+      },
+      {
+        "id": 81,
+        "definition": "metatile_034CD0"
+      },
+      {
+        "id": 82,
+        "definition": "metatile_034CE0"
+      },
+      {
+        "id": 83,
+        "definition": "metatile_034CF0"
+      },
+      {
+        "id": 84,
+        "definition": "metatile_034D00"
+      },
+      {
+        "id": 85,
+        "definition": "metatile_034D10"
+      },
+      {
+        "id": 86,
+        "definition": "metatile_034D20"
+      },
+      {
+        "id": 87,
+        "definition": "metatile_034D30"
+      },
+      {
+        "id": 88,
+        "definition": "metatile_034D40"
+      },
+      {
+        "id": 89,
+        "definition": "metatile_034D50"
+      },
+      {
+        "id": 90,
+        "definition": "metatile_034D60"
+      },
+      {
+        "id": 91,
+        "definition": "metatile_034D70"
+      },
+      {
+        "id": 92,
+        "definition": "metatile_034D80"
+      },
+      {
+        "id": 94,
+        "definition": "metatile_034DA0"
+      },
+      {
+        "id": 95,
+        "definition": "metatile_034DB0"
+      },
+      {
+        "id": 96,
+        "definition": "metatile_034DC0"
+      },
+      {
+        "id": 97,
+        "definition": "metatile_034DD0"
+      },
+      {
+        "id": 98,
+        "definition": "metatile_034DE0"
+      },
+      {
+        "id": 99,
+        "definition": "metatile_034DF0"
+      },
+      {
+        "id": 100,
+        "definition": "metatile_034E00"
+      },
+      {
+        "id": 101,
+        "definition": "metatile_034E10"
+      },
+      {
+        "id": 102,
+        "definition": "metatile_034E20"
+      },
+      {
+        "id": 103,
+        "definition": "metatile_034E30"
+      },
+      {
+        "id": 104,
+        "definition": "metatile_034E40"
+      },
+      {
+        "id": 105,
+        "definition": "metatile_034E50"
+      },
+      {
+        "id": 106,
+        "definition": "metatile_034E60"
+      },
+      {
+        "id": 107,
+        "definition": "metatile_034E70"
+      },
+      {
+        "id": 108,
+        "definition": "metatile_034E80"
+      },
+      {
+        "id": 109,
+        "definition": "metatile_034E90"
+      },
+      {
+        "id": 110,
+        "definition": "metatile_034EA0"
+      },
+      {
+        "id": 111,
+        "definition": "metatile_034EB0"
+      },
+      {
+        "id": 112,
+        "definition": "metatile_034EC0"
+      },
+      {
+        "id": 113,
+        "definition": "metatile_034ED0"
+      },
+      {
+        "id": 114,
+        "definition": "metatile_034EE0"
+      },
+      {
+        "id": 115,
+        "definition": "metatile_034EF0"
+      },
+      {
+        "id": 116,
+        "definition": "metatile_034F00"
+      },
+      {
+        "id": 117,
+        "definition": "metatile_034F10"
+      },
+      {
+        "id": 119,
+        "definition": "metatile_034F30"
+      },
+      {
+        "id": 120,
+        "definition": "metatile_034F40"
+      },
+      {
+        "id": 121,
+        "definition": "metatile_034F50"
+      },
+      {
+        "id": 122,
+        "definition": "metatile_034F60"
+      },
+      {
+        "id": 123,
+        "definition": "metatile_034F70"
+      },
+      {
+        "id": 124,
+        "definition": "metatile_034F80"
+      },
+      {
+        "id": 125,
+        "definition": "metatile_034F90"
+      },
+      {
+        "id": 126,
+        "definition": "metatile_034FA0"
+      },
+      {
+        "id": 127,
+        "definition": "metatile_034FB0"
+      },
+      {
+        "id": 128,
+        "definition": "metatile_034FC0"
+      },
+      {
+        "id": 129,
+        "definition": "metatile_034FD0"
+      },
+      {
+        "id": 130,
+        "definition": "metatile_034FE0"
+      },
+      {
+        "id": 131,
+        "definition": "metatile_034FF0"
+      },
+      {
+        "id": 132,
+        "definition": "metatile_035000"
+      },
+      {
+        "id": 133,
+        "definition": "metatile_035010"
+      },
+      {
+        "id": 134,
+        "definition": "metatile_035020"
+      },
+      {
+        "id": 135,
+        "definition": "metatile_035030"
+      },
+      {
+        "id": 136,
+        "definition": "metatile_035040"
+      },
+      {
+        "id": 137,
+        "definition": "metatile_035050"
+      },
+      {
+        "id": 138,
+        "definition": "metatile_035060"
+      },
+      {
+        "id": 139,
+        "definition": "metatile_035070"
+      },
+      {
+        "id": 140,
+        "definition": "metatile_035080"
+      },
+      {
+        "id": 141,
+        "definition": "metatile_035090"
+      },
+      {
+        "id": 142,
+        "definition": "metatile_0350A0"
+      },
+      {
+        "id": 143,
+        "definition": "metatile_0350B0"
+      },
+      {
+        "id": 144,
+        "definition": "metatile_0350C0"
+      },
+      {
+        "id": 145,
+        "definition": "metatile_0350D0"
+      },
+      {
+        "id": 146,
+        "definition": "metatile_0350E0"
+      },
+      {
+        "id": 147,
+        "definition": "metatile_0350F0"
+      },
+      {
+        "id": 148,
+        "definition": "metatile_035100"
+      },
+      {
+        "id": 149,
+        "definition": "metatile_035110"
+      },
+      {
+        "id": 150,
+        "definition": "metatile_035120"
+      },
+      {
+        "id": 151,
+        "definition": "metatile_035130"
+      },
+      {
+        "id": 152,
+        "definition": "metatile_035140"
+      },
+      {
+        "id": 153,
+        "definition": "metatile_035150"
+      },
+      {
+        "id": 154,
+        "definition": "metatile_035160"
+      },
+      {
+        "id": 155,
+        "definition": "metatile_035170"
+      },
+      {
+        "id": 156,
+        "definition": "metatile_035180"
+      },
+      {
+        "id": 157,
+        "definition": "metatile_035190"
+      },
+      {
+        "id": 158,
+        "definition": "metatile_0351A0"
+      },
+      {
+        "id": 159,
+        "definition": "metatile_0351B0"
+      },
+      {
+        "id": 160,
+        "definition": "metatile_0351C0"
+      }
+    ],
+    "limitation": "IDs reachable in static checkpoint/branch paths; external gate continuations remain outside this map."
+  },
+  {
+    "stage": 7,
+    "definitions": [
+      {
+        "id": 0,
+        "definition": "metatile_0351D0"
+      },
+      {
+        "id": 1,
+        "definition": "metatile_0351E0"
+      },
+      {
+        "id": 2,
+        "definition": "metatile_0351F0"
+      },
+      {
+        "id": 3,
+        "definition": "metatile_035200"
+      },
+      {
+        "id": 4,
+        "definition": "metatile_035210"
+      },
+      {
+        "id": 5,
+        "definition": "metatile_035220"
+      },
+      {
+        "id": 6,
+        "definition": "metatile_035230"
+      },
+      {
+        "id": 7,
+        "definition": "metatile_035240"
+      },
+      {
+        "id": 8,
+        "definition": "metatile_035250"
+      },
+      {
+        "id": 9,
+        "definition": "metatile_035260"
+      },
+      {
+        "id": 10,
+        "definition": "metatile_035270"
+      },
+      {
+        "id": 11,
+        "definition": "metatile_035280"
+      },
+      {
+        "id": 12,
+        "definition": "metatile_035290"
+      },
+      {
+        "id": 13,
+        "definition": "metatile_0352A0"
+      },
+      {
+        "id": 14,
+        "definition": "metatile_0352B0"
+      },
+      {
+        "id": 15,
+        "definition": "metatile_0352C0"
+      },
+      {
+        "id": 16,
+        "definition": "metatile_0352D0"
+      },
+      {
+        "id": 17,
+        "definition": "metatile_0352E0"
+      },
+      {
+        "id": 18,
+        "definition": "metatile_0352F0"
+      },
+      {
+        "id": 19,
+        "definition": "metatile_035300"
+      },
+      {
+        "id": 20,
+        "definition": "metatile_035310"
+      },
+      {
+        "id": 21,
+        "definition": "metatile_035320"
+      },
+      {
+        "id": 22,
+        "definition": "metatile_035330"
+      },
+      {
+        "id": 23,
+        "definition": "metatile_035340"
+      },
+      {
+        "id": 24,
+        "definition": "metatile_035350"
+      },
+      {
+        "id": 25,
+        "definition": "metatile_035360"
+      },
+      {
+        "id": 26,
+        "definition": "metatile_035370"
+      },
+      {
+        "id": 27,
+        "definition": "metatile_035380"
+      },
+      {
+        "id": 28,
+        "definition": "metatile_035390"
+      },
+      {
+        "id": 29,
+        "definition": "metatile_0353A0"
+      },
+      {
+        "id": 30,
+        "definition": "metatile_0353B0"
+      },
+      {
+        "id": 31,
+        "definition": "metatile_0353C0"
+      },
+      {
+        "id": 32,
+        "definition": "metatile_0353D0"
+      },
+      {
+        "id": 33,
+        "definition": "metatile_0353E0"
+      },
+      {
+        "id": 34,
+        "definition": "metatile_0353F0"
+      },
+      {
+        "id": 35,
+        "definition": "metatile_035400"
+      },
+      {
+        "id": 36,
+        "definition": "metatile_035410"
+      },
+      {
+        "id": 37,
+        "definition": "metatile_035420"
+      },
+      {
+        "id": 38,
+        "definition": "metatile_035430"
+      },
+      {
+        "id": 39,
+        "definition": "metatile_035440"
+      },
+      {
+        "id": 40,
+        "definition": "metatile_035450"
+      },
+      {
+        "id": 41,
+        "definition": "metatile_035460"
+      },
+      {
+        "id": 42,
+        "definition": "metatile_035470"
+      },
+      {
+        "id": 43,
+        "definition": "metatile_035480"
+      },
+      {
+        "id": 44,
+        "definition": "metatile_035490"
+      },
+      {
+        "id": 45,
+        "definition": "metatile_0354A0"
+      },
+      {
+        "id": 46,
+        "definition": "metatile_0354B0"
+      },
+      {
+        "id": 47,
+        "definition": "metatile_0354C0"
+      },
+      {
+        "id": 48,
+        "definition": "metatile_0354D0"
+      },
+      {
+        "id": 49,
+        "definition": "metatile_0354E0"
+      },
+      {
+        "id": 50,
+        "definition": "metatile_0354F0"
+      },
+      {
+        "id": 51,
+        "definition": "metatile_035500"
+      },
+      {
+        "id": 52,
+        "definition": "metatile_035510"
+      },
+      {
+        "id": 53,
+        "definition": "metatile_035520"
+      },
+      {
+        "id": 54,
+        "definition": "metatile_035530"
+      },
+      {
+        "id": 64,
+        "definition": "metatile_0355D0"
+      },
+      {
+        "id": 69,
+        "definition": "metatile_035620"
+      },
+      {
+        "id": 80,
+        "definition": "metatile_0356D0"
+      },
+      {
+        "id": 144,
+        "definition": "metatile_035AD0"
+      },
+      {
+        "id": 178,
+        "definition": "metatile_035CF0"
+      },
+      {
+        "id": 195,
+        "definition": "metatile_035E00"
+      }
+    ],
+    "limitation": "IDs reachable in static checkpoint/branch paths; external gate continuations remain outside this map."
+  },
+  {
+    "stage": 8,
+    "definitions": [
+      {
+        "id": 0,
+        "definition": "metatile_0352D0"
+      },
+      {
+        "id": 1,
+        "definition": "metatile_0352E0"
+      },
+      {
+        "id": 2,
+        "definition": "metatile_0352F0"
+      },
+      {
+        "id": 3,
+        "definition": "metatile_035300"
+      },
+      {
+        "id": 4,
+        "definition": "metatile_035310"
+      },
+      {
+        "id": 5,
+        "definition": "metatile_035320"
+      },
+      {
+        "id": 6,
+        "definition": "metatile_035330"
+      },
+      {
+        "id": 7,
+        "definition": "metatile_035340"
+      },
+      {
+        "id": 8,
+        "definition": "metatile_035350"
+      },
+      {
+        "id": 9,
+        "definition": "metatile_035360"
+      },
+      {
+        "id": 10,
+        "definition": "metatile_035370"
+      },
+      {
+        "id": 11,
+        "definition": "metatile_035380"
+      },
+      {
+        "id": 12,
+        "definition": "metatile_035390"
+      },
+      {
+        "id": 13,
+        "definition": "metatile_0353A0"
+      },
+      {
+        "id": 14,
+        "definition": "metatile_0353B0"
+      },
+      {
+        "id": 15,
+        "definition": "metatile_0353C0"
+      },
+      {
+        "id": 16,
+        "definition": "metatile_0353D0"
+      },
+      {
+        "id": 17,
+        "definition": "metatile_0353E0"
+      },
+      {
+        "id": 18,
+        "definition": "metatile_0353F0"
+      },
+      {
+        "id": 19,
+        "definition": "metatile_035400"
+      },
+      {
+        "id": 20,
+        "definition": "metatile_035410"
+      },
+      {
+        "id": 21,
+        "definition": "metatile_035420"
+      },
+      {
+        "id": 22,
+        "definition": "metatile_035430"
+      },
+      {
+        "id": 23,
+        "definition": "metatile_035440"
+      },
+      {
+        "id": 24,
+        "definition": "metatile_035450"
+      },
+      {
+        "id": 25,
+        "definition": "metatile_035460"
+      },
+      {
+        "id": 26,
+        "definition": "metatile_035470"
+      },
+      {
+        "id": 27,
+        "definition": "metatile_035480"
+      },
+      {
+        "id": 28,
+        "definition": "metatile_035490"
+      },
+      {
+        "id": 29,
+        "definition": "metatile_0354A0"
+      },
+      {
+        "id": 30,
+        "definition": "metatile_0354B0"
+      },
+      {
+        "id": 31,
+        "definition": "metatile_0354C0"
+      },
+      {
+        "id": 32,
+        "definition": "metatile_0354D0"
+      },
+      {
+        "id": 33,
+        "definition": "metatile_0354E0"
+      },
+      {
+        "id": 34,
+        "definition": "metatile_0354F0"
+      },
+      {
+        "id": 35,
+        "definition": "metatile_035500"
+      },
+      {
+        "id": 36,
+        "definition": "metatile_035510"
+      },
+      {
+        "id": 37,
+        "definition": "metatile_035520"
+      },
+      {
+        "id": 38,
+        "definition": "metatile_035530"
+      },
+      {
+        "id": 39,
+        "definition": "metatile_035540"
+      },
+      {
+        "id": 40,
+        "definition": "metatile_035550"
+      },
+      {
+        "id": 41,
+        "definition": "metatile_035560"
+      },
+      {
+        "id": 42,
+        "definition": "metatile_035570"
+      },
+      {
+        "id": 43,
+        "definition": "metatile_035580"
+      },
+      {
+        "id": 44,
+        "definition": "metatile_035590"
+      },
+      {
+        "id": 45,
+        "definition": "metatile_0355A0"
+      },
+      {
+        "id": 46,
+        "definition": "metatile_0355B0"
+      },
+      {
+        "id": 47,
+        "definition": "metatile_0355C0"
+      },
+      {
+        "id": 48,
+        "definition": "metatile_0355D0"
+      },
+      {
+        "id": 49,
+        "definition": "metatile_0355E0"
+      },
+      {
+        "id": 50,
+        "definition": "metatile_0355F0"
+      },
+      {
+        "id": 51,
+        "definition": "metatile_035600"
+      },
+      {
+        "id": 52,
+        "definition": "metatile_035610"
+      },
+      {
+        "id": 53,
+        "definition": "metatile_035620"
+      },
+      {
+        "id": 54,
+        "definition": "metatile_035630"
+      }
+    ],
+    "limitation": "IDs reachable in static checkpoint/branch paths; external gate continuations remain outside this map."
+  }
+]

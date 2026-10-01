@@ -1,0 +1,36 @@
+{
+  "routines": [
+    {
+      "id": "player_object_collision_scan",
+      "bank": 7,
+      "cpu_start": 32825,
+      "cpu_end_exclusive": 32933
+    },
+    {
+      "id": "sprite_component_collision_code",
+      "bank": 7,
+      "cpu_start": 33001,
+      "cpu_end_exclusive": 33305
+    },
+    {
+      "id": "collision_callback_dispatch_code",
+      "bank": 4,
+      "cpu_start": 25689,
+      "cpu_end_exclusive": 25733
+    },
+    {
+      "id": "type27_collision_callback_code",
+      "bank": 5,
+      "cpu_start": 33194,
+      "cpu_end_exclusive": 33293
+    },
+    {
+      "id": "type4D_collision_callback_code",
+      "bank": 5,
+      "cpu_start": 38365,
+      "cpu_end_exclusive": 38455
+    }
+  ],
+  "scope": "Bounded reviewed collision routines, not entire banks or speculative linear disassembly",
+  "limitations": "Classified executable structure is not proof every branch or natural combat context is covered."
+}

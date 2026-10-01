@@ -1,0 +1,96 @@
+#pragma once
+#include "rom.hpp"
+#include <array>
+#include <cstdint>
+
+namespace sm {
+struct Stage0PresentationState {
+    std::uint8_t r2 = 0x31;   // active SCREEN-4 name-table page
+    std::uint8_t r5 = 0xf7;   // active sprite-mode-2 table
+    std::uint8_t lower_r5 = 0xff; // SAT selected at the R19 split
+    std::uint8_t r18 = 0x08;  // horizontal display adjust
+    std::uint8_t r19 = 0x00;  // lower raster split line
+    std::uint8_t r23 = 0x1c;  // vertical display scroll
+};
+
+class Stage0BackgroundStream {
+public:
+    explicit Stage0BackgroundStream(const Rom& rom);
+    void reset();
+    void step_15hz();
+    void seek_world_x(unsigned x);
+
+    // Original stage-0 composition state (ring -> D988 -> parallax).
+    std::array<std::uint8_t, 24u * 32u> compose_d988_raw() const;
+    void apply_d988_parallax(std::array<std::uint8_t, 24u * 32u>& d988) const;
+    void apply_fast_ground(std::array<std::uint8_t, 24u * 32u>& d988,
+                           bool alternate = false) const;
+    std::array<std::uint8_t, 24u * 32u> compose_d988_base() const;
+    std::uint16_t ca1a() const noexcept; // signed Y tile-scroll delta, 8.8
+    std::uint16_t ca1c() const noexcept; // signed X tile-scroll delta, 8.8
+    std::int32_t x_velocity_fp() const noexcept { return x_vel_fp_; }
+    std::int32_t y_velocity_fp() const noexcept { return y_vel_fp_; }
+
+    unsigned world_x() const noexcept;
+    int world_y() const noexcept;
+    std::uint16_t source_address() const noexcept { return source_; }
+    std::uint8_t mode() const noexcept { return mode_; }
+    std::uint8_t graphics_set() const noexcept { return graphics_set_; }
+    std::uint16_t trigger_cursor() const noexcept { return trigger_cursor_; }
+    std::uint8_t palette_set() const noexcept { return palette_set_; }
+    std::uint8_t spawn_direction() const noexcept { return c0d5_; }
+    std::uint8_t scroll_row() const noexcept { return c0d2_; }
+    bool fast_ground_alternate() const noexcept {
+        // $5DC8/$5DD0 accepts either the active context (C0B4) or its
+        // pending request (C0B5). graphics_set_ is our active equivalent.
+        return graphics_set_ == 6u || c0b5_ == 6u;
+    }
+    std::uint8_t fast_ground_phase() const noexcept { return ca3a_; }
+    std::uint8_t star_tile() const noexcept { return parallax_l_; }
+    std::uint8_t vertical_scroll() const noexcept;
+    Stage0PresentationState presentation_state() const noexcept;
+    std::uint8_t view_tile(unsigned x, unsigned y) const noexcept;
+    bool gated() const noexcept { return gated_; }
+    std::uint8_t tile(unsigned x, unsigned y) const noexcept;
+    std::uint8_t ring_tile(unsigned col, unsigned row) const noexcept { return ring_[(row & 31u) * 64u + (col & 63u)]; }
+
+private:
+    const Rom& rom_;
+    std::array<std::uint8_t, 64u * 32u> ring_{};
+    std::uint16_t source_ = 0xA13F;
+    std::uint16_t phase_accum_ = 0;
+    std::uint16_t phase_step_ = 0x0200;
+    std::int32_t x_fp_ = 1536 << 8;
+    std::int32_t y_fp_ = 0;
+    std::int32_t x_vel_fp_ = 2 << 8;
+    std::int32_t y_vel_fp_ = 0;
+    std::uint8_t mode_ = 2;
+    std::uint8_t graphics_set_ = 0;
+    std::uint8_t palette_set_ = 1;
+    std::uint8_t macro_phase_ = 0;
+    std::uint8_t c0d2_ = 0x38; // original rotating name-table row / fine Y scroll
+    std::uint8_t c0b5_ = 0x00; // raster-context request; $11 cfg<7 writes this via $79C2
+    std::uint8_t c0d5_ = 0x01; // spawn/scroll direction code from preset byte 10
+    std::uint8_t c09b_ = 0x82; // raster double-buffer phase at the $A13F anchor
+    std::uint8_t ca3a_ = 0x03; // 15-Hz fast-ground phase; A13F/A288 both phase 3
+    std::array<std::uint8_t, 25> e800_{}; // per-row parallax/star positions (+ sentinel)
+    std::uint16_t c0e6_ = 0;             // vertical parallax phase
+    std::uint16_t c0e8_ = 0xafa0;        // horizontal parallax phase
+    std::uint8_t parallax_h_ = 0x4f;
+    std::uint8_t parallax_l_ = 0xcd;
+    std::uint16_t trigger_cursor_ = 0x10c0; // original $CA34 at $A13F entry
+    bool gated_ = false;
+
+    unsigned ring_col() const noexcept;
+    unsigned ring_row() const noexcept;
+    void apply_preset(unsigned preset);
+    void advance_trigger_segment() noexcept;
+    bool prepare_data();
+    void stream_phase();
+    void write_vertical(std::uint16_t source, int col_offset);
+    void write_horizontal(std::uint16_t source, int col_offset, int row_offset,
+                          unsigned row_phase);
+    void put(int col, int row, std::uint8_t tile) noexcept;
+    void step_parallax();
+};
+}

@@ -1,0 +1,2132 @@
+{
+  "objects": [
+    {
+      "type": 1,
+      "metadata_address": 37380,
+      "metadata": [
+        4,
+        4,
+        57,
+        0
+      ],
+      "damage_enabled": false,
+      "initial_hp": 0,
+      "replacement_type": 98,
+      "sound_id": 17,
+      "score_selector": 1,
+      "score_bcd_word": 65535,
+      "score_bonus": null
+    },
+    {
+      "type": 2,
+      "metadata_address": 37384,
+      "metadata": [
+        4,
+        4,
+        49,
+        0
+      ],
+      "damage_enabled": false,
+      "initial_hp": 0,
+      "replacement_type": 98,
+      "sound_id": 17,
+      "score_selector": 1,
+      "score_bcd_word": 65535,
+      "score_bonus": null
+    },
+    {
+      "type": 3,
+      "metadata_address": 37388,
+      "metadata": [
+        4,
+        4,
+        86,
+        0
+      ],
+      "damage_enabled": false,
+      "initial_hp": 0,
+      "replacement_type": 98,
+      "sound_id": 17,
+      "score_selector": 1,
+      "score_bcd_word": 65535,
+      "score_bonus": null
+    },
+    {
+      "type": 4,
+      "metadata_address": 37392,
+      "metadata": [
+        4,
+        4,
+        49,
+        1
+      ],
+      "damage_enabled": false,
+      "initial_hp": 1,
+      "replacement_type": 98,
+      "sound_id": 17,
+      "score_selector": 1,
+      "score_bcd_word": 65535,
+      "score_bonus": null
+    },
+    {
+      "type": 5,
+      "metadata_address": 37396,
+      "metadata": [
+        3,
+        3,
+        82,
+        0
+      ],
+      "damage_enabled": false,
+      "initial_hp": 0,
+      "replacement_type": 98,
+      "sound_id": 17,
+      "score_selector": 1,
+      "score_bcd_word": 65535,
+      "score_bonus": null
+    },
+    {
+      "type": 6,
+      "metadata_address": 37396,
+      "metadata": [
+        3,
+        3,
+        82,
+        0
+      ],
+      "damage_enabled": false,
+      "initial_hp": 0,
+      "replacement_type": 98,
+      "sound_id": 17,
+      "score_selector": 1,
+      "score_bcd_word": 65535,
+      "score_bonus": null
+    },
+    {
+      "type": 7,
+      "metadata_address": 37392,
+      "metadata": [
+        4,
+        4,
+        49,
+        1
+      ],
+      "damage_enabled": false,
+      "initial_hp": 1,
+      "replacement_type": 98,
+      "sound_id": 17,
+      "score_selector": 1,
+      "score_bcd_word": 65535,
+      "score_bonus": null
+    },
+    {
+      "type": 8,
+      "metadata_address": 37392,
+      "metadata": [
+        4,
+        4,
+        49,
+        1
+      ],
+      "damage_enabled": false,
+      "initial_hp": 1,
+      "replacement_type": 98,
+      "sound_id": 17,
+      "score_selector": 1,
+      "score_bcd_word": 65535,
+      "score_bonus": null
+    },
+    {
+      "type": 9,
+      "metadata_address": 37392,
+      "metadata": [
+        4,
+        4,
+        49,
+        1
+      ],
+      "damage_enabled": false,
+      "initial_hp": 1,
+      "replacement_type": 98,
+      "sound_id": 17,
+      "score_selector": 1,
+      "score_bcd_word": 65535,
+      "score_bonus": null
+    },
+    {
+      "type": 10,
+      "metadata_address": 37400,
+      "metadata": [
+        4,
+        132,
+        189,
+        40
+      ],
+      "damage_enabled": true,
+      "initial_hp": 40,
+      "replacement_type": 98,
+      "sound_id": 17,
+      "score_selector": 1,
+      "score_bcd_word": 65535,
+      "score_bonus": null
+    },
+    {
+      "type": 11,
+      "metadata_address": 37400,
+      "metadata": [
+        4,
+        132,
+        189,
+        40
+      ],
+      "damage_enabled": true,
+      "initial_hp": 40,
+      "replacement_type": 98,
+      "sound_id": 17,
+      "score_selector": 1,
+      "score_bcd_word": 65535,
+      "score_bonus": null
+    },
+    {
+      "type": 12,
+      "metadata_address": 37400,
+      "metadata": [
+        4,
+        132,
+        189,
+        40
+      ],
+      "damage_enabled": true,
+      "initial_hp": 40,
+      "replacement_type": 98,
+      "sound_id": 17,
+      "score_selector": 1,
+      "score_bcd_word": 65535,
+      "score_bonus": null
+    },
+    {
+      "type": 13,
+      "metadata_address": 37400,
+      "metadata": [
+        4,
+        132,
+        189,
+        40
+      ],
+      "damage_enabled": true,
+      "initial_hp": 40,
+      "replacement_type": 98,
+      "sound_id": 17,
+      "score_selector": 1,
+      "score_bcd_word": 65535,
+      "score_bonus": null
+    },
+    {
+      "type": 14,
+      "metadata_address": 37404,
+      "metadata": [
+        6,
+        138,
+        86,
+        24
+      ],
+      "damage_enabled": true,
+      "initial_hp": 24,
+      "replacement_type": 98,
+      "sound_id": 20,
+      "score_selector": 6,
+      "score_bcd_word": 512,
+      "score_bonus": 200
+    },
+    {
+      "type": 15,
+      "metadata_address": 37376,
+      "metadata": [
+        3,
+        3,
+        0,
+        0
+      ],
+      "damage_enabled": false,
+      "initial_hp": 0,
+      "replacement_type": 98,
+      "sound_id": 17,
+      "score_selector": 1,
+      "score_bcd_word": 65535,
+      "score_bonus": null
+    },
+    {
+      "type": 16,
+      "metadata_address": 37412,
+      "metadata": [
+        4,
+        132,
+        185,
+        0
+      ],
+      "damage_enabled": true,
+      "initial_hp": 0,
+      "replacement_type": 98,
+      "sound_id": 16,
+      "score_selector": 2,
+      "score_bcd_word": 32,
+      "score_bonus": 20
+    },
+    {
+      "type": 17,
+      "metadata_address": 37412,
+      "metadata": [
+        4,
+        132,
+        185,
+        0
+      ],
+      "damage_enabled": true,
+      "initial_hp": 0,
+      "replacement_type": 98,
+      "sound_id": 16,
+      "score_selector": 2,
+      "score_bcd_word": 32,
+      "score_bonus": 20
+    },
+    {
+      "type": 18,
+      "metadata_address": 37412,
+      "metadata": [
+        4,
+        132,
+        185,
+        0
+      ],
+      "damage_enabled": true,
+      "initial_hp": 0,
+      "replacement_type": 98,
+      "sound_id": 16,
+      "score_selector": 2,
+      "score_bcd_word": 32,
+      "score_bonus": 20
+    },
+    {
+      "type": 19,
+      "metadata_address": 37416,
+      "metadata": [
+        4,
+        132,
+        185,
+        1
+      ],
+      "damage_enabled": true,
+      "initial_hp": 1,
+      "replacement_type": 98,
+      "sound_id": 16,
+      "score_selector": 2,
+      "score_bcd_word": 32,
+      "score_bonus": 20
+    },
+    {
+      "type": 20,
+      "metadata_address": 37420,
+      "metadata": [
+        8,
+        133,
+        20,
+        240
+      ],
+      "damage_enabled": true,
+      "initial_hp": 240,
+      "replacement_type": 106,
+      "sound_id": 77,
+      "score_selector": 8,
+      "score_bcd_word": 8192,
+      "score_bonus": 2000
+    },
+    {
+      "type": 21,
+      "metadata_address": 37424,
+      "metadata": [
+        4,
+        132,
+        185,
+        1
+      ],
+      "damage_enabled": true,
+      "initial_hp": 1,
+      "replacement_type": 98,
+      "sound_id": 16,
+      "score_selector": 2,
+      "score_bcd_word": 32,
+      "score_bonus": 20
+    },
+    {
+      "type": 22,
+      "metadata_address": 37428,
+      "metadata": [
+        4,
+        132,
+        185,
+        1
+      ],
+      "damage_enabled": true,
+      "initial_hp": 1,
+      "replacement_type": 98,
+      "sound_id": 16,
+      "score_selector": 2,
+      "score_bcd_word": 32,
+      "score_bonus": 20
+    },
+    {
+      "type": 23,
+      "metadata_address": 37432,
+      "metadata": [
+        4,
+        132,
+        189,
+        2
+      ],
+      "damage_enabled": true,
+      "initial_hp": 2,
+      "replacement_type": 98,
+      "sound_id": 16,
+      "score_selector": 3,
+      "score_bcd_word": 64,
+      "score_bonus": 40
+    },
+    {
+      "type": 24,
+      "metadata_address": 37412,
+      "metadata": [
+        4,
+        132,
+        185,
+        0
+      ],
+      "damage_enabled": true,
+      "initial_hp": 0,
+      "replacement_type": 98,
+      "sound_id": 16,
+      "score_selector": 2,
+      "score_bcd_word": 32,
+      "score_bonus": 20
+    },
+    {
+      "type": 25,
+      "metadata_address": 37436,
+      "metadata": [
+        4,
+        132,
+        189,
+        1
+      ],
+      "damage_enabled": true,
+      "initial_hp": 1,
+      "replacement_type": 98,
+      "sound_id": 17,
+      "score_selector": 2,
+      "score_bcd_word": 32,
+      "score_bonus": 20
+    },
+    {
+      "type": 26,
+      "metadata_address": 37440,
+      "metadata": [
+        4,
+        132,
+        189,
+        24
+      ],
+      "damage_enabled": true,
+      "initial_hp": 24,
+      "replacement_type": 98,
+      "sound_id": 16,
+      "score_selector": 2,
+      "score_bcd_word": 32,
+      "score_bonus": 20
+    },
+    {
+      "type": 27,
+      "metadata_address": 37444,
+      "metadata": [
+        4,
+        132,
+        185,
+        1
+      ],
+      "damage_enabled": true,
+      "initial_hp": 1,
+      "replacement_type": 98,
+      "sound_id": 16,
+      "score_selector": 2,
+      "score_bcd_word": 32,
+      "score_bonus": 20
+    },
+    {
+      "type": 28,
+      "metadata_address": 37448,
+      "metadata": [
+        4,
+        134,
+        86,
+        12
+      ],
+      "damage_enabled": true,
+      "initial_hp": 12,
+      "replacement_type": 107,
+      "sound_id": 19,
+      "score_selector": 4,
+      "score_bcd_word": 96,
+      "score_bonus": 60
+    },
+    {
+      "type": 29,
+      "metadata_address": 37452,
+      "metadata": [
+        4,
+        132,
+        189,
+        1
+      ],
+      "damage_enabled": true,
+      "initial_hp": 1,
+      "replacement_type": 98,
+      "sound_id": 16,
+      "score_selector": 2,
+      "score_bcd_word": 32,
+      "score_bonus": 20
+    },
+    {
+      "type": 30,
+      "metadata_address": 37456,
+      "metadata": [
+        8,
+        134,
+        185,
+        10
+      ],
+      "damage_enabled": true,
+      "initial_hp": 10,
+      "replacement_type": 98,
+      "sound_id": 19,
+      "score_selector": 5,
+      "score_bcd_word": 256,
+      "score_bonus": 100
+    },
+    {
+      "type": 31,
+      "metadata_address": 37460,
+      "metadata": [
+        6,
+        136,
+        127,
+        5
+      ],
+      "damage_enabled": true,
+      "initial_hp": 5,
+      "replacement_type": 107,
+      "sound_id": 20,
+      "score_selector": 3,
+      "score_bcd_word": 64,
+      "score_bonus": 40
+    },
+    {
+      "type": 32,
+      "metadata_address": 37464,
+      "metadata": [
+        4,
+        132,
+        86,
+        1
+      ],
+      "damage_enabled": true,
+      "initial_hp": 1,
+      "replacement_type": 98,
+      "sound_id": 17,
+      "score_selector": 2,
+      "score_bcd_word": 32,
+      "score_bonus": 20
+    },
+    {
+      "type": 33,
+      "metadata_address": 37468,
+      "metadata": [
+        4,
+        132,
+        185,
+        1
+      ],
+      "damage_enabled": true,
+      "initial_hp": 1,
+      "replacement_type": 98,
+      "sound_id": 18,
+      "score_selector": 3,
+      "score_bcd_word": 64,
+      "score_bonus": 40
+    },
+    {
+      "type": 34,
+      "metadata_address": 37472,
+      "metadata": [
+        4,
+        134,
+        86,
+        6
+      ],
+      "damage_enabled": true,
+      "initial_hp": 6,
+      "replacement_type": 107,
+      "sound_id": 19,
+      "score_selector": 4,
+      "score_bcd_word": 96,
+      "score_bonus": 60
+    },
+    {
+      "type": 35,
+      "metadata_address": 37476,
+      "metadata": [
+        4,
+        132,
+        189,
+        5
+      ],
+      "damage_enabled": true,
+      "initial_hp": 5,
+      "replacement_type": 98,
+      "sound_id": 16,
+      "score_selector": 3,
+      "score_bcd_word": 64,
+      "score_bonus": 40
+    },
+    {
+      "type": 36,
+      "metadata_address": 37480,
+      "metadata": [
+        5,
+        5,
+        4,
+        0
+      ],
+      "damage_enabled": false,
+      "initial_hp": 0,
+      "replacement_type": 98,
+      "sound_id": 17,
+      "score_selector": 1,
+      "score_bcd_word": 65535,
+      "score_bonus": null
+    },
+    {
+      "type": 37,
+      "metadata_address": 37484,
+      "metadata": [
+        4,
+        132,
+        185,
+        1
+      ],
+      "damage_enabled": true,
+      "initial_hp": 1,
+      "replacement_type": 98,
+      "sound_id": 17,
+      "score_selector": 2,
+      "score_bcd_word": 32,
+      "score_bonus": 20
+    },
+    {
+      "type": 38,
+      "metadata_address": 37488,
+      "metadata": [
+        5,
+        134,
+        86,
+        8
+      ],
+      "damage_enabled": true,
+      "initial_hp": 8,
+      "replacement_type": 107,
+      "sound_id": 19,
+      "score_selector": 4,
+      "score_bcd_word": 96,
+      "score_bonus": 60
+    },
+    {
+      "type": 39,
+      "metadata_address": 37496,
+      "metadata": [
+        6,
+        132,
+        189,
+        14
+      ],
+      "damage_enabled": true,
+      "initial_hp": 14,
+      "replacement_type": 98,
+      "sound_id": 19,
+      "score_selector": 4,
+      "score_bcd_word": 96,
+      "score_bonus": 60
+    },
+    {
+      "type": 40,
+      "metadata_address": 37500,
+      "metadata": [
+        10,
+        140,
+        94,
+        31
+      ],
+      "damage_enabled": true,
+      "initial_hp": 31,
+      "replacement_type": 107,
+      "sound_id": 20,
+      "score_selector": 6,
+      "score_bcd_word": 512,
+      "score_bonus": 200
+    },
+    {
+      "type": 41,
+      "metadata_address": 37504,
+      "metadata": [
+        4,
+        132,
+        86,
+        1
+      ],
+      "damage_enabled": true,
+      "initial_hp": 1,
+      "replacement_type": 98,
+      "sound_id": 17,
+      "score_selector": 2,
+      "score_bcd_word": 32,
+      "score_bonus": 20
+    },
+    {
+      "type": 42,
+      "metadata_address": 37508,
+      "metadata": [
+        6,
+        8,
+        177,
+        0
+      ],
+      "damage_enabled": false,
+      "initial_hp": 0,
+      "replacement_type": 98,
+      "sound_id": 17,
+      "score_selector": 1,
+      "score_bcd_word": 65535,
+      "score_bonus": null
+    },
+    {
+      "type": 43,
+      "metadata_address": 37512,
+      "metadata": [
+        4,
+        134,
+        86,
+        6
+      ],
+      "damage_enabled": true,
+      "initial_hp": 6,
+      "replacement_type": 107,
+      "sound_id": 19,
+      "score_selector": 5,
+      "score_bcd_word": 256,
+      "score_bonus": 100
+    },
+    {
+      "type": 44,
+      "metadata_address": 37516,
+      "metadata": [
+        4,
+        132,
+        189,
+        6
+      ],
+      "damage_enabled": true,
+      "initial_hp": 6,
+      "replacement_type": 98,
+      "sound_id": 17,
+      "score_selector": 5,
+      "score_bcd_word": 256,
+      "score_bonus": 100
+    },
+    {
+      "type": 45,
+      "metadata_address": 37520,
+      "metadata": [
+        4,
+        134,
+        189,
+        1
+      ],
+      "damage_enabled": true,
+      "initial_hp": 1,
+      "replacement_type": 98,
+      "sound_id": 17,
+      "score_selector": 4,
+      "score_bcd_word": 96,
+      "score_bonus": 60
+    },
+    {
+      "type": 46,
+      "metadata_address": 37524,
+      "metadata": [
+        5,
+        4,
+        4,
+        6
+      ],
+      "damage_enabled": false,
+      "initial_hp": 6,
+      "replacement_type": 1,
+      "sound_id": 28,
+      "score_selector": 6,
+      "score_bcd_word": 512,
+      "score_bonus": 200
+    },
+    {
+      "type": 47,
+      "metadata_address": 37528,
+      "metadata": [
+        4,
+        132,
+        189,
+        2
+      ],
+      "damage_enabled": true,
+      "initial_hp": 2,
+      "replacement_type": 98,
+      "sound_id": 17,
+      "score_selector": 2,
+      "score_bcd_word": 32,
+      "score_bonus": 20
+    },
+    {
+      "type": 48,
+      "metadata_address": 37532,
+      "metadata": [
+        10,
+        10,
+        4,
+        0
+      ],
+      "damage_enabled": false,
+      "initial_hp": 0,
+      "replacement_type": 98,
+      "sound_id": 17,
+      "score_selector": 6,
+      "score_bcd_word": 512,
+      "score_bonus": 200
+    },
+    {
+      "type": 49,
+      "metadata_address": 37536,
+      "metadata": [
+        4,
+        132,
+        189,
+        4
+      ],
+      "damage_enabled": true,
+      "initial_hp": 4,
+      "replacement_type": 98,
+      "sound_id": 20,
+      "score_selector": 4,
+      "score_bcd_word": 96,
+      "score_bonus": 60
+    },
+    {
+      "type": 50,
+      "metadata_address": 37540,
+      "metadata": [
+        4,
+        132,
+        86,
+        1
+      ],
+      "damage_enabled": true,
+      "initial_hp": 1,
+      "replacement_type": 98,
+      "sound_id": 17,
+      "score_selector": 2,
+      "score_bcd_word": 32,
+      "score_bonus": 20
+    },
+    {
+      "type": 51,
+      "metadata_address": 37544,
+      "metadata": [
+        8,
+        134,
+        185,
+        80
+      ],
+      "damage_enabled": true,
+      "initial_hp": 80,
+      "replacement_type": 98,
+      "sound_id": 20,
+      "score_selector": 5,
+      "score_bcd_word": 256,
+      "score_bonus": 100
+    },
+    {
+      "type": 52,
+      "metadata_address": 37548,
+      "metadata": [
+        6,
+        134,
+        86,
+        6
+      ],
+      "damage_enabled": true,
+      "initial_hp": 6,
+      "replacement_type": 98,
+      "sound_id": 19,
+      "score_selector": 4,
+      "score_bcd_word": 96,
+      "score_bonus": 60
+    },
+    {
+      "type": 53,
+      "metadata_address": 37552,
+      "metadata": [
+        4,
+        132,
+        185,
+        240
+      ],
+      "damage_enabled": true,
+      "initial_hp": 240,
+      "replacement_type": 98,
+      "sound_id": 19,
+      "score_selector": 6,
+      "score_bcd_word": 512,
+      "score_bonus": 200
+    },
+    {
+      "type": 54,
+      "metadata_address": 37556,
+      "metadata": [
+        3,
+        3,
+        86,
+        0
+      ],
+      "damage_enabled": false,
+      "initial_hp": 0,
+      "replacement_type": 98,
+      "sound_id": 17,
+      "score_selector": 1,
+      "score_bcd_word": 65535,
+      "score_bonus": null
+    },
+    {
+      "type": 55,
+      "metadata_address": 37564,
+      "metadata": [
+        4,
+        132,
+        181,
+        0
+      ],
+      "damage_enabled": true,
+      "initial_hp": 0,
+      "replacement_type": 98,
+      "sound_id": 16,
+      "score_selector": 1,
+      "score_bcd_word": 65535,
+      "score_bonus": null
+    },
+    {
+      "type": 56,
+      "metadata_address": 37568,
+      "metadata": [
+        7,
+        135,
+        86,
+        6
+      ],
+      "damage_enabled": true,
+      "initial_hp": 6,
+      "replacement_type": 107,
+      "sound_id": 19,
+      "score_selector": 6,
+      "score_bcd_word": 512,
+      "score_bonus": 200
+    },
+    {
+      "type": 57,
+      "metadata_address": 37572,
+      "metadata": [
+        9,
+        136,
+        86,
+        13
+      ],
+      "damage_enabled": true,
+      "initial_hp": 13,
+      "replacement_type": 107,
+      "sound_id": 33,
+      "score_selector": 7,
+      "score_bcd_word": 1024,
+      "score_bonus": 400
+    },
+    {
+      "type": 58,
+      "metadata_address": 37576,
+      "metadata": [
+        4,
+        132,
+        86,
+        1
+      ],
+      "damage_enabled": true,
+      "initial_hp": 1,
+      "replacement_type": 98,
+      "sound_id": 17,
+      "score_selector": 4,
+      "score_bcd_word": 96,
+      "score_bonus": 60
+    },
+    {
+      "type": 59,
+      "metadata_address": 37580,
+      "metadata": [
+        3,
+        3,
+        111,
+        0
+      ],
+      "damage_enabled": false,
+      "initial_hp": 0,
+      "replacement_type": 98,
+      "sound_id": 17,
+      "score_selector": 1,
+      "score_bcd_word": 65535,
+      "score_bonus": null
+    },
+    {
+      "type": 60,
+      "metadata_address": 37584,
+      "metadata": [
+        3,
+        131,
+        70,
+        1
+      ],
+      "damage_enabled": true,
+      "initial_hp": 1,
+      "replacement_type": 106,
+      "sound_id": 17,
+      "score_selector": 1,
+      "score_bcd_word": 65535,
+      "score_bonus": null
+    },
+    {
+      "type": 61,
+      "metadata_address": 37588,
+      "metadata": [
+        3,
+        131,
+        70,
+        1
+      ],
+      "damage_enabled": true,
+      "initial_hp": 1,
+      "replacement_type": 106,
+      "sound_id": 17,
+      "score_selector": 1,
+      "score_bcd_word": 65535,
+      "score_bonus": null
+    },
+    {
+      "type": 62,
+      "metadata_address": 37592,
+      "metadata": [
+        3,
+        131,
+        4,
+        120
+      ],
+      "damage_enabled": true,
+      "initial_hp": 120,
+      "replacement_type": 106,
+      "sound_id": 77,
+      "score_selector": 8,
+      "score_bcd_word": 8192,
+      "score_bonus": 2000
+    },
+    {
+      "type": 63,
+      "metadata_address": 37596,
+      "metadata": [
+        6,
+        8,
+        20,
+        1
+      ],
+      "damage_enabled": false,
+      "initial_hp": 1,
+      "replacement_type": 0,
+      "sound_id": 17,
+      "score_selector": 1,
+      "score_bcd_word": 65535,
+      "score_bonus": null
+    },
+    {
+      "type": 64,
+      "metadata_address": 37600,
+      "metadata": [
+        4,
+        132,
+        189,
+        0
+      ],
+      "damage_enabled": true,
+      "initial_hp": 0,
+      "replacement_type": 98,
+      "sound_id": 16,
+      "score_selector": 1,
+      "score_bcd_word": 65535,
+      "score_bonus": null
+    },
+    {
+      "type": 65,
+      "metadata_address": 37604,
+      "metadata": [
+        3,
+        3,
+        4,
+        0
+      ],
+      "damage_enabled": false,
+      "initial_hp": 0,
+      "replacement_type": 98,
+      "sound_id": 17,
+      "score_selector": 1,
+      "score_bcd_word": 65535,
+      "score_bonus": null
+    },
+    {
+      "type": 66,
+      "metadata_address": 37608,
+      "metadata": [
+        4,
+        132,
+        189,
+        0
+      ],
+      "damage_enabled": true,
+      "initial_hp": 0,
+      "replacement_type": 98,
+      "sound_id": 16,
+      "score_selector": 2,
+      "score_bcd_word": 32,
+      "score_bonus": 20
+    },
+    {
+      "type": 67,
+      "metadata_address": 37612,
+      "metadata": [
+        4,
+        4,
+        189,
+        0
+      ],
+      "damage_enabled": false,
+      "initial_hp": 0,
+      "replacement_type": 98,
+      "sound_id": 16,
+      "score_selector": 1,
+      "score_bcd_word": 65535,
+      "score_bonus": null
+    },
+    {
+      "type": 68,
+      "metadata_address": 37616,
+      "metadata": [
+        4,
+        132,
+        189,
+        1
+      ],
+      "damage_enabled": true,
+      "initial_hp": 1,
+      "replacement_type": 98,
+      "sound_id": 16,
+      "score_selector": 2,
+      "score_bcd_word": 32,
+      "score_bonus": 20
+    },
+    {
+      "type": 69,
+      "metadata_address": 37620,
+      "metadata": [
+        4,
+        132,
+        185,
+        0
+      ],
+      "damage_enabled": true,
+      "initial_hp": 0,
+      "replacement_type": 98,
+      "sound_id": 18,
+      "score_selector": 2,
+      "score_bcd_word": 32,
+      "score_bonus": 20
+    },
+    {
+      "type": 70,
+      "metadata_address": 37624,
+      "metadata": [
+        2,
+        2,
+        0,
+        0
+      ],
+      "damage_enabled": false,
+      "initial_hp": 0,
+      "replacement_type": 98,
+      "sound_id": 19,
+      "score_selector": 1,
+      "score_bcd_word": 65535,
+      "score_bonus": null
+    },
+    {
+      "type": 71,
+      "metadata_address": 37628,
+      "metadata": [
+        3,
+        3,
+        4,
+        0
+      ],
+      "damage_enabled": false,
+      "initial_hp": 0,
+      "replacement_type": 98,
+      "sound_id": 17,
+      "score_selector": 1,
+      "score_bcd_word": 65535,
+      "score_bonus": null
+    },
+    {
+      "type": 72,
+      "metadata_address": 37632,
+      "metadata": [
+        4,
+        4,
+        181,
+        0
+      ],
+      "damage_enabled": false,
+      "initial_hp": 0,
+      "replacement_type": 98,
+      "sound_id": 17,
+      "score_selector": 1,
+      "score_bcd_word": 65535,
+      "score_bonus": null
+    },
+    {
+      "type": 73,
+      "metadata_address": 37636,
+      "metadata": [
+        4,
+        132,
+        189,
+        1
+      ],
+      "damage_enabled": true,
+      "initial_hp": 1,
+      "replacement_type": 98,
+      "sound_id": 16,
+      "score_selector": 2,
+      "score_bcd_word": 32,
+      "score_bonus": 20
+    },
+    {
+      "type": 74,
+      "metadata_address": 37640,
+      "metadata": [
+        4,
+        132,
+        185,
+        2
+      ],
+      "damage_enabled": true,
+      "initial_hp": 2,
+      "replacement_type": 98,
+      "sound_id": 16,
+      "score_selector": 2,
+      "score_bcd_word": 32,
+      "score_bonus": 20
+    },
+    {
+      "type": 75,
+      "metadata_address": 37644,
+      "metadata": [
+        4,
+        132,
+        189,
+        1
+      ],
+      "damage_enabled": true,
+      "initial_hp": 1,
+      "replacement_type": 98,
+      "sound_id": 16,
+      "score_selector": 3,
+      "score_bcd_word": 64,
+      "score_bonus": 40
+    },
+    {
+      "type": 76,
+      "metadata_address": 37648,
+      "metadata": [
+        6,
+        4,
+        189,
+        1
+      ],
+      "damage_enabled": false,
+      "initial_hp": 1,
+      "replacement_type": 98,
+      "sound_id": 17,
+      "score_selector": 3,
+      "score_bcd_word": 64,
+      "score_bonus": 40
+    },
+    {
+      "type": 77,
+      "metadata_address": 37652,
+      "metadata": [
+        6,
+        132,
+        181,
+        48
+      ],
+      "damage_enabled": true,
+      "initial_hp": 48,
+      "replacement_type": 98,
+      "sound_id": 19,
+      "score_selector": 6,
+      "score_bcd_word": 512,
+      "score_bonus": 200
+    },
+    {
+      "type": 78,
+      "metadata_address": 37656,
+      "metadata": [
+        6,
+        4,
+        189,
+        1
+      ],
+      "damage_enabled": false,
+      "initial_hp": 1,
+      "replacement_type": 98,
+      "sound_id": 17,
+      "score_selector": 3,
+      "score_bcd_word": 64,
+      "score_bonus": 40
+    },
+    {
+      "type": 79,
+      "metadata_address": 37660,
+      "metadata": [
+        5,
+        135,
+        86,
+        2
+      ],
+      "damage_enabled": true,
+      "initial_hp": 2,
+      "replacement_type": 107,
+      "sound_id": 19,
+      "score_selector": 7,
+      "score_bcd_word": 1024,
+      "score_bonus": 400
+    },
+    {
+      "type": 80,
+      "metadata_address": 37664,
+      "metadata": [
+        4,
+        4,
+        103,
+        0
+      ],
+      "damage_enabled": false,
+      "initial_hp": 0,
+      "replacement_type": 98,
+      "sound_id": 17,
+      "score_selector": 7,
+      "score_bcd_word": 1024,
+      "score_bonus": 400
+    },
+    {
+      "type": 81,
+      "metadata_address": 37676,
+      "metadata": [
+        3,
+        3,
+        0,
+        0
+      ],
+      "damage_enabled": false,
+      "initial_hp": 0,
+      "replacement_type": 98,
+      "sound_id": 17,
+      "score_selector": 1,
+      "score_bcd_word": 65535,
+      "score_bonus": null
+    },
+    {
+      "type": 82,
+      "metadata_address": 37676,
+      "metadata": [
+        3,
+        3,
+        0,
+        0
+      ],
+      "damage_enabled": false,
+      "initial_hp": 0,
+      "replacement_type": 98,
+      "sound_id": 17,
+      "score_selector": 1,
+      "score_bcd_word": 65535,
+      "score_bonus": null
+    },
+    {
+      "type": 83,
+      "metadata_address": 37676,
+      "metadata": [
+        3,
+        3,
+        0,
+        0
+      ],
+      "damage_enabled": false,
+      "initial_hp": 0,
+      "replacement_type": 98,
+      "sound_id": 17,
+      "score_selector": 1,
+      "score_bcd_word": 65535,
+      "score_bonus": null
+    },
+    {
+      "type": 84,
+      "metadata_address": 37672,
+      "metadata": [
+        3,
+        3,
+        4,
+        0
+      ],
+      "damage_enabled": false,
+      "initial_hp": 0,
+      "replacement_type": 98,
+      "sound_id": 17,
+      "score_selector": 1,
+      "score_bcd_word": 65535,
+      "score_bonus": null
+    },
+    {
+      "type": 85,
+      "metadata_address": 37680,
+      "metadata": [
+        8,
+        140,
+        61,
+        10
+      ],
+      "damage_enabled": true,
+      "initial_hp": 10,
+      "replacement_type": 107,
+      "sound_id": 19,
+      "score_selector": 5,
+      "score_bcd_word": 256,
+      "score_bonus": 100
+    },
+    {
+      "type": 86,
+      "metadata_address": 37684,
+      "metadata": [
+        12,
+        140,
+        20,
+        44
+      ],
+      "damage_enabled": true,
+      "initial_hp": 44,
+      "replacement_type": 107,
+      "sound_id": 20,
+      "score_selector": 7,
+      "score_bcd_word": 1024,
+      "score_bonus": 400
+    },
+    {
+      "type": 87,
+      "metadata_address": 37704,
+      "metadata": [
+        4,
+        4,
+        61,
+        0
+      ],
+      "damage_enabled": false,
+      "initial_hp": 0,
+      "replacement_type": 98,
+      "sound_id": 17,
+      "score_selector": 1,
+      "score_bcd_word": 65535,
+      "score_bonus": null
+    },
+    {
+      "type": 88,
+      "metadata_address": 37736,
+      "metadata": [
+        4,
+        132,
+        185,
+        8
+      ],
+      "damage_enabled": true,
+      "initial_hp": 8,
+      "replacement_type": 98,
+      "sound_id": 17,
+      "score_selector": 1,
+      "score_bcd_word": 65535,
+      "score_bonus": null
+    },
+    {
+      "type": 89,
+      "metadata_address": 37732,
+      "metadata": [
+        6,
+        10,
+        82,
+        0
+      ],
+      "damage_enabled": false,
+      "initial_hp": 0,
+      "replacement_type": 98,
+      "sound_id": 17,
+      "score_selector": 1,
+      "score_bcd_word": 65535,
+      "score_bonus": null
+    },
+    {
+      "type": 90,
+      "metadata_address": 37740,
+      "metadata": [
+        3,
+        3,
+        86,
+        0
+      ],
+      "damage_enabled": false,
+      "initial_hp": 0,
+      "replacement_type": 98,
+      "sound_id": 17,
+      "score_selector": 1,
+      "score_bcd_word": 65535,
+      "score_bonus": null
+    },
+    {
+      "type": 91,
+      "metadata_address": 37744,
+      "metadata": [
+        4,
+        4,
+        61,
+        0
+      ],
+      "damage_enabled": false,
+      "initial_hp": 0,
+      "replacement_type": 98,
+      "sound_id": 17,
+      "score_selector": 1,
+      "score_bcd_word": 65535,
+      "score_bonus": null
+    },
+    {
+      "type": 92,
+      "metadata_address": 37748,
+      "metadata": [
+        4,
+        132,
+        185,
+        0
+      ],
+      "damage_enabled": true,
+      "initial_hp": 0,
+      "replacement_type": 98,
+      "sound_id": 17,
+      "score_selector": 1,
+      "score_bcd_word": 65535,
+      "score_bonus": null
+    },
+    {
+      "type": 93,
+      "metadata_address": 37752,
+      "metadata": [
+        4,
+        4,
+        61,
+        0
+      ],
+      "damage_enabled": false,
+      "initial_hp": 0,
+      "replacement_type": 98,
+      "sound_id": 17,
+      "score_selector": 1,
+      "score_bcd_word": 65535,
+      "score_bonus": null
+    },
+    {
+      "type": 94,
+      "metadata_address": 37756,
+      "metadata": [
+        4,
+        132,
+        185,
+        0
+      ],
+      "damage_enabled": true,
+      "initial_hp": 0,
+      "replacement_type": 98,
+      "sound_id": 17,
+      "score_selector": 1,
+      "score_bcd_word": 65535,
+      "score_bonus": null
+    },
+    {
+      "type": 95,
+      "metadata_address": 37704,
+      "metadata": [
+        4,
+        4,
+        61,
+        0
+      ],
+      "damage_enabled": false,
+      "initial_hp": 0,
+      "replacement_type": 98,
+      "sound_id": 17,
+      "score_selector": 1,
+      "score_bcd_word": 65535,
+      "score_bonus": null
+    },
+    {
+      "type": 96,
+      "metadata_address": 37708,
+      "metadata": [
+        4,
+        4,
+        33,
+        0
+      ],
+      "damage_enabled": false,
+      "initial_hp": 0,
+      "replacement_type": 98,
+      "sound_id": 17,
+      "score_selector": 1,
+      "score_bcd_word": 65535,
+      "score_bonus": null
+    },
+    {
+      "type": 97,
+      "metadata_address": 37712,
+      "metadata": [
+        4,
+        4,
+        49,
+        0
+      ],
+      "damage_enabled": false,
+      "initial_hp": 0,
+      "replacement_type": 98,
+      "sound_id": 17,
+      "score_selector": 1,
+      "score_bcd_word": 65535,
+      "score_bonus": null
+    },
+    {
+      "type": 98,
+      "metadata_address": 37688,
+      "metadata": [
+        4,
+        4,
+        45,
+        0
+      ],
+      "damage_enabled": false,
+      "initial_hp": 0,
+      "replacement_type": 98,
+      "sound_id": 17,
+      "score_selector": 1,
+      "score_bcd_word": 65535,
+      "score_bonus": null
+    },
+    {
+      "type": 99,
+      "metadata_address": 37728,
+      "metadata": [
+        4,
+        4,
+        49,
+        0
+      ],
+      "damage_enabled": false,
+      "initial_hp": 0,
+      "replacement_type": 98,
+      "sound_id": 17,
+      "score_selector": 1,
+      "score_bcd_word": 65535,
+      "score_bonus": null
+    },
+    {
+      "type": 100,
+      "metadata_address": 37760,
+      "metadata": [
+        6,
+        6,
+        61,
+        60
+      ],
+      "damage_enabled": false,
+      "initial_hp": 60,
+      "replacement_type": 106,
+      "sound_id": 77,
+      "score_selector": 8,
+      "score_bcd_word": 8192,
+      "score_bonus": 2000
+    },
+    {
+      "type": 101,
+      "metadata_address": 37764,
+      "metadata": [
+        2,
+        2,
+        0,
+        0
+      ],
+      "damage_enabled": false,
+      "initial_hp": 0,
+      "replacement_type": 98,
+      "sound_id": 17,
+      "score_selector": 1,
+      "score_bcd_word": 65535,
+      "score_bonus": null
+    },
+    {
+      "type": 102,
+      "metadata_address": 37768,
+      "metadata": [
+        4,
+        132,
+        189,
+        4
+      ],
+      "damage_enabled": true,
+      "initial_hp": 4,
+      "replacement_type": 98,
+      "sound_id": 17,
+      "score_selector": 6,
+      "score_bcd_word": 512,
+      "score_bonus": 200
+    },
+    {
+      "type": 103,
+      "metadata_address": 37772,
+      "metadata": [
+        4,
+        4,
+        49,
+        0
+      ],
+      "damage_enabled": false,
+      "initial_hp": 0,
+      "replacement_type": 98,
+      "sound_id": 17,
+      "score_selector": 1,
+      "score_bcd_word": 65535,
+      "score_bonus": null
+    },
+    {
+      "type": 104,
+      "metadata_address": 37492,
+      "metadata": [
+        4,
+        132,
+        189,
+        0
+      ],
+      "damage_enabled": true,
+      "initial_hp": 0,
+      "replacement_type": 98,
+      "sound_id": 16,
+      "score_selector": 2,
+      "score_bcd_word": 32,
+      "score_bonus": 20
+    },
+    {
+      "type": 105,
+      "metadata_address": 37692,
+      "metadata": [
+        3,
+        3,
+        4,
+        0
+      ],
+      "damage_enabled": false,
+      "initial_hp": 0,
+      "replacement_type": 98,
+      "sound_id": 17,
+      "score_selector": 1,
+      "score_bcd_word": 65535,
+      "score_bonus": null
+    },
+    {
+      "type": 106,
+      "metadata_address": 37700,
+      "metadata": [
+        3,
+        3,
+        4,
+        0
+      ],
+      "damage_enabled": false,
+      "initial_hp": 0,
+      "replacement_type": 98,
+      "sound_id": 17,
+      "score_selector": 1,
+      "score_bcd_word": 65535,
+      "score_bonus": null
+    },
+    {
+      "type": 107,
+      "metadata_address": 37704,
+      "metadata": [
+        4,
+        4,
+        61,
+        0
+      ],
+      "damage_enabled": false,
+      "initial_hp": 0,
+      "replacement_type": 98,
+      "sound_id": 17,
+      "score_selector": 1,
+      "score_bcd_word": 65535,
+      "score_bonus": null
+    },
+    {
+      "type": 108,
+      "metadata_address": 37704,
+      "metadata": [
+        4,
+        4,
+        61,
+        0
+      ],
+      "damage_enabled": false,
+      "initial_hp": 0,
+      "replacement_type": 98,
+      "sound_id": 17,
+      "score_selector": 1,
+      "score_bcd_word": 65535,
+      "score_bonus": null
+    },
+    {
+      "type": 109,
+      "metadata_address": 37704,
+      "metadata": [
+        4,
+        4,
+        61,
+        0
+      ],
+      "damage_enabled": false,
+      "initial_hp": 0,
+      "replacement_type": 98,
+      "sound_id": 17,
+      "score_selector": 1,
+      "score_bcd_word": 65535,
+      "score_bonus": null
+    },
+    {
+      "type": 110,
+      "metadata_address": 37720,
+      "metadata": [
+        4,
+        132,
+        189,
+        0
+      ],
+      "damage_enabled": true,
+      "initial_hp": 0,
+      "replacement_type": 98,
+      "sound_id": 16,
+      "score_selector": 1,
+      "score_bcd_word": 65535,
+      "score_bonus": null
+    },
+    {
+      "type": 111,
+      "metadata_address": 37724,
+      "metadata": [
+        4,
+        132,
+        177,
+        0
+      ],
+      "damage_enabled": true,
+      "initial_hp": 0,
+      "replacement_type": 98,
+      "sound_id": 18,
+      "score_selector": 1,
+      "score_bcd_word": 65535,
+      "score_bonus": null
+    },
+    {
+      "type": 112,
+      "metadata_address": 37776,
+      "metadata": [
+        4,
+        132,
+        177,
+        0
+      ],
+      "damage_enabled": true,
+      "initial_hp": 0,
+      "replacement_type": 98,
+      "sound_id": 16,
+      "score_selector": 1,
+      "score_bcd_word": 65535,
+      "score_bonus": null
+    },
+    {
+      "type": 113,
+      "metadata_address": 37780,
+      "metadata": [
+        6,
+        140,
+        20,
+        37
+      ],
+      "damage_enabled": true,
+      "initial_hp": 37,
+      "replacement_type": 106,
+      "sound_id": 77,
+      "score_selector": 8,
+      "score_bcd_word": 8192,
+      "score_bonus": 2000
+    },
+    {
+      "type": 114,
+      "metadata_address": 37560,
+      "metadata": [
+        2,
+        2,
+        4,
+        0
+      ],
+      "damage_enabled": false,
+      "initial_hp": 0,
+      "replacement_type": 98,
+      "sound_id": 17,
+      "score_selector": 1,
+      "score_bcd_word": 65535,
+      "score_bonus": null
+    },
+    {
+      "type": 115,
+      "metadata_address": 37784,
+      "metadata": [
+        4,
+        132,
+        86,
+        2
+      ],
+      "damage_enabled": true,
+      "initial_hp": 2,
+      "replacement_type": 98,
+      "sound_id": 17,
+      "score_selector": 3,
+      "score_bcd_word": 64,
+      "score_bonus": 40
+    },
+    {
+      "type": 116,
+      "metadata_address": 37788,
+      "metadata": [
+        4,
+        132,
+        185,
+        0
+      ],
+      "damage_enabled": true,
+      "initial_hp": 0,
+      "replacement_type": 98,
+      "sound_id": 19,
+      "score_selector": 1,
+      "score_bcd_word": 65535,
+      "score_bonus": null
+    },
+    {
+      "type": 117,
+      "metadata_address": 37716,
+      "metadata": [
+        4,
+        4,
+        33,
+        0
+      ],
+      "damage_enabled": false,
+      "initial_hp": 0,
+      "replacement_type": 98,
+      "sound_id": 19,
+      "score_selector": 1,
+      "score_bcd_word": 65535,
+      "score_bonus": null
+    },
+    {
+      "type": 118,
+      "metadata_address": 37792,
+      "metadata": [
+        2,
+        130,
+        86,
+        3
+      ],
+      "damage_enabled": true,
+      "initial_hp": 3,
+      "replacement_type": 98,
+      "sound_id": 20,
+      "score_selector": 1,
+      "score_bcd_word": 65535,
+      "score_bonus": null
+    },
+    {
+      "type": 119,
+      "metadata_address": 37796,
+      "metadata": [
+        12,
+        12,
+        4,
+        153
+      ],
+      "damage_enabled": false,
+      "initial_hp": 153,
+      "replacement_type": 106,
+      "sound_id": 77,
+      "score_selector": 9,
+      "score_bcd_word": 16384,
+      "score_bonus": 4000
+    },
+    {
+      "type": 120,
+      "metadata_address": 37800,
+      "metadata": [
+        11,
+        147,
+        61,
+        64
+      ],
+      "damage_enabled": true,
+      "initial_hp": 64,
+      "replacement_type": 98,
+      "sound_id": 77,
+      "score_selector": 9,
+      "score_bcd_word": 16384,
+      "score_bonus": 4000
+    },
+    {
+      "type": 121,
+      "metadata_address": 37668,
+      "metadata": [
+        9,
+        6,
+        28,
+        48
+      ],
+      "damage_enabled": false,
+      "initial_hp": 48,
+      "replacement_type": 98,
+      "sound_id": 77,
+      "score_selector": 10,
+      "score_bcd_word": 20480,
+      "score_bonus": 5000
+    },
+    {
+      "type": 122,
+      "metadata_address": 37804,
+      "metadata": [
+        10,
+        133,
+        86,
+        0
+      ],
+      "damage_enabled": true,
+      "initial_hp": 0,
+      "replacement_type": 106,
+      "sound_id": 77,
+      "score_selector": 8,
+      "score_bcd_word": 8192,
+      "score_bonus": 2000
+    },
+    {
+      "type": 123,
+      "metadata_address": 37808,
+      "metadata": [
+        12,
+        140,
+        20,
+        160
+      ],
+      "damage_enabled": true,
+      "initial_hp": 160,
+      "replacement_type": 106,
+      "sound_id": 77,
+      "score_selector": 9,
+      "score_bcd_word": 16384,
+      "score_bonus": 4000
+    },
+    {
+      "type": 124,
+      "metadata_address": 37812,
+      "metadata": [
+        4,
+        4,
+        181,
+        0
+      ],
+      "damage_enabled": false,
+      "initial_hp": 0,
+      "replacement_type": 98,
+      "sound_id": 19,
+      "score_selector": 1,
+      "score_bcd_word": 65535,
+      "score_bonus": null
+    }
+  ],
+  "score_values": [
+    65535,
+    32,
+    64,
+    96,
+    256,
+    512,
+    1024,
+    8192,
+    16384,
+    20480
+  ],
+  "field_layout": {
+    "0x13": "vertical coarse extent in bank07 player collision; raw byte",
+    "0x14": "horizontal coarse extent masked7F in bank07; bit7 enables ordinary damage; other paths use different masks",
+    "0x15": "render/behavior flags; retained raw",
+    "0x16": "initial HP"
+  },
+  "damage_rule": "ordinary $7C44 consumes +04 only when +14 bit7 set; death callers use subtraction carry (damage > HP), not HP == 0",
+  "limitations": "Custom boss damage and parent/child behavior need separate analysis. Sound IDs are references, not decoded audio."
+}

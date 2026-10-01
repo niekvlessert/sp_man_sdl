@@ -1,0 +1,170 @@
+[
+  {
+    "selector": 0,
+    "enabled": false,
+    "y_offset": 8,
+    "y_extent": 6,
+    "x_offset": 3,
+    "x_extent": 10
+  },
+  {
+    "selector": 1,
+    "enabled": true,
+    "y_offset": 9,
+    "y_extent": 4,
+    "x_offset": 6,
+    "x_extent": 6
+  },
+  {
+    "selector": 2,
+    "enabled": true,
+    "y_offset": 7,
+    "y_extent": 2,
+    "x_offset": 0,
+    "x_extent": 16
+  },
+  {
+    "selector": 3,
+    "enabled": true,
+    "y_offset": 0,
+    "y_extent": 16,
+    "x_offset": 0,
+    "x_extent": 16
+  },
+  {
+    "selector": 4,
+    "enabled": true,
+    "y_offset": 6,
+    "y_extent": 4,
+    "x_offset": 6,
+    "x_extent": 4
+  },
+  {
+    "selector": 5,
+    "enabled": true,
+    "y_offset": 0,
+    "y_extent": 16,
+    "x_offset": 5,
+    "x_extent": 6
+  },
+  {
+    "selector": 6,
+    "enabled": true,
+    "y_offset": 0,
+    "y_extent": 0,
+    "x_offset": 16,
+    "x_extent": 16
+  },
+  {
+    "selector": 7,
+    "enabled": true,
+    "y_offset": 2,
+    "y_extent": 2,
+    "x_offset": 14,
+    "x_extent": 14
+  },
+  {
+    "selector": 8,
+    "enabled": true,
+    "y_offset": 4,
+    "y_extent": 4,
+    "x_offset": 12,
+    "x_extent": 12
+  },
+  {
+    "selector": 9,
+    "enabled": true,
+    "y_offset": 0,
+    "y_extent": 0,
+    "x_offset": 0,
+    "x_extent": 0
+  },
+  {
+    "selector": 10,
+    "enabled": true,
+    "y_offset": 2,
+    "y_extent": 14,
+    "x_offset": 0,
+    "x_extent": 16
+  },
+  {
+    "selector": 11,
+    "enabled": true,
+    "y_offset": 0,
+    "y_extent": 16,
+    "x_offset": 7,
+    "x_extent": 2
+  },
+  {
+    "selector": 12,
+    "enabled": true,
+    "y_offset": 7,
+    "y_extent": 2,
+    "x_offset": 0,
+    "x_extent": 16
+  },
+  {
+    "selector": 13,
+    "enabled": true,
+    "y_offset": 6,
+    "y_extent": 4,
+    "x_offset": 0,
+    "x_extent": 16
+  },
+  {
+    "selector": 14,
+    "enabled": true,
+    "y_offset": 4,
+    "y_extent": 8,
+    "x_offset": 0,
+    "x_extent": 16
+  },
+  {
+    "selector": 15,
+    "enabled": true,
+    "y_offset": 0,
+    "y_extent": 16,
+    "x_offset": 7,
+    "x_extent": 2
+  },
+  {
+    "selector": 16,
+    "enabled": true,
+    "y_offset": 0,
+    "y_extent": 16,
+    "x_offset": 6,
+    "x_extent": 4
+  },
+  {
+    "selector": 17,
+    "enabled": true,
+    "y_offset": 0,
+    "y_extent": 16,
+    "x_offset": 4,
+    "x_extent": 8
+  },
+  {
+    "selector": 18,
+    "enabled": true,
+    "y_offset": 4,
+    "y_extent": 8,
+    "x_offset": 0,
+    "x_extent": 16
+  },
+  {
+    "selector": 19,
+    "enabled": true,
+    "y_offset": 2,
+    "y_extent": 12,
+    "x_offset": 0,
+    "x_extent": 16
+  },
+  {
+    "selector": 20,
+    "enabled": true,
+    "y_offset": 1,
+    "y_extent": 15,
+    "x_offset": 0,
+    "x_extent": 16
+  }
+]

@@ -1,0 +1,19 @@
+# Build products
+/build/
+
+# Original game ROM (required locally, never versioned)
+/space_manbow.rom
+
+# Probe/capture scratch output
+/tools/probe_out/
+/tools/__pycache__/
+**/__pycache__/
+*.pyc
+
+# Local/editor noise
+.DS_Store
+*.swp
+*.tmp
+
+# Ad-hoc root captures
+/*.ppm

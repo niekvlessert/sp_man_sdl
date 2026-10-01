@@ -1,0 +1,30 @@
+{
+  "demos": [
+    {
+      "index": 0,
+      "stage": 3,
+      "checkpoint": 0,
+      "root": 44212,
+      "records": 461,
+      "frames": 1448
+    },
+    {
+      "index": 1,
+      "stage": 0,
+      "checkpoint": 1,
+      "root": 40960,
+      "records": 585,
+      "frames": 1291
+    },
+    {
+      "index": 2,
+      "stage": 1,
+      "checkpoint": 2,
+      "root": 42724,
+      "records": 493,
+      "frames": 1011
+    }
+  ],
+  "bank": 31,
+  "limitations": "Stored input playback, not proof all three demos finish naturally; external lookahead terminates attract mode."
+}

@@ -1,0 +1,146 @@
+[
+  {
+    "tile_selector": 0,
+    "address": 39706,
+    "size": 6,
+    "commands": [
+      {
+        "relative_origin": [
+          3,
+          2
+        ],
+        "repeat": false,
+        "count": 1,
+        "matrix_indices": [
+          0
+        ]
+      }
+    ]
+  },
+  {
+    "tile_selector": 1,
+    "address": 39712,
+    "size": 6,
+    "commands": [
+      {
+        "relative_origin": [
+          3,
+          1
+        ],
+        "repeat": false,
+        "count": 1,
+        "matrix_indices": [
+          1
+        ]
+      }
+    ]
+  },
+  {
+    "tile_selector": 2,
+    "address": 39718,
+    "size": 6,
+    "commands": [
+      {
+        "relative_origin": [
+          2,
+          1
+        ],
+        "repeat": false,
+        "count": 1,
+        "matrix_indices": [
+          2
+        ]
+      }
+    ]
+  },
+  {
+    "tile_selector": 3,
+    "address": 39724,
+    "size": 6,
+    "commands": [
+      {
+        "relative_origin": [
+          0,
+          0
+        ],
+        "repeat": false,
+        "count": 1,
+        "matrix_indices": [
+          3
+        ]
+      }
+    ]
+  },
+  {
+    "tile_selector": 4,
+    "address": 39730,
+    "size": 6,
+    "commands": [
+      {
+        "relative_origin": [
+          1,
+          1
+        ],
+        "repeat": false,
+        "count": 1,
+        "matrix_indices": [
+          4
+        ]
+      }
+    ]
+  },
+  {
+    "tile_selector": 5,
+    "address": 39718,
+    "size": 6,
+    "commands": [
+      {
+        "relative_origin": [
+          2,
+          1
+        ],
+        "repeat": false,
+        "count": 1,
+        "matrix_indices": [
+          2
+        ]
+      }
+    ]
+  },
+  {
+    "tile_selector": 6,
+    "address": 39712,
+    "size": 6,
+    "commands": [
+      {
+        "relative_origin": [
+          3,
+          1
+        ],
+        "repeat": false,
+        "count": 1,
+        "matrix_indices": [
+          1
+        ]
+      }
+    ]
+  },
+  {
+    "tile_selector": 7,
+    "address": 39706,
+    "size": 6,
+    "commands": [
+      {
+        "relative_origin": [
+          3,
+          2
+        ],
+        "repeat": false,
+        "count": 1,
+        "matrix_indices": [
+          0
+        ]
+      }
+    ]
+  }
+]

@@ -1,0 +1,6 @@
+far calls 2
+rom=08C4F caller_bank=04+0C4F map=[09,0A,0B] target=6D09
+rom=08C60 caller_bank=04+0C60 map=[09,0A,0B] target=6D0C
+
+Tuples:
+09,0A,0B: 2

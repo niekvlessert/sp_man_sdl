@@ -1,0 +1,5 @@
+progress: Searching for file with sha1sum 5aff2d9b6efc723bc395b0f96f0adfa83cc54a49...
+Indexing filepool /var/folders/v3/tf7y7sqx3xn1wg9pq_8ykr540000gn/T/sm-pcm-dpn9wja2/share/systemroms: [223]: /systemroms/machines/gradiente/expert_plus_basic-bios1.rom
+progress: Found file with sha1sum 5aff2d9b6efc723bc395b0f96f0adfa83cc54a49... 100%
+warning: Couldn't load firmwareswitch status: File "/var/folders/v3/tf7y7sqx3xn1wg9pq_8ykr540000gn/T/sm-pcm-dpn9wja2/persistent/Panasonic_FS-A1WSX/untitled1/firmwareswitch" not found
+warning: Couldn't bind socket.

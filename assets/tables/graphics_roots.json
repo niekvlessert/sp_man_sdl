@@ -1,0 +1,149 @@
+[
+  {
+    "root": 33789,
+    "preamble_end": 33803,
+    "terminal": 255,
+    "status": "parsed",
+    "reason": "loader-rooted group; non-stage0 groups need VRAM comparison"
+  },
+  {
+    "root": 33862,
+    "preamble_end": 33880,
+    "terminal": 255,
+    "status": "parsed",
+    "reason": "loader-rooted group; non-stage0 groups need VRAM comparison"
+  },
+  {
+    "root": 34377,
+    "preamble_end": 34377,
+    "terminal": 255,
+    "status": "parsed",
+    "reason": "loader-rooted group; non-stage0 groups need VRAM comparison"
+  },
+  {
+    "root": 34390,
+    "preamble_end": 34390,
+    "terminal": 255,
+    "status": "parsed",
+    "reason": "loader-rooted group; non-stage0 groups need VRAM comparison"
+  },
+  {
+    "root": 34406,
+    "preamble_end": 34406,
+    "terminal": 255,
+    "status": "parsed",
+    "reason": "loader-rooted group; non-stage0 groups need VRAM comparison"
+  },
+  {
+    "root": 34431,
+    "preamble_end": 34449,
+    "terminal": 255,
+    "status": "parsed",
+    "reason": "loader-rooted group; non-stage0 groups need VRAM comparison"
+  },
+  {
+    "root": 34569,
+    "preamble_end": 34569,
+    "terminal": 255,
+    "status": "parsed",
+    "reason": "loader-rooted group; non-stage0 groups need VRAM comparison"
+  },
+  {
+    "root": 34582,
+    "preamble_end": 34600,
+    "terminal": 255,
+    "status": "parsed",
+    "reason": "loader-rooted group; non-stage0 groups need VRAM comparison"
+  },
+  {
+    "root": 34996,
+    "preamble_end": 35014,
+    "terminal": 255,
+    "status": "parsed",
+    "reason": "loader-rooted group; non-stage0 groups need VRAM comparison"
+  },
+  {
+    "root": 35024,
+    "preamble_end": 35042,
+    "terminal": 255,
+    "status": "parsed",
+    "reason": "loader-rooted group; non-stage0 groups need VRAM comparison"
+  },
+  {
+    "root": 35227,
+    "preamble_end": 35245,
+    "terminal": 255,
+    "status": "parsed",
+    "reason": "loader-rooted group; non-stage0 groups need VRAM comparison"
+  },
+  {
+    "root": 35258,
+    "preamble_end": 35276,
+    "terminal": 255,
+    "status": "parsed",
+    "reason": "loader-rooted group; non-stage0 groups need VRAM comparison"
+  },
+  {
+    "root": 35730,
+    "preamble_end": 35748,
+    "terminal": 255,
+    "status": "parsed",
+    "reason": "loader-rooted group; non-stage0 groups need VRAM comparison"
+  },
+  {
+    "root": 35758,
+    "preamble_end": 35776,
+    "terminal": 255,
+    "status": "parsed",
+    "reason": "loader-rooted group; non-stage0 groups need VRAM comparison"
+  },
+  {
+    "root": 36393,
+    "preamble_end": 36411,
+    "terminal": 255,
+    "status": "parsed",
+    "reason": "loader-rooted group; non-stage0 groups need VRAM comparison"
+  },
+  {
+    "root": 36421,
+    "preamble_end": 36421,
+    "terminal": 255,
+    "status": "parsed",
+    "reason": "loader-rooted group; non-stage0 groups need VRAM comparison"
+  },
+  {
+    "root": 36452,
+    "preamble_end": 36470,
+    "terminal": 255,
+    "status": "parsed",
+    "reason": "loader-rooted group; non-stage0 groups need VRAM comparison"
+  },
+  {
+    "root": 37196,
+    "preamble_end": 37196,
+    "terminal": 255,
+    "status": "parsed",
+    "reason": "loader-rooted group; non-stage0 groups need VRAM comparison"
+  },
+  {
+    "root": 37206,
+    "preamble_end": 37224,
+    "terminal": 255,
+    "status": "parsed",
+    "reason": "loader-rooted group; non-stage0 groups need VRAM comparison"
+  },
+  {
+    "root": 37234,
+    "preamble_end": 37234,
+    "terminal": 255,
+    "status": "parsed",
+    "reason": "loader-rooted group; non-stage0 groups need VRAM comparison"
+  },
+  {
+    "root": 37250,
+    "preamble_end": 37268,
+    "terminal": 255,
+    "status": "parsed",
+    "reason": "loader-rooted group; non-stage0 groups need VRAM comparison"
+  }
+]

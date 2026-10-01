@@ -1,0 +1,773 @@
+{
+  "rom_sha256": "bca5696ebbf4a3493bb226baa03ba8f8c5cc4876a4ad0eaa9722f583a42192b0",
+  "provenance": {
+    "rom_sha256": "bca5696ebbf4a3493bb226baa03ba8f8c5cc4876a4ad0eaa9722f583a42192b0",
+    "openmsx_binary_sha256": "ac3ec4e0baeb4dd29b03976f1bd07838182f75acf1066d41ef981f3d74c82a46",
+    "machine": "Panasonic_FS-A1WSX",
+    "maximum_duration_seconds": 500,
+    "interventions": "F0FC stage selector before start; CA53/54 invincibility; no fire; candidate boss pending damage min(255,HP+1) at original damage entries after1s, at most once per0.2s; all injections logged; no ROM patches"
+  },
+  "stages": [
+    {
+      "stage": 0,
+      "next_stage": 1,
+      "trace_sha256": "3f7f630e8088cc9206a3611438889b9dc9fa241ed2bbb8e7bf118deb77be46ff",
+      "injection_count": 1,
+      "injected_types": [
+        100
+      ],
+      "completion_pc": 39684,
+      "completion_banks": "04,05,06",
+      "milestones": [
+        {
+          "tag": "INIT",
+          "time": 12.424376562,
+          "fields": {
+            "stage": "00",
+            "checkpoint": "00",
+            "stream": "A000",
+            "trigger": "0000",
+            "metatile": "8000"
+          },
+          "evidence": "tools/probe_out/all_stage_boss_validation/stage_00/trace.log:62"
+        },
+        {
+          "tag": "WRITE",
+          "time": 144.128282226,
+          "fields": {
+            "address": "CA0F",
+            "value": "01",
+            "pc": "9B04",
+            "banks": "04,05,06"
+          },
+          "evidence": "tools/probe_out/all_stage_boss_validation/stage_00/trace.log:416"
+        },
+        {
+          "tag": "WRITE",
+          "time": 144.178312048,
+          "fields": {
+            "address": "CA10",
+            "value": "01",
+            "pc": "6318",
+            "banks": "01,02,03"
+          },
+          "evidence": "tools/probe_out/all_stage_boss_validation/stage_00/trace.log:419"
+        },
+        {
+          "tag": "INIT",
+          "time": 145.257488033,
+          "fields": {
+            "stage": "01",
+            "checkpoint": "00",
+            "stream": "A460",
+            "trigger": "0000",
+            "metatile": "8AE0"
+          },
+          "evidence": "tools/probe_out/all_stage_boss_validation/stage_00/trace.log:425"
+        }
+      ]
+    },
+    {
+      "stage": 1,
+      "next_stage": 2,
+      "trace_sha256": "84b0c732d6a242f3fe4336f668b79824cd7a5baf2df9259c9e0cb59a3699f301",
+      "injection_count": 1,
+      "injected_types": [
+        122
+      ],
+      "completion_pc": 39684,
+      "completion_banks": "04,05,06",
+      "milestones": [
+        {
+          "tag": "INIT",
+          "time": 11.45933743,
+          "fields": {
+            "stage": "01",
+            "checkpoint": "00",
+            "stream": "A460",
+            "trigger": "0000",
+            "metatile": "8AE0"
+          },
+          "evidence": "tools/probe_out/all_stage_boss_validation/stage_01/trace.log:62"
+        },
+        {
+          "tag": "WRITE",
+          "time": 187.80398207,
+          "fields": {
+            "address": "CA0F",
+            "value": "01",
+            "pc": "9B04",
+            "banks": "04,05,06"
+          },
+          "evidence": "tools/probe_out/all_stage_boss_validation/stage_01/trace.log:356"
+        },
+        {
+          "tag": "WRITE",
+          "time": 187.850089327,
+          "fields": {
+            "address": "CA10",
+            "value": "02",
+            "pc": "6318",
+            "banks": "01,02,03"
+          },
+          "evidence": "tools/probe_out/all_stage_boss_validation/stage_01/trace.log:359"
+        },
+        {
+          "tag": "INIT",
+          "time": 188.944570329,
+          "fields": {
+            "stage": "02",
+            "checkpoint": "00",
+            "stream": "A970",
+            "trigger": "0000",
+            "metatile": "9060"
+          },
+          "evidence": "tools/probe_out/all_stage_boss_validation/stage_01/trace.log:365"
+        }
+      ]
+    },
+    {
+      "stage": 2,
+      "next_stage": 3,
+      "trace_sha256": "bbd3c77e3c4bbfeafa8b9dafd94366c50dcbd25bc1cd37df031f8c4087f3fd78",
+      "injection_count": 1,
+      "injected_types": [
+        62
+      ],
+      "completion_pc": 39684,
+      "completion_banks": "04,05,06",
+      "milestones": [
+        {
+          "tag": "INIT",
+          "time": 11.48272923,
+          "fields": {
+            "stage": "02",
+            "checkpoint": "00",
+            "stream": "A970",
+            "trigger": "0000",
+            "metatile": "9060"
+          },
+          "evidence": "tools/probe_out/all_stage_boss_validation/stage_02/trace.log:62"
+        },
+        {
+          "tag": "WRITE",
+          "time": 158.645855828,
+          "fields": {
+            "address": "CA0F",
+            "value": "01",
+            "pc": "9B04",
+            "banks": "04,05,06"
+          },
+          "evidence": "tools/probe_out/all_stage_boss_validation/stage_02/trace.log:244"
+        },
+        {
+          "tag": "WRITE",
+          "time": 158.697006463,
+          "fields": {
+            "address": "CA10",
+            "value": "03",
+            "pc": "6318",
+            "banks": "01,02,03"
+          },
+          "evidence": "tools/probe_out/all_stage_boss_validation/stage_02/trace.log:247"
+        },
+        {
+          "tag": "INIT",
+          "time": 159.723770759,
+          "fields": {
+            "stage": "03",
+            "checkpoint": "00",
+            "stream": "ABA9",
+            "trigger": "0000",
+            "metatile": "95D0"
+          },
+          "evidence": "tools/probe_out/all_stage_boss_validation/stage_02/trace.log:253"
+        }
+      ]
+    },
+    {
+      "stage": 3,
+      "next_stage": 4,
+      "trace_sha256": "69fc2271f245f1d7a5162397e21409f2e2922c66424f81606cc86b7656858fac",
+      "injection_count": 1,
+      "injected_types": [
+        20
+      ],
+      "completion_pc": 39684,
+      "completion_banks": "04,05,06",
+      "milestones": [
+        {
+          "tag": "INIT",
+          "time": 11.407126883,
+          "fields": {
+            "stage": "03",
+            "checkpoint": "00",
+            "stream": "ABA9",
+            "trigger": "0000",
+            "metatile": "95D0"
+          },
+          "evidence": "tools/probe_out/all_stage_boss_validation/stage_03/trace.log:62"
+        },
+        {
+          "tag": "WRITE",
+          "time": 169.277548403,
+          "fields": {
+            "address": "CA0F",
+            "value": "01",
+            "pc": "9B04",
+            "banks": "04,05,06"
+          },
+          "evidence": "tools/probe_out/all_stage_boss_validation/stage_03/trace.log:222"
+        },
+        {
+          "tag": "WRITE",
+          "time": 169.327904524,
+          "fields": {
+            "address": "CA10",
+            "value": "04",
+            "pc": "6318",
+            "banks": "01,02,03"
+          },
+          "evidence": "tools/probe_out/all_stage_boss_validation/stage_03/trace.log:226"
+        },
+        {
+          "tag": "INIT",
+          "time": 170.742577618,
+          "fields": {
+            "stage": "04",
+            "checkpoint": "00",
+            "stream": "AE47",
+            "trigger": "0000",
+            "metatile": "9DB0"
+          },
+          "evidence": "tools/probe_out/all_stage_boss_validation/stage_03/trace.log:232"
+        }
+      ]
+    },
+    {
+      "stage": 4,
+      "next_stage": 5,
+      "trace_sha256": "dfc55fde5ac040bbaf5d5a20ac9557305b5903c32e45df9f06cd9c24bdf9c89a",
+      "injection_count": 13,
+      "injected_types": [
+        118,
+        119
+      ],
+      "completion_pc": 39684,
+      "completion_banks": "04,05,06",
+      "milestones": [
+        {
+          "tag": "INIT",
+          "time": 11.800654832,
+          "fields": {
+            "stage": "04",
+            "checkpoint": "00",
+            "stream": "AE47",
+            "trigger": "0000",
+            "metatile": "9DB0"
+          },
+          "evidence": "tools/probe_out/all_stage_boss_validation/stage_04/trace.log:62"
+        },
+        {
+          "tag": "WRITE",
+          "time": 99.02044366,
+          "fields": {
+            "address": "CA0F",
+            "value": "01",
+            "pc": "9B04",
+            "banks": "04,05,06"
+          },
+          "evidence": "tools/probe_out/all_stage_boss_validation/stage_04/trace.log:455"
+        },
+        {
+          "tag": "WRITE",
+          "time": 99.070771285,
+          "fields": {
+            "address": "CA10",
+            "value": "05",
+            "pc": "6318",
+            "banks": "01,02,03"
+          },
+          "evidence": "tools/probe_out/all_stage_boss_validation/stage_04/trace.log:458"
+        },
+        {
+          "tag": "INIT",
+          "time": 100.799041778,
+          "fields": {
+            "stage": "05",
+            "checkpoint": "00",
+            "stream": "B331",
+            "trigger": "0000",
+            "metatile": "A070"
+          },
+          "evidence": "tools/probe_out/all_stage_boss_validation/stage_04/trace.log:464"
+        }
+      ]
+    },
+    {
+      "stage": 5,
+      "next_stage": 6,
+      "trace_sha256": "16424ab7364f91de0ba0a197b352b23fd966795cc65144ff545920995fb84223",
+      "injection_count": 1,
+      "injected_types": [
+        123
+      ],
+      "completion_pc": 39684,
+      "completion_banks": "04,05,06",
+      "milestones": [
+        {
+          "tag": "INIT",
+          "time": 12.112312878,
+          "fields": {
+            "stage": "05",
+            "checkpoint": "00",
+            "stream": "B331",
+            "trigger": "0000",
+            "metatile": "A070"
+          },
+          "evidence": "tools/probe_out/all_stage_boss_validation/stage_05/trace.log:62"
+        },
+        {
+          "tag": "WRITE",
+          "time": 246.095243949,
+          "fields": {
+            "address": "CA0F",
+            "value": "01",
+            "pc": "9B04",
+            "banks": "04,05,06"
+          },
+          "evidence": "tools/probe_out/all_stage_boss_validation/stage_05/trace.log:294"
+        },
+        {
+          "tag": "WRITE",
+          "time": 246.141190291,
+          "fields": {
+            "address": "CA10",
+            "value": "06",
+            "pc": "6318",
+            "banks": "01,02,03"
+          },
+          "evidence": "tools/probe_out/all_stage_boss_validation/stage_05/trace.log:297"
+        },
+        {
+          "tag": "INIT",
+          "time": 247.765345316,
+          "fields": {
+            "stage": "06",
+            "checkpoint": "00",
+            "stream": "B770",
+            "trigger": "0000",
+            "metatile": "A7C0"
+          },
+          "evidence": "tools/probe_out/all_stage_boss_validation/stage_05/trace.log:303"
+        }
+      ]
+    },
+    {
+      "stage": 6,
+      "next_stage": 7,
+      "trace_sha256": "cd4e8f43ef77433145100396e57762f0e06fd450c28d3dce7e94308cb9180b6a",
+      "injection_count": 2,
+      "injected_types": [
+        67
+      ],
+      "completion_pc": 36670,
+      "completion_banks": "04,05,06",
+      "milestones": [
+        {
+          "tag": "INIT",
+          "time": 12.008801677,
+          "fields": {
+            "stage": "06",
+            "checkpoint": "00",
+            "stream": "B770",
+            "trigger": "0000",
+            "metatile": "A7C0"
+          },
+          "evidence": "tools/probe_out/all_stage_boss_validation/stage_06/trace.log:62"
+        },
+        {
+          "tag": "WRITE",
+          "time": 113.289453827,
+          "fields": {
+            "address": "CA0F",
+            "value": "01",
+            "pc": "8F3E",
+            "banks": "04,05,06"
+          },
+          "evidence": "tools/probe_out/all_stage_boss_validation/stage_06/trace.log:150"
+        },
+        {
+          "tag": "WRITE",
+          "time": 113.339799611,
+          "fields": {
+            "address": "CA10",
+            "value": "07",
+            "pc": "6318",
+            "banks": "01,02,03"
+          },
+          "evidence": "tools/probe_out/all_stage_boss_validation/stage_06/trace.log:153"
+        },
+        {
+          "tag": "INIT",
+          "time": 113.916143812,
+          "fields": {
+            "stage": "07",
+            "checkpoint": "00",
+            "stream": "B948",
+            "trigger": "0000",
+            "metatile": "B1D0"
+          },
+          "evidence": "tools/probe_out/all_stage_boss_validation/stage_06/trace.log:159"
+        }
+      ]
+    },
+    {
+      "stage": 7,
+      "next_stage": 8,
+      "trace_sha256": "289c6de3fe621b99b13fcd208700f908b3884ec13ebd3165550695c24d22f37d",
+      "injection_count": 1,
+      "injected_types": [
+        120
+      ],
+      "completion_pc": 43981,
+      "completion_banks": "04,05,06",
+      "milestones": [
+        {
+          "tag": "INIT",
+          "time": 10.924825921,
+          "fields": {
+            "stage": "07",
+            "checkpoint": "00",
+            "stream": "B948",
+            "trigger": "0000",
+            "metatile": "B1D0"
+          },
+          "evidence": "tools/probe_out/all_stage_boss_validation/stage_07/trace.log:62"
+        },
+        {
+          "tag": "WRITE",
+          "time": 107.782964036,
+          "fields": {
+            "address": "CA0F",
+            "value": "01",
+            "pc": "ABCD",
+            "banks": "04,05,06"
+          },
+          "evidence": "tools/probe_out/all_stage_boss_validation/stage_07/trace.log:156"
+        },
+        {
+          "tag": "WRITE",
+          "time": 107.812601881,
+          "fields": {
+            "address": "CA10",
+            "value": "08",
+            "pc": "6318",
+            "banks": "01,02,03"
+          },
+          "evidence": "tools/probe_out/all_stage_boss_validation/stage_07/trace.log:160"
+        },
+        {
+          "tag": "INIT",
+          "time": 109.095730603,
+          "fields": {
+            "stage": "08",
+            "checkpoint": "00",
+            "stream": "BA7F",
+            "trigger": "0000",
+            "metatile": "B2D0"
+          },
+          "evidence": "tools/probe_out/all_stage_boss_validation/stage_07/trace.log:166"
+        }
+      ]
+    },
+    {
+      "stage": 8,
+      "next_stage": 9,
+      "trace_sha256": "60e186c35f233748e732bea8d59e33af54fd6d796109f8d73c60ba862182e676",
+      "injection_count": 3,
+      "injected_types": [
+        121
+      ],
+      "completion_pc": 24644,
+      "completion_banks": "04,05,06",
+      "milestones": [
+        {
+          "tag": "INIT",
+          "time": 11.571322333,
+          "fields": {
+            "stage": "08",
+            "checkpoint": "00",
+            "stream": "BA7F",
+            "trigger": "0000",
+            "metatile": "B2D0"
+          },
+          "evidence": "tools/probe_out/all_stage_boss_validation/stage_08/trace.log:62"
+        },
+        {
+          "tag": "WRITE",
+          "time": 23.776027959,
+          "fields": {
+            "address": "CA0F",
+            "value": "01",
+            "pc": "6044",
+            "banks": "04,05,06"
+          },
+          "evidence": "tools/probe_out/all_stage_boss_validation/stage_08/trace.log:89"
+        },
+        {
+          "tag": "WRITE",
+          "time": 23.805162947,
+          "fields": {
+            "address": "CA10",
+            "value": "09",
+            "pc": "6318",
+            "banks": "01,02,03"
+          },
+          "evidence": "tools/probe_out/all_stage_boss_validation/stage_08/trace.log:93"
+        },
+        {
+          "tag": "WRITE",
+          "time": 23.805175239,
+          "fields": {
+            "address": "CA00",
+            "value": "04",
+            "pc": "6499",
+            "banks": "01,02,03"
+          },
+          "evidence": "tools/probe_out/all_stage_boss_validation/stage_08/trace.log:94"
+        }
+      ]
+    }
+  ],
+  "checks": [
+    {
+      "stage": 0,
+      "name": "initial checkpoint0 selector exact",
+      "passed": true
+    },
+    {
+      "stage": 0,
+      "name": "explicit damage interventions precede completion",
+      "passed": true
+    },
+    {
+      "stage": 0,
+      "name": "completion precedes original bounded stage increment",
+      "passed": true
+    },
+    {
+      "stage": 0,
+      "name": "final stage index matches expected increment",
+      "passed": true
+    },
+    {
+      "stage": 0,
+      "name": "next stage checkpoint0 initialized exactly",
+      "passed": true
+    },
+    {
+      "stage": 1,
+      "name": "initial checkpoint0 selector exact",
+      "passed": true
+    },
+    {
+      "stage": 1,
+      "name": "explicit damage interventions precede completion",
+      "passed": true
+    },
+    {
+      "stage": 1,
+      "name": "completion precedes original bounded stage increment",
+      "passed": true
+    },
+    {
+      "stage": 1,
+      "name": "final stage index matches expected increment",
+      "passed": true
+    },
+    {
+      "stage": 1,
+      "name": "next stage checkpoint0 initialized exactly",
+      "passed": true
+    },
+    {
+      "stage": 2,
+      "name": "initial checkpoint0 selector exact",
+      "passed": true
+    },
+    {
+      "stage": 2,
+      "name": "explicit damage interventions precede completion",
+      "passed": true
+    },
+    {
+      "stage": 2,
+      "name": "completion precedes original bounded stage increment",
+      "passed": true
+    },
+    {
+      "stage": 2,
+      "name": "final stage index matches expected increment",
+      "passed": true
+    },
+    {
+      "stage": 2,
+      "name": "next stage checkpoint0 initialized exactly",
+      "passed": true
+    },
+    {
+      "stage": 3,
+      "name": "initial checkpoint0 selector exact",
+      "passed": true
+    },
+    {
+      "stage": 3,
+      "name": "explicit damage interventions precede completion",
+      "passed": true
+    },
+    {
+      "stage": 3,
+      "name": "completion precedes original bounded stage increment",
+      "passed": true
+    },
+    {
+      "stage": 3,
+      "name": "final stage index matches expected increment",
+      "passed": true
+    },
+    {
+      "stage": 3,
+      "name": "next stage checkpoint0 initialized exactly",
+      "passed": true
+    },
+    {
+      "stage": 4,
+      "name": "initial checkpoint0 selector exact",
+      "passed": true
+    },
+    {
+      "stage": 4,
+      "name": "explicit damage interventions precede completion",
+      "passed": true
+    },
+    {
+      "stage": 4,
+      "name": "completion precedes original bounded stage increment",
+      "passed": true
+    },
+    {
+      "stage": 4,
+      "name": "final stage index matches expected increment",
+      "passed": true
+    },
+    {
+      "stage": 4,
+      "name": "next stage checkpoint0 initialized exactly",
+      "passed": true
+    },
+    {
+      "stage": 5,
+      "name": "initial checkpoint0 selector exact",
+      "passed": true
+    },
+    {
+      "stage": 5,
+      "name": "explicit damage interventions precede completion",
+      "passed": true
+    },
+    {
+      "stage": 5,
+      "name": "completion precedes original bounded stage increment",
+      "passed": true
+    },
+    {
+      "stage": 5,
+      "name": "final stage index matches expected increment",
+      "passed": true
+    },
+    {
+      "stage": 5,
+      "name": "next stage checkpoint0 initialized exactly",
+      "passed": true
+    },
+    {
+      "stage": 6,
+      "name": "initial checkpoint0 selector exact",
+      "passed": true
+    },
+    {
+      "stage": 6,
+      "name": "explicit damage interventions precede completion",
+      "passed": true
+    },
+    {
+      "stage": 6,
+      "name": "completion precedes original bounded stage increment",
+      "passed": true
+    },
+    {
+      "stage": 6,
+      "name": "final stage index matches expected increment",
+      "passed": true
+    },
+    {
+      "stage": 6,
+      "name": "next stage checkpoint0 initialized exactly",
+      "passed": true
+    },
+    {
+      "stage": 7,
+      "name": "initial checkpoint0 selector exact",
+      "passed": true
+    },
+    {
+      "stage": 7,
+      "name": "explicit damage interventions precede completion",
+      "passed": true
+    },
+    {
+      "stage": 7,
+      "name": "completion precedes original bounded stage increment",
+      "passed": true
+    },
+    {
+      "stage": 7,
+      "name": "final stage index matches expected increment",
+      "passed": true
+    },
+    {
+      "stage": 7,
+      "name": "next stage checkpoint0 initialized exactly",
+      "passed": true
+    },
+    {
+      "stage": 8,
+      "name": "initial checkpoint0 selector exact",
+      "passed": true
+    },
+    {
+      "stage": 8,
+      "name": "explicit damage interventions precede completion",
+      "passed": true
+    },
+    {
+      "stage": 8,
+      "name": "completion precedes original bounded stage increment",
+      "passed": true
+    },
+    {
+      "stage": 8,
+      "name": "final stage index matches expected increment",
+      "passed": true
+    },
+    {
+      "stage": 8,
+      "name": "stage9 branches into ending state4 without checkpoint selector9",
+      "passed": true
+    }
+  ],
+  "passed": 45,
+  "total": 45,
+  "limitations": "All paths use declared pending-damage assistance, not unassisted play. Last run reaches ending state4 and samples8s after stage9 selection; complete ending/credits timing remains unverified. Synthetic checkpoint selector checks are separate."
+}

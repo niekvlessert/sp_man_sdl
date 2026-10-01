@@ -1,0 +1,928 @@
+{
+  "rom_sha256": "bca5696ebbf4a3493bb226baa03ba8f8c5cc4876a4ad0eaa9722f583a42192b0",
+  "openmsx_binary_sha256": "ac3ec4e0baeb4dd29b03976f1bd07838182f75acf1066d41ef981f3d74c82a46",
+  "method": "Synthetic original bank09 $7803..$782C selector subsection; stage/checkpoint RAM fixtures; no ROM patches",
+  "limitations": "Validates selector and C0E1 resume marker, not all natural death/respawn paths or spawn filtering.",
+  "passed": 54,
+  "total": 54,
+  "results": [
+    {
+      "stage": 0,
+      "checkpoint": 0,
+      "expected": [
+        40960,
+        0,
+        32768,
+        0
+      ],
+      "actual": [
+        40960,
+        0,
+        32768,
+        0
+      ],
+      "exact": true
+    },
+    {
+      "stage": 0,
+      "checkpoint": 1,
+      "expected": [
+        41208,
+        4256,
+        32768,
+        1
+      ],
+      "actual": [
+        41208,
+        4256,
+        32768,
+        1
+      ],
+      "exact": true
+    },
+    {
+      "stage": 0,
+      "checkpoint": 2,
+      "expected": [
+        41769,
+        4256,
+        32768,
+        2
+      ],
+      "actual": [
+        41769,
+        4256,
+        32768,
+        2
+      ],
+      "exact": true
+    },
+    {
+      "stage": 0,
+      "checkpoint": 3,
+      "expected": [
+        41769,
+        4256,
+        32768,
+        3
+      ],
+      "actual": [
+        41769,
+        4256,
+        32768,
+        3
+      ],
+      "exact": true
+    },
+    {
+      "stage": 0,
+      "checkpoint": 4,
+      "expected": [
+        41769,
+        4256,
+        32768,
+        4
+      ],
+      "actual": [
+        41769,
+        4256,
+        32768,
+        4
+      ],
+      "exact": true
+    },
+    {
+      "stage": 0,
+      "checkpoint": 5,
+      "expected": [
+        41894,
+        4256,
+        32768,
+        5
+      ],
+      "actual": [
+        41894,
+        4256,
+        32768,
+        5
+      ],
+      "exact": true
+    },
+    {
+      "stage": 1,
+      "checkpoint": 0,
+      "expected": [
+        42080,
+        0,
+        35552,
+        0
+      ],
+      "actual": [
+        42080,
+        0,
+        35552,
+        0
+      ],
+      "exact": true
+    },
+    {
+      "stage": 1,
+      "checkpoint": 1,
+      "expected": [
+        42319,
+        4252,
+        35552,
+        1
+      ],
+      "actual": [
+        42319,
+        4252,
+        35552,
+        1
+      ],
+      "exact": true
+    },
+    {
+      "stage": 1,
+      "checkpoint": 2,
+      "expected": [
+        42810,
+        12425,
+        35552,
+        2
+      ],
+      "actual": [
+        42810,
+        12425,
+        35552,
+        2
+      ],
+      "exact": true
+    },
+    {
+      "stage": 1,
+      "checkpoint": 3,
+      "expected": [
+        43055,
+        20480,
+        35552,
+        3
+      ],
+      "actual": [
+        43055,
+        20480,
+        35552,
+        3
+      ],
+      "exact": true
+    },
+    {
+      "stage": 1,
+      "checkpoint": 4,
+      "expected": [
+        43055,
+        20480,
+        35552,
+        4
+      ],
+      "actual": [
+        43055,
+        20480,
+        35552,
+        4
+      ],
+      "exact": true
+    },
+    {
+      "stage": 1,
+      "checkpoint": 5,
+      "expected": [
+        43055,
+        20480,
+        35552,
+        5
+      ],
+      "actual": [
+        43055,
+        20480,
+        35552,
+        5
+      ],
+      "exact": true
+    },
+    {
+      "stage": 2,
+      "checkpoint": 0,
+      "expected": [
+        43376,
+        0,
+        36960,
+        0
+      ],
+      "actual": [
+        43376,
+        0,
+        36960,
+        0
+      ],
+      "exact": true
+    },
+    {
+      "stage": 2,
+      "checkpoint": 1,
+      "expected": [
+        43624,
+        4256,
+        36960,
+        1
+      ],
+      "actual": [
+        43624,
+        4256,
+        36960,
+        1
+      ],
+      "exact": true
+    },
+    {
+      "stage": 2,
+      "checkpoint": 2,
+      "expected": [
+        43776,
+        4352,
+        36960,
+        2
+      ],
+      "actual": [
+        43776,
+        4352,
+        36960,
+        2
+      ],
+      "exact": true
+    },
+    {
+      "stage": 2,
+      "checkpoint": 3,
+      "expected": [
+        43880,
+        4416,
+        36960,
+        3
+      ],
+      "actual": [
+        43880,
+        4416,
+        36960,
+        3
+      ],
+      "exact": true
+    },
+    {
+      "stage": 2,
+      "checkpoint": 4,
+      "expected": [
+        43880,
+        4416,
+        36960,
+        4
+      ],
+      "actual": [
+        43880,
+        4416,
+        36960,
+        4
+      ],
+      "exact": true
+    },
+    {
+      "stage": 2,
+      "checkpoint": 5,
+      "expected": [
+        43880,
+        4416,
+        36960,
+        5
+      ],
+      "actual": [
+        43880,
+        4416,
+        36960,
+        5
+      ],
+      "exact": true
+    },
+    {
+      "stage": 3,
+      "checkpoint": 0,
+      "expected": [
+        43945,
+        0,
+        38352,
+        0
+      ],
+      "actual": [
+        43945,
+        0,
+        38352,
+        0
+      ],
+      "exact": true
+    },
+    {
+      "stage": 3,
+      "checkpoint": 1,
+      "expected": [
+        44302,
+        12292,
+        38352,
+        1
+      ],
+      "actual": [
+        44302,
+        12292,
+        38352,
+        1
+      ],
+      "exact": true
+    },
+    {
+      "stage": 3,
+      "checkpoint": 2,
+      "expected": [
+        44302,
+        12320,
+        38352,
+        2
+      ],
+      "actual": [
+        44302,
+        12320,
+        38352,
+        2
+      ],
+      "exact": true
+    },
+    {
+      "stage": 3,
+      "checkpoint": 3,
+      "expected": [
+        44302,
+        12320,
+        38352,
+        3
+      ],
+      "actual": [
+        44302,
+        12320,
+        38352,
+        3
+      ],
+      "exact": true
+    },
+    {
+      "stage": 3,
+      "checkpoint": 4,
+      "expected": [
+        44302,
+        12320,
+        38352,
+        4
+      ],
+      "actual": [
+        44302,
+        12320,
+        38352,
+        4
+      ],
+      "exact": true
+    },
+    {
+      "stage": 3,
+      "checkpoint": 5,
+      "expected": [
+        44302,
+        12320,
+        38352,
+        5
+      ],
+      "actual": [
+        44302,
+        12320,
+        38352,
+        5
+      ],
+      "exact": true
+    },
+    {
+      "stage": 4,
+      "checkpoint": 0,
+      "expected": [
+        44615,
+        0,
+        40368,
+        0
+      ],
+      "actual": [
+        44615,
+        0,
+        40368,
+        0
+      ],
+      "exact": true
+    },
+    {
+      "stage": 4,
+      "checkpoint": 1,
+      "expected": [
+        45055,
+        4384,
+        40368,
+        1
+      ],
+      "actual": [
+        45055,
+        4384,
+        40368,
+        1
+      ],
+      "exact": true
+    },
+    {
+      "stage": 4,
+      "checkpoint": 2,
+      "expected": [
+        45738,
+        4832,
+        40368,
+        2
+      ],
+      "actual": [
+        45738,
+        4832,
+        40368,
+        2
+      ],
+      "exact": true
+    },
+    {
+      "stage": 4,
+      "checkpoint": 3,
+      "expected": [
+        45738,
+        4832,
+        40368,
+        3
+      ],
+      "actual": [
+        45738,
+        4832,
+        40368,
+        3
+      ],
+      "exact": true
+    },
+    {
+      "stage": 4,
+      "checkpoint": 4,
+      "expected": [
+        45738,
+        4832,
+        40368,
+        4
+      ],
+      "actual": [
+        45738,
+        4832,
+        40368,
+        4
+      ],
+      "exact": true
+    },
+    {
+      "stage": 4,
+      "checkpoint": 5,
+      "expected": [
+        45738,
+        4832,
+        40368,
+        5
+      ],
+      "actual": [
+        45738,
+        4832,
+        40368,
+        5
+      ],
+      "exact": true
+    },
+    {
+      "stage": 5,
+      "checkpoint": 0,
+      "expected": [
+        45873,
+        0,
+        41072,
+        0
+      ],
+      "actual": [
+        45873,
+        0,
+        41072,
+        0
+      ],
+      "exact": true
+    },
+    {
+      "stage": 5,
+      "checkpoint": 1,
+      "expected": [
+        46174,
+        12293,
+        41072,
+        1
+      ],
+      "actual": [
+        46174,
+        12293,
+        41072,
+        1
+      ],
+      "exact": true
+    },
+    {
+      "stage": 5,
+      "checkpoint": 2,
+      "expected": [
+        46174,
+        12293,
+        41072,
+        2
+      ],
+      "actual": [
+        46174,
+        12293,
+        41072,
+        2
+      ],
+      "exact": true
+    },
+    {
+      "stage": 5,
+      "checkpoint": 3,
+      "expected": [
+        46657,
+        12293,
+        41072,
+        3
+      ],
+      "actual": [
+        46657,
+        12293,
+        41072,
+        3
+      ],
+      "exact": true
+    },
+    {
+      "stage": 5,
+      "checkpoint": 4,
+      "expected": [
+        46815,
+        16389,
+        41072,
+        4
+      ],
+      "actual": [
+        46815,
+        16389,
+        41072,
+        4
+      ],
+      "exact": true
+    },
+    {
+      "stage": 5,
+      "checkpoint": 5,
+      "expected": [
+        45873,
+        0,
+        41072,
+        5
+      ],
+      "actual": [
+        45873,
+        0,
+        41072,
+        5
+      ],
+      "exact": true
+    },
+    {
+      "stage": 6,
+      "checkpoint": 0,
+      "expected": [
+        46960,
+        0,
+        42944,
+        0
+      ],
+      "actual": [
+        46960,
+        0,
+        42944,
+        0
+      ],
+      "exact": true
+    },
+    {
+      "stage": 6,
+      "checkpoint": 1,
+      "expected": [
+        46960,
+        0,
+        42944,
+        1
+      ],
+      "actual": [
+        46960,
+        0,
+        42944,
+        1
+      ],
+      "exact": true
+    },
+    {
+      "stage": 6,
+      "checkpoint": 2,
+      "expected": [
+        46960,
+        0,
+        42944,
+        2
+      ],
+      "actual": [
+        46960,
+        0,
+        42944,
+        2
+      ],
+      "exact": true
+    },
+    {
+      "stage": 6,
+      "checkpoint": 3,
+      "expected": [
+        46960,
+        0,
+        42944,
+        3
+      ],
+      "actual": [
+        46960,
+        0,
+        42944,
+        3
+      ],
+      "exact": true
+    },
+    {
+      "stage": 6,
+      "checkpoint": 4,
+      "expected": [
+        46960,
+        0,
+        42944,
+        4
+      ],
+      "actual": [
+        46960,
+        0,
+        42944,
+        4
+      ],
+      "exact": true
+    },
+    {
+      "stage": 6,
+      "checkpoint": 5,
+      "expected": [
+        46960,
+        0,
+        42944,
+        5
+      ],
+      "actual": [
+        46960,
+        0,
+        42944,
+        5
+      ],
+      "exact": true
+    },
+    {
+      "stage": 7,
+      "checkpoint": 0,
+      "expected": [
+        47432,
+        0,
+        45520,
+        0
+      ],
+      "actual": [
+        47432,
+        0,
+        45520,
+        0
+      ],
+      "exact": true
+    },
+    {
+      "stage": 7,
+      "checkpoint": 1,
+      "expected": [
+        47432,
+        0,
+        45520,
+        1
+      ],
+      "actual": [
+        47432,
+        0,
+        45520,
+        1
+      ],
+      "exact": true
+    },
+    {
+      "stage": 7,
+      "checkpoint": 2,
+      "expected": [
+        47432,
+        0,
+        45520,
+        2
+      ],
+      "actual": [
+        47432,
+        0,
+        45520,
+        2
+      ],
+      "exact": true
+    },
+    {
+      "stage": 7,
+      "checkpoint": 3,
+      "expected": [
+        47432,
+        0,
+        45520,
+        3
+      ],
+      "actual": [
+        47432,
+        0,
+        45520,
+        3
+      ],
+      "exact": true
+    },
+    {
+      "stage": 7,
+      "checkpoint": 4,
+      "expected": [
+        47432,
+        0,
+        45520,
+        4
+      ],
+      "actual": [
+        47432,
+        0,
+        45520,
+        4
+      ],
+      "exact": true
+    },
+    {
+      "stage": 7,
+      "checkpoint": 5,
+      "expected": [
+        47432,
+        0,
+        45520,
+        5
+      ],
+      "actual": [
+        47432,
+        0,
+        45520,
+        5
+      ],
+      "exact": true
+    },
+    {
+      "stage": 8,
+      "checkpoint": 0,
+      "expected": [
+        47743,
+        0,
+        45776,
+        0
+      ],
+      "actual": [
+        47743,
+        0,
+        45776,
+        0
+      ],
+      "exact": true
+    },
+    {
+      "stage": 8,
+      "checkpoint": 1,
+      "expected": [
+        47743,
+        0,
+        45776,
+        1
+      ],
+      "actual": [
+        47743,
+        0,
+        45776,
+        1
+      ],
+      "exact": true
+    },
+    {
+      "stage": 8,
+      "checkpoint": 2,
+      "expected": [
+        47743,
+        0,
+        45776,
+        2
+      ],
+      "actual": [
+        47743,
+        0,
+        45776,
+        2
+      ],
+      "exact": true
+    },
+    {
+      "stage": 8,
+      "checkpoint": 3,
+      "expected": [
+        47743,
+        0,
+        45776,
+        3
+      ],
+      "actual": [
+        47743,
+        0,
+        45776,
+        3
+      ],
+      "exact": true
+    },
+    {
+      "stage": 8,
+      "checkpoint": 4,
+      "expected": [
+        47743,
+        0,
+        45776,
+        4
+      ],
+      "actual": [
+        47743,
+        0,
+        45776,
+        4
+      ],
+      "exact": true
+    },
+    {
+      "stage": 8,
+      "checkpoint": 5,
+      "expected": [
+        47743,
+        0,
+        45776,
+        5
+      ],
+      "actual": [
+        47743,
+        0,
+        45776,
+        5
+      ],
+      "exact": true
+    }
+  ]
+}

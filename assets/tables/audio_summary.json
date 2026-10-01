@@ -1,0 +1,11 @@
+{
+  "sound_descriptors": 83,
+  "sound_ids": 85,
+  "sequence_states": 30731,
+  "sequence_nodes": 25067,
+  "sequence_bytes": 33351,
+  "sequence_ranges": 9,
+  "unresolved": 13,
+  "unique_waveforms": 31,
+  "limitations": "Static rooted extraction, requires runtime boundary validation; no complete audio synthesizer or final track exports."
+}

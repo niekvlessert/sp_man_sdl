@@ -1,0 +1,2772 @@
+{
+  "rom_sha256": "bca5696ebbf4a3493bb226baa03ba8f8c5cc4876a4ad0eaa9722f583a42192b0",
+  "method": "natural first-80-second stage traces with saved-stage selector and invincibility",
+  "limitation": "Observed indices prove minimum list extent only; unseen frames remain possible.",
+  "frames": [
+    {
+      "kind": "sprite",
+      "type": 1,
+      "frame": 0,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_00/trace.log",
+          "stage": 0,
+          "line": 243,
+          "log_sha256": "a6d60722fc473f5b1a7841f46ad48f5f7f087e6f6a18368bf990f8e410eec1a6",
+          "list_address": null
+        },
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_01/trace.log",
+          "stage": 1,
+          "line": 67,
+          "log_sha256": "51c8d0cb6ee86a4302e4fe67225c80be5c4315c655b7f2b51af5e06ef182b611",
+          "list_address": null
+        },
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_02/trace.log",
+          "stage": 2,
+          "line": 115,
+          "log_sha256": "dfe7442c48ea4b15deed309652354367df888230173a40288711426ee54f6f00",
+          "list_address": null
+        },
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_03/trace.log",
+          "stage": 3,
+          "line": 111,
+          "log_sha256": "05c429a45144c6900f0d58d0929e219c36db04b78fb5923fa33ed841e88aa63f",
+          "list_address": null
+        },
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_04/trace.log",
+          "stage": 4,
+          "line": 50,
+          "log_sha256": "1f77cc712d0761d0085632ce4339b0eb4e04496ac9fbb4e896dd152286109073",
+          "list_address": null
+        },
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_05/trace.log",
+          "stage": 5,
+          "line": 189,
+          "log_sha256": "de945568904ab9e58b6714c37813ff7c29277c75f5f4b8840684d14965d8b116",
+          "list_address": null
+        },
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_06/trace.log",
+          "stage": 6,
+          "line": 268,
+          "log_sha256": "892bc52c96e1f7a88c41d6294d775039768ee040eb84facd940b74654c5b8cc0",
+          "list_address": null
+        },
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_07/trace.log",
+          "stage": 7,
+          "line": 71,
+          "log_sha256": "f60d36fbc4af8e26028ab7d82fcd6129da0b37f27cd304ba9ef6e49477a26aa6",
+          "list_address": null
+        },
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_08/trace.log",
+          "stage": 8,
+          "line": 108,
+          "log_sha256": "72c6a46c4efcb8bafd563e9f75586d3aedf1b04462234f0bb00019b684c80791",
+          "list_address": null
+        }
+      ]
+    },
+    {
+      "kind": "sprite",
+      "type": 4,
+      "frame": 0,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_00/trace.log",
+          "stage": 0,
+          "line": 236,
+          "log_sha256": "a6d60722fc473f5b1a7841f46ad48f5f7f087e6f6a18368bf990f8e410eec1a6",
+          "list_address": null
+        },
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_02/trace.log",
+          "stage": 2,
+          "line": 230,
+          "log_sha256": "dfe7442c48ea4b15deed309652354367df888230173a40288711426ee54f6f00",
+          "list_address": null
+        },
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_04/trace.log",
+          "stage": 4,
+          "line": 89,
+          "log_sha256": "1f77cc712d0761d0085632ce4339b0eb4e04496ac9fbb4e896dd152286109073",
+          "list_address": null
+        }
+      ]
+    },
+    {
+      "kind": "sprite",
+      "type": 4,
+      "frame": 12,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_00/trace.log",
+          "stage": 0,
+          "line": 180,
+          "log_sha256": "a6d60722fc473f5b1a7841f46ad48f5f7f087e6f6a18368bf990f8e410eec1a6",
+          "list_address": null
+        },
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_01/trace.log",
+          "stage": 1,
+          "line": 70,
+          "log_sha256": "51c8d0cb6ee86a4302e4fe67225c80be5c4315c655b7f2b51af5e06ef182b611",
+          "list_address": null
+        },
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_02/trace.log",
+          "stage": 2,
+          "line": 82,
+          "log_sha256": "dfe7442c48ea4b15deed309652354367df888230173a40288711426ee54f6f00",
+          "list_address": null
+        },
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_03/trace.log",
+          "stage": 3,
+          "line": 132,
+          "log_sha256": "05c429a45144c6900f0d58d0929e219c36db04b78fb5923fa33ed841e88aa63f",
+          "list_address": null
+        },
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_04/trace.log",
+          "stage": 4,
+          "line": 47,
+          "log_sha256": "1f77cc712d0761d0085632ce4339b0eb4e04496ac9fbb4e896dd152286109073",
+          "list_address": null
+        },
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_05/trace.log",
+          "stage": 5,
+          "line": 124,
+          "log_sha256": "de945568904ab9e58b6714c37813ff7c29277c75f5f4b8840684d14965d8b116",
+          "list_address": null
+        },
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_06/trace.log",
+          "stage": 6,
+          "line": 179,
+          "log_sha256": "892bc52c96e1f7a88c41d6294d775039768ee040eb84facd940b74654c5b8cc0",
+          "list_address": null
+        },
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_07/trace.log",
+          "stage": 7,
+          "line": 74,
+          "log_sha256": "f60d36fbc4af8e26028ab7d82fcd6129da0b37f27cd304ba9ef6e49477a26aa6",
+          "list_address": null
+        },
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_08/trace.log",
+          "stage": 8,
+          "line": 143,
+          "log_sha256": "72c6a46c4efcb8bafd563e9f75586d3aedf1b04462234f0bb00019b684c80791",
+          "list_address": null
+        }
+      ]
+    },
+    {
+      "kind": "sprite",
+      "type": 4,
+      "frame": 13,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_00/trace.log",
+          "stage": 0,
+          "line": 218,
+          "log_sha256": "a6d60722fc473f5b1a7841f46ad48f5f7f087e6f6a18368bf990f8e410eec1a6",
+          "list_address": null
+        },
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_01/trace.log",
+          "stage": 1,
+          "line": 134,
+          "log_sha256": "51c8d0cb6ee86a4302e4fe67225c80be5c4315c655b7f2b51af5e06ef182b611",
+          "list_address": null
+        },
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_02/trace.log",
+          "stage": 2,
+          "line": 160,
+          "log_sha256": "dfe7442c48ea4b15deed309652354367df888230173a40288711426ee54f6f00",
+          "list_address": null
+        },
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_04/trace.log",
+          "stage": 4,
+          "line": 59,
+          "log_sha256": "1f77cc712d0761d0085632ce4339b0eb4e04496ac9fbb4e896dd152286109073",
+          "list_address": null
+        },
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_06/trace.log",
+          "stage": 6,
+          "line": 304,
+          "log_sha256": "892bc52c96e1f7a88c41d6294d775039768ee040eb84facd940b74654c5b8cc0",
+          "list_address": null
+        }
+      ]
+    },
+    {
+      "kind": "sprite",
+      "type": 4,
+      "frame": 16,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_02/trace.log",
+          "stage": 2,
+          "line": 227,
+          "log_sha256": "dfe7442c48ea4b15deed309652354367df888230173a40288711426ee54f6f00",
+          "list_address": null
+        },
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_04/trace.log",
+          "stage": 4,
+          "line": 131,
+          "log_sha256": "1f77cc712d0761d0085632ce4339b0eb4e04496ac9fbb4e896dd152286109073",
+          "list_address": null
+        }
+      ]
+    },
+    {
+      "kind": "sprite",
+      "type": 7,
+      "frame": 0,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_00/trace.log",
+          "stage": 0,
+          "line": 247,
+          "log_sha256": "a6d60722fc473f5b1a7841f46ad48f5f7f087e6f6a18368bf990f8e410eec1a6",
+          "list_address": null
+        },
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_01/trace.log",
+          "stage": 1,
+          "line": 136,
+          "log_sha256": "51c8d0cb6ee86a4302e4fe67225c80be5c4315c655b7f2b51af5e06ef182b611",
+          "list_address": null
+        },
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_04/trace.log",
+          "stage": 4,
+          "line": 63,
+          "log_sha256": "1f77cc712d0761d0085632ce4339b0eb4e04496ac9fbb4e896dd152286109073",
+          "list_address": null
+        }
+      ]
+    },
+    {
+      "kind": "sprite",
+      "type": 16,
+      "frame": 0,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_00/trace.log",
+          "stage": 0,
+          "line": 217,
+          "log_sha256": "a6d60722fc473f5b1a7841f46ad48f5f7f087e6f6a18368bf990f8e410eec1a6",
+          "list_address": null
+        }
+      ]
+    },
+    {
+      "kind": "sprite",
+      "type": 16,
+      "frame": 1,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_01/trace.log",
+          "stage": 1,
+          "line": 75,
+          "log_sha256": "51c8d0cb6ee86a4302e4fe67225c80be5c4315c655b7f2b51af5e06ef182b611",
+          "list_address": null
+        }
+      ]
+    },
+    {
+      "kind": "sprite",
+      "type": 17,
+      "frame": 0,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_00/trace.log",
+          "stage": 0,
+          "line": 460,
+          "log_sha256": "a6d60722fc473f5b1a7841f46ad48f5f7f087e6f6a18368bf990f8e410eec1a6",
+          "list_address": null
+        }
+      ]
+    },
+    {
+      "kind": "sprite",
+      "type": 17,
+      "frame": 1,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_00/trace.log",
+          "stage": 0,
+          "line": 459,
+          "log_sha256": "a6d60722fc473f5b1a7841f46ad48f5f7f087e6f6a18368bf990f8e410eec1a6",
+          "list_address": null
+        }
+      ]
+    },
+    {
+      "kind": "sprite",
+      "type": 17,
+      "frame": 2,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_00/trace.log",
+          "stage": 0,
+          "line": 461,
+          "log_sha256": "a6d60722fc473f5b1a7841f46ad48f5f7f087e6f6a18368bf990f8e410eec1a6",
+          "list_address": null
+        }
+      ]
+    },
+    {
+      "kind": "sprite",
+      "type": 18,
+      "frame": 0,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_00/trace.log",
+          "stage": 0,
+          "line": 179,
+          "log_sha256": "a6d60722fc473f5b1a7841f46ad48f5f7f087e6f6a18368bf990f8e410eec1a6",
+          "list_address": null
+        }
+      ]
+    },
+    {
+      "kind": "sprite",
+      "type": 18,
+      "frame": 1,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_01/trace.log",
+          "stage": 1,
+          "line": 68,
+          "log_sha256": "51c8d0cb6ee86a4302e4fe67225c80be5c4315c655b7f2b51af5e06ef182b611",
+          "list_address": null
+        }
+      ]
+    },
+    {
+      "kind": "sprite",
+      "type": 19,
+      "frame": 0,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_02/trace.log",
+          "stage": 2,
+          "line": 81,
+          "log_sha256": "dfe7442c48ea4b15deed309652354367df888230173a40288711426ee54f6f00",
+          "list_address": null
+        }
+      ]
+    },
+    {
+      "kind": "sprite",
+      "type": 19,
+      "frame": 1,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_04/trace.log",
+          "stage": 4,
+          "line": 98,
+          "log_sha256": "1f77cc712d0761d0085632ce4339b0eb4e04496ac9fbb4e896dd152286109073",
+          "list_address": null
+        }
+      ]
+    },
+    {
+      "kind": "sprite",
+      "type": 21,
+      "frame": 0,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_00/trace.log",
+          "stage": 0,
+          "line": 275,
+          "log_sha256": "a6d60722fc473f5b1a7841f46ad48f5f7f087e6f6a18368bf990f8e410eec1a6",
+          "list_address": null
+        }
+      ]
+    },
+    {
+      "kind": "sprite",
+      "type": 22,
+      "frame": 0,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_01/trace.log",
+          "stage": 1,
+          "line": 248,
+          "log_sha256": "51c8d0cb6ee86a4302e4fe67225c80be5c4315c655b7f2b51af5e06ef182b611",
+          "list_address": null
+        },
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_06/trace.log",
+          "stage": 6,
+          "line": 249,
+          "log_sha256": "892bc52c96e1f7a88c41d6294d775039768ee040eb84facd940b74654c5b8cc0",
+          "list_address": null
+        }
+      ]
+    },
+    {
+      "kind": "sprite",
+      "type": 23,
+      "frame": 0,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_03/trace.log",
+          "stage": 3,
+          "line": 131,
+          "log_sha256": "05c429a45144c6900f0d58d0929e219c36db04b78fb5923fa33ed841e88aa63f",
+          "list_address": null
+        }
+      ]
+    },
+    {
+      "kind": "sprite",
+      "type": 24,
+      "frame": 0,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_00/trace.log",
+          "stage": 0,
+          "line": 245,
+          "log_sha256": "a6d60722fc473f5b1a7841f46ad48f5f7f087e6f6a18368bf990f8e410eec1a6",
+          "list_address": null
+        },
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_01/trace.log",
+          "stage": 1,
+          "line": 98,
+          "log_sha256": "51c8d0cb6ee86a4302e4fe67225c80be5c4315c655b7f2b51af5e06ef182b611",
+          "list_address": null
+        },
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_02/trace.log",
+          "stage": 2,
+          "line": 176,
+          "log_sha256": "dfe7442c48ea4b15deed309652354367df888230173a40288711426ee54f6f00",
+          "list_address": null
+        }
+      ]
+    },
+    {
+      "kind": "sprite",
+      "type": 24,
+      "frame": 1,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_04/trace.log",
+          "stage": 4,
+          "line": 46,
+          "log_sha256": "1f77cc712d0761d0085632ce4339b0eb4e04496ac9fbb4e896dd152286109073",
+          "list_address": null
+        }
+      ]
+    },
+    {
+      "kind": "sprite",
+      "type": 25,
+      "frame": 0,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_01/trace.log",
+          "stage": 1,
+          "line": 135,
+          "log_sha256": "51c8d0cb6ee86a4302e4fe67225c80be5c4315c655b7f2b51af5e06ef182b611",
+          "list_address": null
+        }
+      ]
+    },
+    {
+      "kind": "sprite",
+      "type": 25,
+      "frame": 1,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_01/trace.log",
+          "stage": 1,
+          "line": 116,
+          "log_sha256": "51c8d0cb6ee86a4302e4fe67225c80be5c4315c655b7f2b51af5e06ef182b611",
+          "list_address": null
+        },
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_03/trace.log",
+          "stage": 3,
+          "line": 405,
+          "log_sha256": "05c429a45144c6900f0d58d0929e219c36db04b78fb5923fa33ed841e88aa63f",
+          "list_address": null
+        }
+      ]
+    },
+    {
+      "kind": "sprite",
+      "type": 25,
+      "frame": 2,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_03/trace.log",
+          "stage": 3,
+          "line": 404,
+          "log_sha256": "05c429a45144c6900f0d58d0929e219c36db04b78fb5923fa33ed841e88aa63f",
+          "list_address": null
+        }
+      ]
+    },
+    {
+      "kind": "sprite",
+      "type": 26,
+      "frame": 0,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_06/trace.log",
+          "stage": 6,
+          "line": 356,
+          "log_sha256": "892bc52c96e1f7a88c41d6294d775039768ee040eb84facd940b74654c5b8cc0",
+          "list_address": null
+        }
+      ]
+    },
+    {
+      "kind": "sprite",
+      "type": 26,
+      "frame": 1,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_06/trace.log",
+          "stage": 6,
+          "line": 351,
+          "log_sha256": "892bc52c96e1f7a88c41d6294d775039768ee040eb84facd940b74654c5b8cc0",
+          "list_address": null
+        }
+      ]
+    },
+    {
+      "kind": "sprite",
+      "type": 26,
+      "frame": 2,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_06/trace.log",
+          "stage": 6,
+          "line": 397,
+          "log_sha256": "892bc52c96e1f7a88c41d6294d775039768ee040eb84facd940b74654c5b8cc0",
+          "list_address": null
+        }
+      ]
+    },
+    {
+      "kind": "sprite",
+      "type": 26,
+      "frame": 3,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_06/trace.log",
+          "stage": 6,
+          "line": 398,
+          "log_sha256": "892bc52c96e1f7a88c41d6294d775039768ee040eb84facd940b74654c5b8cc0",
+          "list_address": null
+        }
+      ]
+    },
+    {
+      "kind": "sprite",
+      "type": 26,
+      "frame": 4,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_06/trace.log",
+          "stage": 6,
+          "line": 288,
+          "log_sha256": "892bc52c96e1f7a88c41d6294d775039768ee040eb84facd940b74654c5b8cc0",
+          "list_address": null
+        }
+      ]
+    },
+    {
+      "kind": "sprite",
+      "type": 26,
+      "frame": 5,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_06/trace.log",
+          "stage": 6,
+          "line": 289,
+          "log_sha256": "892bc52c96e1f7a88c41d6294d775039768ee040eb84facd940b74654c5b8cc0",
+          "list_address": null
+        }
+      ]
+    },
+    {
+      "kind": "sprite",
+      "type": 26,
+      "frame": 6,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_06/trace.log",
+          "stage": 6,
+          "line": 346,
+          "log_sha256": "892bc52c96e1f7a88c41d6294d775039768ee040eb84facd940b74654c5b8cc0",
+          "list_address": null
+        }
+      ]
+    },
+    {
+      "kind": "sprite",
+      "type": 26,
+      "frame": 7,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_06/trace.log",
+          "stage": 6,
+          "line": 345,
+          "log_sha256": "892bc52c96e1f7a88c41d6294d775039768ee040eb84facd940b74654c5b8cc0",
+          "list_address": null
+        }
+      ]
+    },
+    {
+      "kind": "sprite",
+      "type": 26,
+      "frame": 13,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_06/trace.log",
+          "stage": 6,
+          "line": 446,
+          "log_sha256": "892bc52c96e1f7a88c41d6294d775039768ee040eb84facd940b74654c5b8cc0",
+          "list_address": null
+        }
+      ]
+    },
+    {
+      "kind": "sprite",
+      "type": 27,
+      "frame": 0,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_07/trace.log",
+          "stage": 7,
+          "line": 73,
+          "log_sha256": "f60d36fbc4af8e26028ab7d82fcd6129da0b37f27cd304ba9ef6e49477a26aa6",
+          "list_address": null
+        }
+      ]
+    },
+    {
+      "kind": "sprite",
+      "type": 29,
+      "frame": 0,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_02/trace.log",
+          "stage": 2,
+          "line": 179,
+          "log_sha256": "dfe7442c48ea4b15deed309652354367df888230173a40288711426ee54f6f00",
+          "list_address": null
+        }
+      ]
+    },
+    {
+      "kind": "sprite",
+      "type": 30,
+      "frame": 0,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_00/trace.log",
+          "stage": 0,
+          "line": 242,
+          "log_sha256": "a6d60722fc473f5b1a7841f46ad48f5f7f087e6f6a18368bf990f8e410eec1a6",
+          "list_address": null
+        }
+      ]
+    },
+    {
+      "kind": "sprite",
+      "type": 33,
+      "frame": 0,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_04/trace.log",
+          "stage": 4,
+          "line": 134,
+          "log_sha256": "1f77cc712d0761d0085632ce4339b0eb4e04496ac9fbb4e896dd152286109073",
+          "list_address": null
+        }
+      ]
+    },
+    {
+      "kind": "sprite",
+      "type": 33,
+      "frame": 2,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_04/trace.log",
+          "stage": 4,
+          "line": 135,
+          "log_sha256": "1f77cc712d0761d0085632ce4339b0eb4e04496ac9fbb4e896dd152286109073",
+          "list_address": null
+        }
+      ]
+    },
+    {
+      "kind": "sprite",
+      "type": 39,
+      "frame": 0,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_01/trace.log",
+          "stage": 1,
+          "line": 138,
+          "log_sha256": "51c8d0cb6ee86a4302e4fe67225c80be5c4315c655b7f2b51af5e06ef182b611",
+          "list_address": null
+        },
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_04/trace.log",
+          "stage": 4,
+          "line": 53,
+          "log_sha256": "1f77cc712d0761d0085632ce4339b0eb4e04496ac9fbb4e896dd152286109073",
+          "list_address": null
+        }
+      ]
+    },
+    {
+      "kind": "sprite",
+      "type": 39,
+      "frame": 1,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_01/trace.log",
+          "stage": 1,
+          "line": 133,
+          "log_sha256": "51c8d0cb6ee86a4302e4fe67225c80be5c4315c655b7f2b51af5e06ef182b611",
+          "list_address": null
+        },
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_02/trace.log",
+          "stage": 2,
+          "line": 226,
+          "log_sha256": "dfe7442c48ea4b15deed309652354367df888230173a40288711426ee54f6f00",
+          "list_address": null
+        },
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_04/trace.log",
+          "stage": 4,
+          "line": 52,
+          "log_sha256": "1f77cc712d0761d0085632ce4339b0eb4e04496ac9fbb4e896dd152286109073",
+          "list_address": null
+        }
+      ]
+    },
+    {
+      "kind": "sprite",
+      "type": 44,
+      "frame": 0,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_01/trace.log",
+          "stage": 1,
+          "line": 140,
+          "log_sha256": "51c8d0cb6ee86a4302e4fe67225c80be5c4315c655b7f2b51af5e06ef182b611",
+          "list_address": null
+        }
+      ]
+    },
+    {
+      "kind": "sprite",
+      "type": 47,
+      "frame": 0,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_05/trace.log",
+          "stage": 5,
+          "line": 318,
+          "log_sha256": "de945568904ab9e58b6714c37813ff7c29277c75f5f4b8840684d14965d8b116",
+          "list_address": null
+        }
+      ]
+    },
+    {
+      "kind": "sprite",
+      "type": 53,
+      "frame": 0,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_02/trace.log",
+          "stage": 2,
+          "line": 233,
+          "log_sha256": "dfe7442c48ea4b15deed309652354367df888230173a40288711426ee54f6f00",
+          "list_address": null
+        }
+      ]
+    },
+    {
+      "kind": "sprite",
+      "type": 53,
+      "frame": 1,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_02/trace.log",
+          "stage": 2,
+          "line": 237,
+          "log_sha256": "dfe7442c48ea4b15deed309652354367df888230173a40288711426ee54f6f00",
+          "list_address": null
+        }
+      ]
+    },
+    {
+      "kind": "sprite",
+      "type": 66,
+      "frame": 0,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_07/trace.log",
+          "stage": 7,
+          "line": 75,
+          "log_sha256": "f60d36fbc4af8e26028ab7d82fcd6129da0b37f27cd304ba9ef6e49477a26aa6",
+          "list_address": null
+        }
+      ]
+    },
+    {
+      "kind": "sprite",
+      "type": 72,
+      "frame": 0,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_05/trace.log",
+          "stage": 5,
+          "line": 319,
+          "log_sha256": "de945568904ab9e58b6714c37813ff7c29277c75f5f4b8840684d14965d8b116",
+          "list_address": null
+        }
+      ]
+    },
+    {
+      "kind": "sprite",
+      "type": 73,
+      "frame": 0,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_04/trace.log",
+          "stage": 4,
+          "line": 61,
+          "log_sha256": "1f77cc712d0761d0085632ce4339b0eb4e04496ac9fbb4e896dd152286109073",
+          "list_address": null
+        }
+      ]
+    },
+    {
+      "kind": "sprite",
+      "type": 73,
+      "frame": 1,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_04/trace.log",
+          "stage": 4,
+          "line": 62,
+          "log_sha256": "1f77cc712d0761d0085632ce4339b0eb4e04496ac9fbb4e896dd152286109073",
+          "list_address": null
+        }
+      ]
+    },
+    {
+      "kind": "sprite",
+      "type": 74,
+      "frame": 0,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_05/trace.log",
+          "stage": 5,
+          "line": 375,
+          "log_sha256": "de945568904ab9e58b6714c37813ff7c29277c75f5f4b8840684d14965d8b116",
+          "list_address": null
+        }
+      ]
+    },
+    {
+      "kind": "sprite",
+      "type": 74,
+      "frame": 1,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_05/trace.log",
+          "stage": 5,
+          "line": 374,
+          "log_sha256": "de945568904ab9e58b6714c37813ff7c29277c75f5f4b8840684d14965d8b116",
+          "list_address": null
+        }
+      ]
+    },
+    {
+      "kind": "sprite",
+      "type": 76,
+      "frame": 0,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_08/trace.log",
+          "stage": 8,
+          "line": 264,
+          "log_sha256": "72c6a46c4efcb8bafd563e9f75586d3aedf1b04462234f0bb00019b684c80791",
+          "list_address": null
+        }
+      ]
+    },
+    {
+      "kind": "sprite",
+      "type": 76,
+      "frame": 1,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_08/trace.log",
+          "stage": 8,
+          "line": 260,
+          "log_sha256": "72c6a46c4efcb8bafd563e9f75586d3aedf1b04462234f0bb00019b684c80791",
+          "list_address": null
+        }
+      ]
+    },
+    {
+      "kind": "sprite",
+      "type": 76,
+      "frame": 2,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_08/trace.log",
+          "stage": 8,
+          "line": 259,
+          "log_sha256": "72c6a46c4efcb8bafd563e9f75586d3aedf1b04462234f0bb00019b684c80791",
+          "list_address": null
+        }
+      ]
+    },
+    {
+      "kind": "sprite",
+      "type": 76,
+      "frame": 3,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_08/trace.log",
+          "stage": 8,
+          "line": 261,
+          "log_sha256": "72c6a46c4efcb8bafd563e9f75586d3aedf1b04462234f0bb00019b684c80791",
+          "list_address": null
+        }
+      ]
+    },
+    {
+      "kind": "sprite",
+      "type": 76,
+      "frame": 4,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_08/trace.log",
+          "stage": 8,
+          "line": 262,
+          "log_sha256": "72c6a46c4efcb8bafd563e9f75586d3aedf1b04462234f0bb00019b684c80791",
+          "list_address": null
+        }
+      ]
+    },
+    {
+      "kind": "sprite",
+      "type": 76,
+      "frame": 5,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_08/trace.log",
+          "stage": 8,
+          "line": 263,
+          "log_sha256": "72c6a46c4efcb8bafd563e9f75586d3aedf1b04462234f0bb00019b684c80791",
+          "list_address": null
+        }
+      ]
+    },
+    {
+      "kind": "sprite",
+      "type": 76,
+      "frame": 6,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_08/trace.log",
+          "stage": 8,
+          "line": 265,
+          "log_sha256": "72c6a46c4efcb8bafd563e9f75586d3aedf1b04462234f0bb00019b684c80791",
+          "list_address": null
+        }
+      ]
+    },
+    {
+      "kind": "sprite",
+      "type": 76,
+      "frame": 7,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_08/trace.log",
+          "stage": 8,
+          "line": 266,
+          "log_sha256": "72c6a46c4efcb8bafd563e9f75586d3aedf1b04462234f0bb00019b684c80791",
+          "list_address": null
+        }
+      ]
+    },
+    {
+      "kind": "sprite",
+      "type": 77,
+      "frame": 0,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_05/trace.log",
+          "stage": 5,
+          "line": 123,
+          "log_sha256": "de945568904ab9e58b6714c37813ff7c29277c75f5f4b8840684d14965d8b116",
+          "list_address": null
+        }
+      ]
+    },
+    {
+      "kind": "sprite",
+      "type": 77,
+      "frame": 1,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_06/trace.log",
+          "stage": 6,
+          "line": 178,
+          "log_sha256": "892bc52c96e1f7a88c41d6294d775039768ee040eb84facd940b74654c5b8cc0",
+          "list_address": null
+        }
+      ]
+    },
+    {
+      "kind": "sprite",
+      "type": 78,
+      "frame": 0,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_08/trace.log",
+          "stage": 8,
+          "line": 122,
+          "log_sha256": "72c6a46c4efcb8bafd563e9f75586d3aedf1b04462234f0bb00019b684c80791",
+          "list_address": null
+        }
+      ]
+    },
+    {
+      "kind": "sprite",
+      "type": 78,
+      "frame": 1,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_08/trace.log",
+          "stage": 8,
+          "line": 109,
+          "log_sha256": "72c6a46c4efcb8bafd563e9f75586d3aedf1b04462234f0bb00019b684c80791",
+          "list_address": null
+        }
+      ]
+    },
+    {
+      "kind": "sprite",
+      "type": 78,
+      "frame": 2,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_08/trace.log",
+          "stage": 8,
+          "line": 110,
+          "log_sha256": "72c6a46c4efcb8bafd563e9f75586d3aedf1b04462234f0bb00019b684c80791",
+          "list_address": null
+        }
+      ]
+    },
+    {
+      "kind": "sprite",
+      "type": 78,
+      "frame": 3,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_08/trace.log",
+          "stage": 8,
+          "line": 111,
+          "log_sha256": "72c6a46c4efcb8bafd563e9f75586d3aedf1b04462234f0bb00019b684c80791",
+          "list_address": null
+        }
+      ]
+    },
+    {
+      "kind": "sprite",
+      "type": 78,
+      "frame": 4,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_08/trace.log",
+          "stage": 8,
+          "line": 114,
+          "log_sha256": "72c6a46c4efcb8bafd563e9f75586d3aedf1b04462234f0bb00019b684c80791",
+          "list_address": null
+        }
+      ]
+    },
+    {
+      "kind": "sprite",
+      "type": 78,
+      "frame": 5,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_08/trace.log",
+          "stage": 8,
+          "line": 115,
+          "log_sha256": "72c6a46c4efcb8bafd563e9f75586d3aedf1b04462234f0bb00019b684c80791",
+          "list_address": null
+        }
+      ]
+    },
+    {
+      "kind": "sprite",
+      "type": 78,
+      "frame": 6,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_08/trace.log",
+          "stage": 8,
+          "line": 116,
+          "log_sha256": "72c6a46c4efcb8bafd563e9f75586d3aedf1b04462234f0bb00019b684c80791",
+          "list_address": null
+        }
+      ]
+    },
+    {
+      "kind": "sprite",
+      "type": 78,
+      "frame": 7,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_08/trace.log",
+          "stage": 8,
+          "line": 117,
+          "log_sha256": "72c6a46c4efcb8bafd563e9f75586d3aedf1b04462234f0bb00019b684c80791",
+          "list_address": null
+        }
+      ]
+    },
+    {
+      "kind": "sprite",
+      "type": 94,
+      "frame": 0,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_08/trace.log",
+          "stage": 8,
+          "line": 258,
+          "log_sha256": "72c6a46c4efcb8bafd563e9f75586d3aedf1b04462234f0bb00019b684c80791",
+          "list_address": null
+        }
+      ]
+    },
+    {
+      "kind": "sprite",
+      "type": 94,
+      "frame": 1,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_08/trace.log",
+          "stage": 8,
+          "line": 267,
+          "log_sha256": "72c6a46c4efcb8bafd563e9f75586d3aedf1b04462234f0bb00019b684c80791",
+          "list_address": null
+        }
+      ]
+    },
+    {
+      "kind": "sprite",
+      "type": 94,
+      "frame": 2,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_08/trace.log",
+          "stage": 8,
+          "line": 268,
+          "log_sha256": "72c6a46c4efcb8bafd563e9f75586d3aedf1b04462234f0bb00019b684c80791",
+          "list_address": null
+        }
+      ]
+    },
+    {
+      "kind": "sprite",
+      "type": 96,
+      "frame": 0,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_00/trace.log",
+          "stage": 0,
+          "line": 472,
+          "log_sha256": "a6d60722fc473f5b1a7841f46ad48f5f7f087e6f6a18368bf990f8e410eec1a6",
+          "list_address": null
+        },
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_01/trace.log",
+          "stage": 1,
+          "line": 76,
+          "log_sha256": "51c8d0cb6ee86a4302e4fe67225c80be5c4315c655b7f2b51af5e06ef182b611",
+          "list_address": null
+        },
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_02/trace.log",
+          "stage": 2,
+          "line": 116,
+          "log_sha256": "dfe7442c48ea4b15deed309652354367df888230173a40288711426ee54f6f00",
+          "list_address": null
+        },
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_03/trace.log",
+          "stage": 3,
+          "line": 112,
+          "log_sha256": "05c429a45144c6900f0d58d0929e219c36db04b78fb5923fa33ed841e88aa63f",
+          "list_address": null
+        },
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_04/trace.log",
+          "stage": 4,
+          "line": 111,
+          "log_sha256": "1f77cc712d0761d0085632ce4339b0eb4e04496ac9fbb4e896dd152286109073",
+          "list_address": null
+        },
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_06/trace.log",
+          "stage": 6,
+          "line": 293,
+          "log_sha256": "892bc52c96e1f7a88c41d6294d775039768ee040eb84facd940b74654c5b8cc0",
+          "list_address": null
+        },
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_07/trace.log",
+          "stage": 7,
+          "line": 72,
+          "log_sha256": "f60d36fbc4af8e26028ab7d82fcd6129da0b37f27cd304ba9ef6e49477a26aa6",
+          "list_address": null
+        }
+      ]
+    },
+    {
+      "kind": "sprite",
+      "type": 97,
+      "frame": 0,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_00/trace.log",
+          "stage": 0,
+          "line": 276,
+          "log_sha256": "a6d60722fc473f5b1a7841f46ad48f5f7f087e6f6a18368bf990f8e410eec1a6",
+          "list_address": null
+        }
+      ]
+    },
+    {
+      "kind": "sprite",
+      "type": 102,
+      "frame": 0,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_08/trace.log",
+          "stage": 8,
+          "line": 238,
+          "log_sha256": "72c6a46c4efcb8bafd563e9f75586d3aedf1b04462234f0bb00019b684c80791",
+          "list_address": null
+        }
+      ]
+    },
+    {
+      "kind": "sprite",
+      "type": 103,
+      "frame": 0,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_00/trace.log",
+          "stage": 0,
+          "line": 244,
+          "log_sha256": "a6d60722fc473f5b1a7841f46ad48f5f7f087e6f6a18368bf990f8e410eec1a6",
+          "list_address": null
+        },
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_01/trace.log",
+          "stage": 1,
+          "line": 148,
+          "log_sha256": "51c8d0cb6ee86a4302e4fe67225c80be5c4315c655b7f2b51af5e06ef182b611",
+          "list_address": null
+        },
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_02/trace.log",
+          "stage": 2,
+          "line": 187,
+          "log_sha256": "dfe7442c48ea4b15deed309652354367df888230173a40288711426ee54f6f00",
+          "list_address": null
+        },
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_03/trace.log",
+          "stage": 3,
+          "line": 141,
+          "log_sha256": "05c429a45144c6900f0d58d0929e219c36db04b78fb5923fa33ed841e88aa63f",
+          "list_address": null
+        }
+      ]
+    },
+    {
+      "kind": "sprite",
+      "type": 104,
+      "frame": 0,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_00/trace.log",
+          "stage": 0,
+          "line": 467,
+          "log_sha256": "a6d60722fc473f5b1a7841f46ad48f5f7f087e6f6a18368bf990f8e410eec1a6",
+          "list_address": null
+        }
+      ]
+    },
+    {
+      "kind": "sprite",
+      "type": 111,
+      "frame": 0,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_03/trace.log",
+          "stage": 3,
+          "line": 178,
+          "log_sha256": "05c429a45144c6900f0d58d0929e219c36db04b78fb5923fa33ed841e88aa63f",
+          "list_address": null
+        }
+      ]
+    },
+    {
+      "kind": "sprite",
+      "type": 111,
+      "frame": 1,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_03/trace.log",
+          "stage": 3,
+          "line": 179,
+          "log_sha256": "05c429a45144c6900f0d58d0929e219c36db04b78fb5923fa33ed841e88aa63f",
+          "list_address": null
+        }
+      ]
+    },
+    {
+      "kind": "sprite",
+      "type": 111,
+      "frame": 2,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_03/trace.log",
+          "stage": 3,
+          "line": 180,
+          "log_sha256": "05c429a45144c6900f0d58d0929e219c36db04b78fb5923fa33ed841e88aa63f",
+          "list_address": null
+        }
+      ]
+    },
+    {
+      "kind": "sprite",
+      "type": 111,
+      "frame": 3,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_03/trace.log",
+          "stage": 3,
+          "line": 181,
+          "log_sha256": "05c429a45144c6900f0d58d0929e219c36db04b78fb5923fa33ed841e88aa63f",
+          "list_address": null
+        }
+      ]
+    },
+    {
+      "kind": "sprite",
+      "type": 112,
+      "frame": 0,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_00/trace.log",
+          "stage": 0,
+          "line": 452,
+          "log_sha256": "a6d60722fc473f5b1a7841f46ad48f5f7f087e6f6a18368bf990f8e410eec1a6",
+          "list_address": null
+        }
+      ]
+    },
+    {
+      "kind": "tile",
+      "type": 3,
+      "frame": 0,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_00/trace.log",
+          "stage": 0,
+          "line": 190,
+          "log_sha256": "a6d60722fc473f5b1a7841f46ad48f5f7f087e6f6a18368bf990f8e410eec1a6",
+          "list_address": 34788
+        },
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_01/trace.log",
+          "stage": 1,
+          "line": 69,
+          "log_sha256": "51c8d0cb6ee86a4302e4fe67225c80be5c4315c655b7f2b51af5e06ef182b611",
+          "list_address": 34788
+        },
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_02/trace.log",
+          "stage": 2,
+          "line": 126,
+          "log_sha256": "dfe7442c48ea4b15deed309652354367df888230173a40288711426ee54f6f00",
+          "list_address": 34788
+        },
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_03/trace.log",
+          "stage": 3,
+          "line": 171,
+          "log_sha256": "05c429a45144c6900f0d58d0929e219c36db04b78fb5923fa33ed841e88aa63f",
+          "list_address": 34788
+        },
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_04/trace.log",
+          "stage": 4,
+          "line": 51,
+          "log_sha256": "1f77cc712d0761d0085632ce4339b0eb4e04496ac9fbb4e896dd152286109073",
+          "list_address": 34788
+        },
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_05/trace.log",
+          "stage": 5,
+          "line": 323,
+          "log_sha256": "de945568904ab9e58b6714c37813ff7c29277c75f5f4b8840684d14965d8b116",
+          "list_address": 34788
+        },
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_06/trace.log",
+          "stage": 6,
+          "line": 275,
+          "log_sha256": "892bc52c96e1f7a88c41d6294d775039768ee040eb84facd940b74654c5b8cc0",
+          "list_address": 34788
+        },
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_07/trace.log",
+          "stage": 7,
+          "line": 76,
+          "log_sha256": "f60d36fbc4af8e26028ab7d82fcd6129da0b37f27cd304ba9ef6e49477a26aa6",
+          "list_address": 34788
+        }
+      ]
+    },
+    {
+      "kind": "tile",
+      "type": 3,
+      "frame": 1,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_00/trace.log",
+          "stage": 0,
+          "line": 230,
+          "log_sha256": "a6d60722fc473f5b1a7841f46ad48f5f7f087e6f6a18368bf990f8e410eec1a6",
+          "list_address": 34788
+        },
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_01/trace.log",
+          "stage": 1,
+          "line": 137,
+          "log_sha256": "51c8d0cb6ee86a4302e4fe67225c80be5c4315c655b7f2b51af5e06ef182b611",
+          "list_address": 34788
+        },
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_02/trace.log",
+          "stage": 2,
+          "line": 221,
+          "log_sha256": "dfe7442c48ea4b15deed309652354367df888230173a40288711426ee54f6f00",
+          "list_address": 34788
+        },
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_04/trace.log",
+          "stage": 4,
+          "line": 114,
+          "log_sha256": "1f77cc712d0761d0085632ce4339b0eb4e04496ac9fbb4e896dd152286109073",
+          "list_address": 34788
+        }
+      ]
+    },
+    {
+      "kind": "tile",
+      "type": 3,
+      "frame": 2,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_00/trace.log",
+          "stage": 0,
+          "line": 212,
+          "log_sha256": "a6d60722fc473f5b1a7841f46ad48f5f7f087e6f6a18368bf990f8e410eec1a6",
+          "list_address": 34788
+        },
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_01/trace.log",
+          "stage": 1,
+          "line": 119,
+          "log_sha256": "51c8d0cb6ee86a4302e4fe67225c80be5c4315c655b7f2b51af5e06ef182b611",
+          "list_address": 34788
+        },
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_02/trace.log",
+          "stage": 2,
+          "line": 171,
+          "log_sha256": "dfe7442c48ea4b15deed309652354367df888230173a40288711426ee54f6f00",
+          "list_address": 34788
+        },
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_04/trace.log",
+          "stage": 4,
+          "line": 60,
+          "log_sha256": "1f77cc712d0761d0085632ce4339b0eb4e04496ac9fbb4e896dd152286109073",
+          "list_address": 34788
+        },
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_05/trace.log",
+          "stage": 5,
+          "line": 328,
+          "log_sha256": "de945568904ab9e58b6714c37813ff7c29277c75f5f4b8840684d14965d8b116",
+          "list_address": 34788
+        },
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_06/trace.log",
+          "stage": 6,
+          "line": 320,
+          "log_sha256": "892bc52c96e1f7a88c41d6294d775039768ee040eb84facd940b74654c5b8cc0",
+          "list_address": 34788
+        }
+      ]
+    },
+    {
+      "kind": "tile",
+      "type": 3,
+      "frame": 3,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_00/trace.log",
+          "stage": 0,
+          "line": 227,
+          "log_sha256": "a6d60722fc473f5b1a7841f46ad48f5f7f087e6f6a18368bf990f8e410eec1a6",
+          "list_address": 34788
+        },
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_01/trace.log",
+          "stage": 1,
+          "line": 120,
+          "log_sha256": "51c8d0cb6ee86a4302e4fe67225c80be5c4315c655b7f2b51af5e06ef182b611",
+          "list_address": 34788
+        },
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_02/trace.log",
+          "stage": 2,
+          "line": 184,
+          "log_sha256": "dfe7442c48ea4b15deed309652354367df888230173a40288711426ee54f6f00",
+          "list_address": 34788
+        },
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_04/trace.log",
+          "stage": 4,
+          "line": 66,
+          "log_sha256": "1f77cc712d0761d0085632ce4339b0eb4e04496ac9fbb4e896dd152286109073",
+          "list_address": 34788
+        },
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_05/trace.log",
+          "stage": 5,
+          "line": 364,
+          "log_sha256": "de945568904ab9e58b6714c37813ff7c29277c75f5f4b8840684d14965d8b116",
+          "list_address": 34788
+        },
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_06/trace.log",
+          "stage": 6,
+          "line": 355,
+          "log_sha256": "892bc52c96e1f7a88c41d6294d775039768ee040eb84facd940b74654c5b8cc0",
+          "list_address": 34788
+        }
+      ]
+    },
+    {
+      "kind": "tile",
+      "type": 3,
+      "frame": 4,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_00/trace.log",
+          "stage": 0,
+          "line": 246,
+          "log_sha256": "a6d60722fc473f5b1a7841f46ad48f5f7f087e6f6a18368bf990f8e410eec1a6",
+          "list_address": 34788
+        },
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_01/trace.log",
+          "stage": 1,
+          "line": 321,
+          "log_sha256": "51c8d0cb6ee86a4302e4fe67225c80be5c4315c655b7f2b51af5e06ef182b611",
+          "list_address": 34788
+        },
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_04/trace.log",
+          "stage": 4,
+          "line": 115,
+          "log_sha256": "1f77cc712d0761d0085632ce4339b0eb4e04496ac9fbb4e896dd152286109073",
+          "list_address": 34788
+        }
+      ]
+    },
+    {
+      "kind": "tile",
+      "type": 3,
+      "frame": 7,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_00/trace.log",
+          "stage": 0,
+          "line": 195,
+          "log_sha256": "a6d60722fc473f5b1a7841f46ad48f5f7f087e6f6a18368bf990f8e410eec1a6",
+          "list_address": 34788
+        },
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_01/trace.log",
+          "stage": 1,
+          "line": 105,
+          "log_sha256": "51c8d0cb6ee86a4302e4fe67225c80be5c4315c655b7f2b51af5e06ef182b611",
+          "list_address": 34788
+        },
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_02/trace.log",
+          "stage": 2,
+          "line": 153,
+          "log_sha256": "dfe7442c48ea4b15deed309652354367df888230173a40288711426ee54f6f00",
+          "list_address": 34788
+        },
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_04/trace.log",
+          "stage": 4,
+          "line": 58,
+          "log_sha256": "1f77cc712d0761d0085632ce4339b0eb4e04496ac9fbb4e896dd152286109073",
+          "list_address": 34788
+        },
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_05/trace.log",
+          "stage": 5,
+          "line": 324,
+          "log_sha256": "de945568904ab9e58b6714c37813ff7c29277c75f5f4b8840684d14965d8b116",
+          "list_address": 34788
+        },
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_06/trace.log",
+          "stage": 6,
+          "line": 303,
+          "log_sha256": "892bc52c96e1f7a88c41d6294d775039768ee040eb84facd940b74654c5b8cc0",
+          "list_address": 34788
+        },
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_07/trace.log",
+          "stage": 7,
+          "line": 81,
+          "log_sha256": "f60d36fbc4af8e26028ab7d82fcd6129da0b37f27cd304ba9ef6e49477a26aa6",
+          "list_address": 34788
+        }
+      ]
+    },
+    {
+      "kind": "tile",
+      "type": 3,
+      "frame": 8,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_04/trace.log",
+          "stage": 4,
+          "line": 136,
+          "log_sha256": "1f77cc712d0761d0085632ce4339b0eb4e04496ac9fbb4e896dd152286109073",
+          "list_address": 34788
+        }
+      ]
+    },
+    {
+      "kind": "tile",
+      "type": 28,
+      "frame": 0,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_02/trace.log",
+          "stage": 2,
+          "line": 172,
+          "log_sha256": "dfe7442c48ea4b15deed309652354367df888230173a40288711426ee54f6f00",
+          "list_address": 38374
+        }
+      ]
+    },
+    {
+      "kind": "tile",
+      "type": 31,
+      "frame": 0,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_00/trace.log",
+          "stage": 0,
+          "line": 326,
+          "log_sha256": "a6d60722fc473f5b1a7841f46ad48f5f7f087e6f6a18368bf990f8e410eec1a6",
+          "list_address": 35442
+        }
+      ]
+    },
+    {
+      "kind": "tile",
+      "type": 32,
+      "frame": 0,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_00/trace.log",
+          "stage": 0,
+          "line": 378,
+          "log_sha256": "a6d60722fc473f5b1a7841f46ad48f5f7f087e6f6a18368bf990f8e410eec1a6",
+          "list_address": 35444
+        }
+      ]
+    },
+    {
+      "kind": "tile",
+      "type": 32,
+      "frame": 3,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_00/trace.log",
+          "stage": 0,
+          "line": 455,
+          "log_sha256": "a6d60722fc473f5b1a7841f46ad48f5f7f087e6f6a18368bf990f8e410eec1a6",
+          "list_address": 35444
+        }
+      ]
+    },
+    {
+      "kind": "tile",
+      "type": 34,
+      "frame": 0,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_00/trace.log",
+          "stage": 0,
+          "line": 429,
+          "log_sha256": "a6d60722fc473f5b1a7841f46ad48f5f7f087e6f6a18368bf990f8e410eec1a6",
+          "list_address": 35460
+        }
+      ]
+    },
+    {
+      "kind": "tile",
+      "type": 34,
+      "frame": 1,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_00/trace.log",
+          "stage": 0,
+          "line": 434,
+          "log_sha256": "a6d60722fc473f5b1a7841f46ad48f5f7f087e6f6a18368bf990f8e410eec1a6",
+          "list_address": 35460
+        }
+      ]
+    },
+    {
+      "kind": "tile",
+      "type": 36,
+      "frame": 0,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_00/trace.log",
+          "stage": 0,
+          "line": 309,
+          "log_sha256": "a6d60722fc473f5b1a7841f46ad48f5f7f087e6f6a18368bf990f8e410eec1a6",
+          "list_address": 35464
+        }
+      ]
+    },
+    {
+      "kind": "tile",
+      "type": 36,
+      "frame": 1,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_00/trace.log",
+          "stage": 0,
+          "line": 312,
+          "log_sha256": "a6d60722fc473f5b1a7841f46ad48f5f7f087e6f6a18368bf990f8e410eec1a6",
+          "list_address": 35464
+        }
+      ]
+    },
+    {
+      "kind": "tile",
+      "type": 36,
+      "frame": 2,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_00/trace.log",
+          "stage": 0,
+          "line": 319,
+          "log_sha256": "a6d60722fc473f5b1a7841f46ad48f5f7f087e6f6a18368bf990f8e410eec1a6",
+          "list_address": 35464
+        }
+      ]
+    },
+    {
+      "kind": "tile",
+      "type": 36,
+      "frame": 3,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_00/trace.log",
+          "stage": 0,
+          "line": 290,
+          "log_sha256": "a6d60722fc473f5b1a7841f46ad48f5f7f087e6f6a18368bf990f8e410eec1a6",
+          "list_address": 35464
+        }
+      ]
+    },
+    {
+      "kind": "tile",
+      "type": 36,
+      "frame": 4,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_00/trace.log",
+          "stage": 0,
+          "line": 293,
+          "log_sha256": "a6d60722fc473f5b1a7841f46ad48f5f7f087e6f6a18368bf990f8e410eec1a6",
+          "list_address": 35464
+        }
+      ]
+    },
+    {
+      "kind": "tile",
+      "type": 36,
+      "frame": 5,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_00/trace.log",
+          "stage": 0,
+          "line": 296,
+          "log_sha256": "a6d60722fc473f5b1a7841f46ad48f5f7f087e6f6a18368bf990f8e410eec1a6",
+          "list_address": 35464
+        }
+      ]
+    },
+    {
+      "kind": "tile",
+      "type": 36,
+      "frame": 6,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_00/trace.log",
+          "stage": 0,
+          "line": 303,
+          "log_sha256": "a6d60722fc473f5b1a7841f46ad48f5f7f087e6f6a18368bf990f8e410eec1a6",
+          "list_address": 35464
+        }
+      ]
+    },
+    {
+      "kind": "tile",
+      "type": 36,
+      "frame": 7,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_00/trace.log",
+          "stage": 0,
+          "line": 306,
+          "log_sha256": "a6d60722fc473f5b1a7841f46ad48f5f7f087e6f6a18368bf990f8e410eec1a6",
+          "list_address": 35464
+        }
+      ]
+    },
+    {
+      "kind": "tile",
+      "type": 36,
+      "frame": 8,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_00/trace.log",
+          "stage": 0,
+          "line": 310,
+          "log_sha256": "a6d60722fc473f5b1a7841f46ad48f5f7f087e6f6a18368bf990f8e410eec1a6",
+          "list_address": 35464
+        }
+      ]
+    },
+    {
+      "kind": "tile",
+      "type": 36,
+      "frame": 9,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_00/trace.log",
+          "stage": 0,
+          "line": 313,
+          "log_sha256": "a6d60722fc473f5b1a7841f46ad48f5f7f087e6f6a18368bf990f8e410eec1a6",
+          "list_address": 35464
+        }
+      ]
+    },
+    {
+      "kind": "tile",
+      "type": 36,
+      "frame": 10,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_00/trace.log",
+          "stage": 0,
+          "line": 320,
+          "log_sha256": "a6d60722fc473f5b1a7841f46ad48f5f7f087e6f6a18368bf990f8e410eec1a6",
+          "list_address": 35464
+        }
+      ]
+    },
+    {
+      "kind": "tile",
+      "type": 36,
+      "frame": 11,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_00/trace.log",
+          "stage": 0,
+          "line": 291,
+          "log_sha256": "a6d60722fc473f5b1a7841f46ad48f5f7f087e6f6a18368bf990f8e410eec1a6",
+          "list_address": 35464
+        }
+      ]
+    },
+    {
+      "kind": "tile",
+      "type": 36,
+      "frame": 12,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_00/trace.log",
+          "stage": 0,
+          "line": 294,
+          "log_sha256": "a6d60722fc473f5b1a7841f46ad48f5f7f087e6f6a18368bf990f8e410eec1a6",
+          "list_address": 35464
+        }
+      ]
+    },
+    {
+      "kind": "tile",
+      "type": 36,
+      "frame": 13,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_00/trace.log",
+          "stage": 0,
+          "line": 297,
+          "log_sha256": "a6d60722fc473f5b1a7841f46ad48f5f7f087e6f6a18368bf990f8e410eec1a6",
+          "list_address": 35464
+        }
+      ]
+    },
+    {
+      "kind": "tile",
+      "type": 36,
+      "frame": 14,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_00/trace.log",
+          "stage": 0,
+          "line": 304,
+          "log_sha256": "a6d60722fc473f5b1a7841f46ad48f5f7f087e6f6a18368bf990f8e410eec1a6",
+          "list_address": 35464
+        }
+      ]
+    },
+    {
+      "kind": "tile",
+      "type": 36,
+      "frame": 15,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_00/trace.log",
+          "stage": 0,
+          "line": 307,
+          "log_sha256": "a6d60722fc473f5b1a7841f46ad48f5f7f087e6f6a18368bf990f8e410eec1a6",
+          "list_address": 35464
+        }
+      ]
+    },
+    {
+      "kind": "tile",
+      "type": 36,
+      "frame": 16,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_00/trace.log",
+          "stage": 0,
+          "line": 311,
+          "log_sha256": "a6d60722fc473f5b1a7841f46ad48f5f7f087e6f6a18368bf990f8e410eec1a6",
+          "list_address": 35464
+        }
+      ]
+    },
+    {
+      "kind": "tile",
+      "type": 36,
+      "frame": 17,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_00/trace.log",
+          "stage": 0,
+          "line": 314,
+          "log_sha256": "a6d60722fc473f5b1a7841f46ad48f5f7f087e6f6a18368bf990f8e410eec1a6",
+          "list_address": 35464
+        }
+      ]
+    },
+    {
+      "kind": "tile",
+      "type": 36,
+      "frame": 18,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_00/trace.log",
+          "stage": 0,
+          "line": 321,
+          "log_sha256": "a6d60722fc473f5b1a7841f46ad48f5f7f087e6f6a18368bf990f8e410eec1a6",
+          "list_address": 35464
+        }
+      ]
+    },
+    {
+      "kind": "tile",
+      "type": 36,
+      "frame": 19,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_00/trace.log",
+          "stage": 0,
+          "line": 292,
+          "log_sha256": "a6d60722fc473f5b1a7841f46ad48f5f7f087e6f6a18368bf990f8e410eec1a6",
+          "list_address": 35464
+        }
+      ]
+    },
+    {
+      "kind": "tile",
+      "type": 36,
+      "frame": 20,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_00/trace.log",
+          "stage": 0,
+          "line": 295,
+          "log_sha256": "a6d60722fc473f5b1a7841f46ad48f5f7f087e6f6a18368bf990f8e410eec1a6",
+          "list_address": 35464
+        }
+      ]
+    },
+    {
+      "kind": "tile",
+      "type": 36,
+      "frame": 21,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_00/trace.log",
+          "stage": 0,
+          "line": 298,
+          "log_sha256": "a6d60722fc473f5b1a7841f46ad48f5f7f087e6f6a18368bf990f8e410eec1a6",
+          "list_address": 35464
+        }
+      ]
+    },
+    {
+      "kind": "tile",
+      "type": 36,
+      "frame": 22,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_00/trace.log",
+          "stage": 0,
+          "line": 305,
+          "log_sha256": "a6d60722fc473f5b1a7841f46ad48f5f7f087e6f6a18368bf990f8e410eec1a6",
+          "list_address": 35464
+        }
+      ]
+    },
+    {
+      "kind": "tile",
+      "type": 36,
+      "frame": 23,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_00/trace.log",
+          "stage": 0,
+          "line": 308,
+          "log_sha256": "a6d60722fc473f5b1a7841f46ad48f5f7f087e6f6a18368bf990f8e410eec1a6",
+          "list_address": 35464
+        }
+      ]
+    },
+    {
+      "kind": "tile",
+      "type": 38,
+      "frame": 0,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_00/trace.log",
+          "stage": 0,
+          "line": 446,
+          "log_sha256": "a6d60722fc473f5b1a7841f46ad48f5f7f087e6f6a18368bf990f8e410eec1a6",
+          "list_address": 35512
+        }
+      ]
+    },
+    {
+      "kind": "tile",
+      "type": 38,
+      "frame": 1,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_00/trace.log",
+          "stage": 0,
+          "line": 453,
+          "log_sha256": "a6d60722fc473f5b1a7841f46ad48f5f7f087e6f6a18368bf990f8e410eec1a6",
+          "list_address": 35512
+        }
+      ]
+    },
+    {
+      "kind": "tile",
+      "type": 41,
+      "frame": 0,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_01/trace.log",
+          "stage": 1,
+          "line": 81,
+          "log_sha256": "51c8d0cb6ee86a4302e4fe67225c80be5c4315c655b7f2b51af5e06ef182b611",
+          "list_address": 36791
+        }
+      ]
+    },
+    {
+      "kind": "tile",
+      "type": 41,
+      "frame": 1,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_01/trace.log",
+          "stage": 1,
+          "line": 104,
+          "log_sha256": "51c8d0cb6ee86a4302e4fe67225c80be5c4315c655b7f2b51af5e06ef182b611",
+          "list_address": 36791
+        }
+      ]
+    },
+    {
+      "kind": "tile",
+      "type": 41,
+      "frame": 2,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_01/trace.log",
+          "stage": 1,
+          "line": 108,
+          "log_sha256": "51c8d0cb6ee86a4302e4fe67225c80be5c4315c655b7f2b51af5e06ef182b611",
+          "list_address": 36791
+        }
+      ]
+    },
+    {
+      "kind": "tile",
+      "type": 41,
+      "frame": 4,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_01/trace.log",
+          "stage": 1,
+          "line": 101,
+          "log_sha256": "51c8d0cb6ee86a4302e4fe67225c80be5c4315c655b7f2b51af5e06ef182b611",
+          "list_address": 36791
+        }
+      ]
+    },
+    {
+      "kind": "tile",
+      "type": 41,
+      "frame": 5,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_01/trace.log",
+          "stage": 1,
+          "line": 122,
+          "log_sha256": "51c8d0cb6ee86a4302e4fe67225c80be5c4315c655b7f2b51af5e06ef182b611",
+          "list_address": 36791
+        }
+      ]
+    },
+    {
+      "kind": "tile",
+      "type": 41,
+      "frame": 6,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_01/trace.log",
+          "stage": 1,
+          "line": 127,
+          "log_sha256": "51c8d0cb6ee86a4302e4fe67225c80be5c4315c655b7f2b51af5e06ef182b611",
+          "list_address": 36791
+        }
+      ]
+    },
+    {
+      "kind": "tile",
+      "type": 41,
+      "frame": 7,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_01/trace.log",
+          "stage": 1,
+          "line": 132,
+          "log_sha256": "51c8d0cb6ee86a4302e4fe67225c80be5c4315c655b7f2b51af5e06ef182b611",
+          "list_address": 36791
+        }
+      ]
+    },
+    {
+      "kind": "tile",
+      "type": 43,
+      "frame": 1,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_01/trace.log",
+          "stage": 1,
+          "line": 203,
+          "log_sha256": "51c8d0cb6ee86a4302e4fe67225c80be5c4315c655b7f2b51af5e06ef182b611",
+          "list_address": 36807
+        }
+      ]
+    },
+    {
+      "kind": "tile",
+      "type": 50,
+      "frame": 0,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_02/trace.log",
+          "stage": 2,
+          "line": 76,
+          "log_sha256": "dfe7442c48ea4b15deed309652354367df888230173a40288711426ee54f6f00",
+          "list_address": 38378
+        }
+      ]
+    },
+    {
+      "kind": "tile",
+      "type": 50,
+      "frame": 1,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_02/trace.log",
+          "stage": 2,
+          "line": 108,
+          "log_sha256": "dfe7442c48ea4b15deed309652354367df888230173a40288711426ee54f6f00",
+          "list_address": 38378
+        }
+      ]
+    },
+    {
+      "kind": "tile",
+      "type": 50,
+      "frame": 2,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_02/trace.log",
+          "stage": 2,
+          "line": 152,
+          "log_sha256": "dfe7442c48ea4b15deed309652354367df888230173a40288711426ee54f6f00",
+          "list_address": 38378
+        }
+      ]
+    },
+    {
+      "kind": "tile",
+      "type": 50,
+      "frame": 4,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_02/trace.log",
+          "stage": 2,
+          "line": 80,
+          "log_sha256": "dfe7442c48ea4b15deed309652354367df888230173a40288711426ee54f6f00",
+          "list_address": 38378
+        }
+      ]
+    },
+    {
+      "kind": "tile",
+      "type": 50,
+      "frame": 5,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_02/trace.log",
+          "stage": 2,
+          "line": 157,
+          "log_sha256": "dfe7442c48ea4b15deed309652354367df888230173a40288711426ee54f6f00",
+          "list_address": 38378
+        }
+      ]
+    },
+    {
+      "kind": "tile",
+      "type": 50,
+      "frame": 6,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_02/trace.log",
+          "stage": 2,
+          "line": 159,
+          "log_sha256": "dfe7442c48ea4b15deed309652354367df888230173a40288711426ee54f6f00",
+          "list_address": 38378
+        }
+      ]
+    },
+    {
+      "kind": "tile",
+      "type": 50,
+      "frame": 7,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_02/trace.log",
+          "stage": 2,
+          "line": 165,
+          "log_sha256": "dfe7442c48ea4b15deed309652354367df888230173a40288711426ee54f6f00",
+          "list_address": 38378
+        }
+      ]
+    },
+    {
+      "kind": "tile",
+      "type": 57,
+      "frame": 0,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_03/trace.log",
+          "stage": 3,
+          "line": 165,
+          "log_sha256": "05c429a45144c6900f0d58d0929e219c36db04b78fb5923fa33ed841e88aa63f",
+          "list_address": 38523
+        }
+      ]
+    },
+    {
+      "kind": "tile",
+      "type": 72,
+      "frame": 1,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_05/trace.log",
+          "stage": 5,
+          "line": 275,
+          "log_sha256": "de945568904ab9e58b6714c37813ff7c29277c75f5f4b8840684d14965d8b116",
+          "list_address": 39955
+        }
+      ]
+    },
+    {
+      "kind": "tile",
+      "type": 72,
+      "frame": 2,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_05/trace.log",
+          "stage": 5,
+          "line": 229,
+          "log_sha256": "de945568904ab9e58b6714c37813ff7c29277c75f5f4b8840684d14965d8b116",
+          "list_address": 39955
+        }
+      ]
+    },
+    {
+      "kind": "tile",
+      "type": 79,
+      "frame": 0,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_06/trace.log",
+          "stage": 6,
+          "line": 219,
+          "log_sha256": "892bc52c96e1f7a88c41d6294d775039768ee040eb84facd940b74654c5b8cc0",
+          "list_address": 40627
+        }
+      ]
+    },
+    {
+      "kind": "tile",
+      "type": 79,
+      "frame": 1,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_06/trace.log",
+          "stage": 6,
+          "line": 218,
+          "log_sha256": "892bc52c96e1f7a88c41d6294d775039768ee040eb84facd940b74654c5b8cc0",
+          "list_address": 40627
+        }
+      ]
+    },
+    {
+      "kind": "tile",
+      "type": 80,
+      "frame": 0,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_07/trace.log",
+          "stage": 7,
+          "line": 70,
+          "log_sha256": "f60d36fbc4af8e26028ab7d82fcd6129da0b37f27cd304ba9ef6e49477a26aa6",
+          "list_address": 40631
+        }
+      ]
+    },
+    {
+      "kind": "tile",
+      "type": 80,
+      "frame": 1,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_07/trace.log",
+          "stage": 7,
+          "line": 69,
+          "log_sha256": "f60d36fbc4af8e26028ab7d82fcd6129da0b37f27cd304ba9ef6e49477a26aa6",
+          "list_address": 40631
+        }
+      ]
+    },
+    {
+      "kind": "tile",
+      "type": 90,
+      "frame": 0,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_08/trace.log",
+          "stage": 8,
+          "line": 105,
+          "log_sha256": "72c6a46c4efcb8bafd563e9f75586d3aedf1b04462234f0bb00019b684c80791",
+          "list_address": 40723
+        }
+      ]
+    },
+    {
+      "kind": "tile",
+      "type": 90,
+      "frame": 1,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_08/trace.log",
+          "stage": 8,
+          "line": 113,
+          "log_sha256": "72c6a46c4efcb8bafd563e9f75586d3aedf1b04462234f0bb00019b684c80791",
+          "list_address": 40723
+        }
+      ]
+    },
+    {
+      "kind": "tile",
+      "type": 90,
+      "frame": 2,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_08/trace.log",
+          "stage": 8,
+          "line": 121,
+          "log_sha256": "72c6a46c4efcb8bafd563e9f75586d3aedf1b04462234f0bb00019b684c80791",
+          "list_address": 40723
+        }
+      ]
+    },
+    {
+      "kind": "tile",
+      "type": 90,
+      "frame": 3,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_08/trace.log",
+          "stage": 8,
+          "line": 124,
+          "log_sha256": "72c6a46c4efcb8bafd563e9f75586d3aedf1b04462234f0bb00019b684c80791",
+          "list_address": 40723
+        }
+      ]
+    },
+    {
+      "kind": "tile",
+      "type": 90,
+      "frame": 4,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_08/trace.log",
+          "stage": 8,
+          "line": 128,
+          "log_sha256": "72c6a46c4efcb8bafd563e9f75586d3aedf1b04462234f0bb00019b684c80791",
+          "list_address": 40723
+        }
+      ]
+    },
+    {
+      "kind": "tile",
+      "type": 90,
+      "frame": 5,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_08/trace.log",
+          "stage": 8,
+          "line": 130,
+          "log_sha256": "72c6a46c4efcb8bafd563e9f75586d3aedf1b04462234f0bb00019b684c80791",
+          "list_address": 40723
+        }
+      ]
+    },
+    {
+      "kind": "tile",
+      "type": 90,
+      "frame": 6,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_08/trace.log",
+          "stage": 8,
+          "line": 134,
+          "log_sha256": "72c6a46c4efcb8bafd563e9f75586d3aedf1b04462234f0bb00019b684c80791",
+          "list_address": 40723
+        }
+      ]
+    },
+    {
+      "kind": "tile",
+      "type": 90,
+      "frame": 7,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_08/trace.log",
+          "stage": 8,
+          "line": 136,
+          "log_sha256": "72c6a46c4efcb8bafd563e9f75586d3aedf1b04462234f0bb00019b684c80791",
+          "list_address": 40723
+        }
+      ]
+    },
+    {
+      "kind": "tile",
+      "type": 90,
+      "frame": 8,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_08/trace.log",
+          "stage": 8,
+          "line": 139,
+          "log_sha256": "72c6a46c4efcb8bafd563e9f75586d3aedf1b04462234f0bb00019b684c80791",
+          "list_address": 40723
+        }
+      ]
+    },
+    {
+      "kind": "tile",
+      "type": 90,
+      "frame": 9,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_08/trace.log",
+          "stage": 8,
+          "line": 140,
+          "log_sha256": "72c6a46c4efcb8bafd563e9f75586d3aedf1b04462234f0bb00019b684c80791",
+          "list_address": 40723
+        }
+      ]
+    },
+    {
+      "kind": "tile",
+      "type": 90,
+      "frame": 10,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_08/trace.log",
+          "stage": 8,
+          "line": 104,
+          "log_sha256": "72c6a46c4efcb8bafd563e9f75586d3aedf1b04462234f0bb00019b684c80791",
+          "list_address": 40723
+        }
+      ]
+    },
+    {
+      "kind": "tile",
+      "type": 90,
+      "frame": 11,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_08/trace.log",
+          "stage": 8,
+          "line": 112,
+          "log_sha256": "72c6a46c4efcb8bafd563e9f75586d3aedf1b04462234f0bb00019b684c80791",
+          "list_address": 40723
+        }
+      ]
+    },
+    {
+      "kind": "tile",
+      "type": 90,
+      "frame": 12,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_08/trace.log",
+          "stage": 8,
+          "line": 120,
+          "log_sha256": "72c6a46c4efcb8bafd563e9f75586d3aedf1b04462234f0bb00019b684c80791",
+          "list_address": 40723
+        }
+      ]
+    },
+    {
+      "kind": "tile",
+      "type": 90,
+      "frame": 13,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_08/trace.log",
+          "stage": 8,
+          "line": 123,
+          "log_sha256": "72c6a46c4efcb8bafd563e9f75586d3aedf1b04462234f0bb00019b684c80791",
+          "list_address": 40723
+        }
+      ]
+    },
+    {
+      "kind": "tile",
+      "type": 90,
+      "frame": 14,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_08/trace.log",
+          "stage": 8,
+          "line": 127,
+          "log_sha256": "72c6a46c4efcb8bafd563e9f75586d3aedf1b04462234f0bb00019b684c80791",
+          "list_address": 40723
+        }
+      ]
+    },
+    {
+      "kind": "tile",
+      "type": 90,
+      "frame": 15,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_08/trace.log",
+          "stage": 8,
+          "line": 129,
+          "log_sha256": "72c6a46c4efcb8bafd563e9f75586d3aedf1b04462234f0bb00019b684c80791",
+          "list_address": 40723
+        }
+      ]
+    },
+    {
+      "kind": "tile",
+      "type": 90,
+      "frame": 16,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_08/trace.log",
+          "stage": 8,
+          "line": 133,
+          "log_sha256": "72c6a46c4efcb8bafd563e9f75586d3aedf1b04462234f0bb00019b684c80791",
+          "list_address": 40723
+        }
+      ]
+    },
+    {
+      "kind": "tile",
+      "type": 90,
+      "frame": 17,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_08/trace.log",
+          "stage": 8,
+          "line": 135,
+          "log_sha256": "72c6a46c4efcb8bafd563e9f75586d3aedf1b04462234f0bb00019b684c80791",
+          "list_address": 40723
+        }
+      ]
+    },
+    {
+      "kind": "tile",
+      "type": 107,
+      "frame": 9,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_00/trace.log",
+          "stage": 0,
+          "line": 375,
+          "log_sha256": "a6d60722fc473f5b1a7841f46ad48f5f7f087e6f6a18368bf990f8e410eec1a6",
+          "list_address": 42561
+        }
+      ]
+    },
+    {
+      "kind": "tile",
+      "type": 107,
+      "frame": 11,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_00/trace.log",
+          "stage": 0,
+          "line": 462,
+          "log_sha256": "a6d60722fc473f5b1a7841f46ad48f5f7f087e6f6a18368bf990f8e410eec1a6",
+          "list_address": 42561
+        }
+      ]
+    },
+    {
+      "kind": "tile",
+      "type": 107,
+      "frame": 12,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_00/trace.log",
+          "stage": 0,
+          "line": 481,
+          "log_sha256": "a6d60722fc473f5b1a7841f46ad48f5f7f087e6f6a18368bf990f8e410eec1a6",
+          "list_address": 42561
+        }
+      ]
+    },
+    {
+      "kind": "tile",
+      "type": 107,
+      "frame": 14,
+      "evidence": [
+        {
+          "path": "tools/probe_out/entrypoint_validation/stage_03/trace.log",
+          "stage": 3,
+          "line": 192,
+          "log_sha256": "05c429a45144c6900f0d58d0929e219c36db04b78fb5923fa33ed841e88aa63f",
+          "list_address": 42561
+        }
+      ]
+    }
+  ]
+}

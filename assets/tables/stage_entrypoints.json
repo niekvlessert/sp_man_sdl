@@ -1,0 +1,317 @@
+[
+  {
+    "stage_index": 0,
+    "spawn_address": 37834,
+    "spawn_records": 86,
+    "checkpoint_table": 31902,
+    "checkpoints": [
+      {
+        "stream_address": 40960,
+        "trigger": 0
+      },
+      {
+        "stream_address": 41208,
+        "trigger": 4256
+      },
+      {
+        "stream_address": 41769,
+        "trigger": 4256
+      },
+      {
+        "stream_address": 41769,
+        "trigger": 4256
+      },
+      {
+        "stream_address": 41769,
+        "trigger": 4256
+      },
+      {
+        "stream_address": 41894,
+        "trigger": 4256
+      }
+    ],
+    "metatile_base": 32768,
+    "graphics_root": 33862,
+    "sprite_root": 37591
+  },
+  {
+    "stage_index": 1,
+    "spawn_address": 38478,
+    "spawn_records": 164,
+    "checkpoint_table": 31926,
+    "checkpoints": [
+      {
+        "stream_address": 42080,
+        "trigger": 0
+      },
+      {
+        "stream_address": 42319,
+        "trigger": 4252
+      },
+      {
+        "stream_address": 42810,
+        "trigger": 12425
+      },
+      {
+        "stream_address": 43055,
+        "trigger": 20480
+      },
+      {
+        "stream_address": 43055,
+        "trigger": 20480
+      },
+      {
+        "stream_address": 43055,
+        "trigger": 20480
+      }
+    ],
+    "metatile_base": 35552,
+    "graphics_root": 34431,
+    "sprite_root": 37670
+  },
+  {
+    "stage_index": 2,
+    "spawn_address": 39494,
+    "spawn_records": 72,
+    "checkpoint_table": 31950,
+    "checkpoints": [
+      {
+        "stream_address": 43376,
+        "trigger": 0
+      },
+      {
+        "stream_address": 43624,
+        "trigger": 4256
+      },
+      {
+        "stream_address": 43776,
+        "trigger": 4352
+      },
+      {
+        "stream_address": 43880,
+        "trigger": 4416
+      },
+      {
+        "stream_address": 43880,
+        "trigger": 4416
+      },
+      {
+        "stream_address": 43880,
+        "trigger": 4416
+      }
+    ],
+    "metatile_base": 36960,
+    "graphics_root": 34582,
+    "sprite_root": 37755
+  },
+  {
+    "stage_index": 3,
+    "spawn_address": 39998,
+    "spawn_records": 61,
+    "checkpoint_table": 31974,
+    "checkpoints": [
+      {
+        "stream_address": 43945,
+        "trigger": 0
+      },
+      {
+        "stream_address": 44302,
+        "trigger": 12292
+      },
+      {
+        "stream_address": 44302,
+        "trigger": 12320
+      },
+      {
+        "stream_address": 44302,
+        "trigger": 12320
+      },
+      {
+        "stream_address": 44302,
+        "trigger": 12320
+      },
+      {
+        "stream_address": 44302,
+        "trigger": 12320
+      }
+    ],
+    "metatile_base": 38352,
+    "graphics_root": 35024,
+    "sprite_root": 37816
+  },
+  {
+    "stage_index": 4,
+    "spawn_address": 40354,
+    "spawn_records": 80,
+    "checkpoint_table": 31998,
+    "checkpoints": [
+      {
+        "stream_address": 44615,
+        "trigger": 0
+      },
+      {
+        "stream_address": 45055,
+        "trigger": 4384
+      },
+      {
+        "stream_address": 45738,
+        "trigger": 4832
+      },
+      {
+        "stream_address": 45738,
+        "trigger": 4832
+      },
+      {
+        "stream_address": 45738,
+        "trigger": 4832
+      },
+      {
+        "stream_address": 45738,
+        "trigger": 4832
+      }
+    ],
+    "metatile_base": 40368,
+    "graphics_root": 35258,
+    "sprite_root": 37859
+  },
+  {
+    "stage_index": 5,
+    "spawn_address": 40858,
+    "spawn_records": 110,
+    "checkpoint_table": 32022,
+    "checkpoints": [
+      {
+        "stream_address": 45873,
+        "trigger": 0
+      },
+      {
+        "stream_address": 46174,
+        "trigger": 12293
+      },
+      {
+        "stream_address": 46174,
+        "trigger": 12293
+      },
+      {
+        "stream_address": 46657,
+        "trigger": 12293
+      },
+      {
+        "stream_address": 46815,
+        "trigger": 16389
+      },
+      {
+        "stream_address": 45873,
+        "trigger": 0
+      }
+    ],
+    "metatile_base": 41072,
+    "graphics_root": 35758,
+    "sprite_root": 37902
+  },
+  {
+    "stage_index": 6,
+    "spawn_address": 41575,
+    "spawn_records": 28,
+    "checkpoint_table": 32046,
+    "checkpoints": [
+      {
+        "stream_address": 46960,
+        "trigger": 0
+      },
+      {
+        "stream_address": 46960,
+        "trigger": 0
+      },
+      {
+        "stream_address": 46960,
+        "trigger": 0
+      },
+      {
+        "stream_address": 46960,
+        "trigger": 0
+      },
+      {
+        "stream_address": 46960,
+        "trigger": 0
+      },
+      {
+        "stream_address": 46960,
+        "trigger": 0
+      }
+    ],
+    "metatile_base": 42944,
+    "graphics_root": 36452,
+    "sprite_root": 37951
+  },
+  {
+    "stage_index": 7,
+    "spawn_address": 41839,
+    "spawn_records": 40,
+    "checkpoint_table": 32070,
+    "checkpoints": [
+      {
+        "stream_address": 47432,
+        "trigger": 0
+      },
+      {
+        "stream_address": 47432,
+        "trigger": 0
+      },
+      {
+        "stream_address": 47432,
+        "trigger": 0
+      },
+      {
+        "stream_address": 47432,
+        "trigger": 0
+      },
+      {
+        "stream_address": 47432,
+        "trigger": 0
+      },
+      {
+        "stream_address": 47432,
+        "trigger": 0
+      }
+    ],
+    "metatile_base": 45520,
+    "graphics_root": 37206,
+    "sprite_root": 38012
+  },
+  {
+    "stage_index": 8,
+    "spawn_address": 42059,
+    "spawn_records": 11,
+    "checkpoint_table": 32094,
+    "checkpoints": [
+      {
+        "stream_address": 47743,
+        "trigger": 0
+      },
+      {
+        "stream_address": 47743,
+        "trigger": 0
+      },
+      {
+        "stream_address": 47743,
+        "trigger": 0
+      },
+      {
+        "stream_address": 47743,
+        "trigger": 0
+      },
+      {
+        "stream_address": 47743,
+        "trigger": 0
+      },
+      {
+        "stream_address": 47743,
+        "trigger": 0
+      }
+    ],
+    "metatile_base": 45776,
+    "graphics_root": 37250,
+    "sprite_root": 38013
+  }
+]

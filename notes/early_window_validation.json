@@ -1,0 +1,45 @@
+{
+  "rom_sha256": "bca5696ebbf4a3493bb226baa03ba8f8c5cc4876a4ad0eaa9722f583a42192b0",
+  "openmsx_sha256": "ac3ec4e0baeb4dd29b03976f1bd07838182f75acf1066d41ef981f3d74c82a46",
+  "results": [
+    {
+      "camera": 256,
+      "bytes": 672,
+      "matching": 672,
+      "exact": true
+    },
+    {
+      "camera": 336,
+      "bytes": 672,
+      "matching": 672,
+      "exact": true
+    },
+    {
+      "camera": 1024,
+      "bytes": 672,
+      "matching": 672,
+      "exact": true
+    },
+    {
+      "camera": 1534,
+      "bytes": 672,
+      "matching": 672,
+      "exact": true
+    },
+    {
+      "camera": 1536,
+      "bytes": 672,
+      "matching": 672,
+      "exact": true
+    },
+    {
+      "camera": 1536,
+      "fixture": "complete ring at vehicle entrance",
+      "bytes": 2048,
+      "matching": 2048,
+      "exact": true
+    }
+  ],
+  "method": "Natural stage0 bank09 $6EE7 entry, before stars; first 21 rows, 32 columns at stride48 compared with native C++ viewport; full 2048-byte E000 ring at A13F compared with native reset",
+  "limitations": "Proves early tile addressing at five camera states. Does not prove ground cadence, complete raster presentation or the later vehicle behavior."
+}

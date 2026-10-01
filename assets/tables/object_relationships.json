@@ -1,0 +1,18 @@
+{
+  "pool_base": 52864,
+  "slot_size": 64,
+  "slot_count": 20,
+  "fields": {
+    "0x2D": "one-based slot identity",
+    "0x34": "relationship: low6 parent identity, bit7 child-mark traversal, bit6 invalid/removal marker, bit5 early exit in cleanup",
+    "0x35": "neighbor reference; bit7 marks invalid",
+    "0x36": "neighbor reference; bit7 marks invalid",
+    "0x37": "live-child counter",
+    "0x3B": "additional death-child counter",
+    "0x3D": "conditional last-child marker; death cleanup reads returned IY and writes removed IX"
+  },
+  "removal": "bank04 $7D3E -> $7D54 decrements parent+37 on a valid relationship; death $7D5E decrements returned IY+3B; neighbor lookup may replace the parent pointer",
+  "marking": "bank04 $7D89 sets bit6 on child+34 entries equal to removed slot ID; $7DA6 sets bit7 in referenced neighbors+35/+36",
+  "damage": "bank07 $813F writes damage to directly collided object+04; generic relationship cleanup contains no parent-HP subtraction",
+  "limitations": "Generic link routines, not proof every custom handler lacks forwarding. Death cleanup decrements returned IY+3B even after stale identity rejection; valid neighbor lookup can redirect this decrement to a neighbor. Other invalid relationships and special collision callbacks remain separate."
+}

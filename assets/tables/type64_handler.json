@@ -1,0 +1,104 @@
+{
+  "type": 100,
+  "handler_bank": 6,
+  "handler": 41688,
+  "state_targets": [
+    41728,
+    41773,
+    41784,
+    41811,
+    41826,
+    41841,
+    41856
+  ],
+  "phase_records": [
+    [
+      192,
+      255,
+      88,
+      1
+    ],
+    [
+      0,
+      0,
+      36,
+      1
+    ],
+    [
+      192,
+      255,
+      40,
+      16
+    ],
+    [
+      0,
+      0,
+      36,
+      1
+    ],
+    [
+      64,
+      0,
+      40,
+      20
+    ]
+  ],
+  "tile_initial_frame": 6,
+  "tile_handler_domain": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6
+  ],
+  "tile_cycle_domain": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5
+  ],
+  "sprite_active_domain": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5
+  ],
+  "sprite_by_tile": [
+    5,
+    0,
+    1,
+    4,
+    4,
+    5
+  ],
+  "directional_sprite": [
+    2,
+    3,
+    4,
+    5,
+    5,
+    5,
+    2,
+    2
+  ],
+  "transitions": [
+    "0 initializes tile6, position and child objects; advances to1",
+    "1 advances to2 and loads phase0",
+    "2 waits for phase timer, enables damage and advances to3",
+    "3..5 advance on timer completion",
+    "6 returns to3 on timer completion"
+  ],
+  "evidence": {
+    "tile_increment": "$A3CE..$A3D5 stops before6",
+    "tile_decrement": "$A3E9..$A3EF stops at0",
+    "phase_selector": "$A38E..$A3AC",
+    "sprite_selector": "$A45C..$A482"
+  },
+  "limitations": "Domains describe this handler, not all death/reset overrides. Custom stamps use matrix indices distinct from the tile selector. Stage0 death transition is documented in tables/boss_gate_validation.json when evidence is present."
+}

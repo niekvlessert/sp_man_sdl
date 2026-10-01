@@ -1,0 +1,781 @@
+[
+  {
+    "offset": 23614,
+    "cpu_address": 39998,
+    "trigger": 4128,
+    "type": 25,
+    "trigger_flag": false,
+    "type_flag": false,
+    "control": 6,
+    "payload": [
+      18,
+      30
+    ]
+  },
+  {
+    "offset": 23620,
+    "cpu_address": 40004,
+    "trigger": 4136,
+    "type": 25,
+    "trigger_flag": false,
+    "type_flag": false,
+    "control": 6,
+    "payload": [
+      146,
+      1
+    ]
+  },
+  {
+    "offset": 23626,
+    "cpu_address": 40010,
+    "trigger": 4138,
+    "type": 25,
+    "trigger_flag": false,
+    "type_flag": false,
+    "control": 6,
+    "payload": [
+      16,
+      30
+    ]
+  },
+  {
+    "offset": 23632,
+    "cpu_address": 40016,
+    "trigger": 4140,
+    "type": 23,
+    "trigger_flag": false,
+    "type_flag": false,
+    "control": 5,
+    "payload": [
+      131
+    ]
+  },
+  {
+    "offset": 23637,
+    "cpu_address": 40021,
+    "trigger": 4142,
+    "type": 57,
+    "trigger_flag": true,
+    "type_flag": false,
+    "control": 6,
+    "payload": [
+      8,
+      0
+    ]
+  },
+  {
+    "offset": 23643,
+    "cpu_address": 40027,
+    "trigger": 4148,
+    "type": 23,
+    "trigger_flag": true,
+    "type_flag": true,
+    "control": 5,
+    "payload": [
+      131
+    ]
+  },
+  {
+    "offset": 23648,
+    "cpu_address": 40032,
+    "trigger": 4156,
+    "type": 25,
+    "trigger_flag": false,
+    "type_flag": false,
+    "control": 6,
+    "payload": [
+      16,
+      30
+    ]
+  },
+  {
+    "offset": 23654,
+    "cpu_address": 40038,
+    "trigger": 4160,
+    "type": 57,
+    "trigger_flag": false,
+    "type_flag": false,
+    "control": 6,
+    "payload": [
+      8,
+      1
+    ]
+  },
+  {
+    "offset": 23660,
+    "cpu_address": 40044,
+    "trigger": 4172,
+    "type": 25,
+    "trigger_flag": false,
+    "type_flag": false,
+    "control": 6,
+    "payload": [
+      16,
+      30
+    ]
+  },
+  {
+    "offset": 23666,
+    "cpu_address": 40050,
+    "trigger": 4176,
+    "type": 57,
+    "trigger_flag": false,
+    "type_flag": false,
+    "control": 6,
+    "payload": [
+      136,
+      0
+    ]
+  },
+  {
+    "offset": 23672,
+    "cpu_address": 40056,
+    "trigger": 4176,
+    "type": 23,
+    "trigger_flag": false,
+    "type_flag": false,
+    "control": 5,
+    "payload": [
+      131
+    ]
+  },
+  {
+    "offset": 23677,
+    "cpu_address": 40061,
+    "trigger": 4180,
+    "type": 25,
+    "trigger_flag": false,
+    "type_flag": false,
+    "control": 6,
+    "payload": [
+      18,
+      30
+    ]
+  },
+  {
+    "offset": 23683,
+    "cpu_address": 40067,
+    "trigger": 4208,
+    "type": 55,
+    "trigger_flag": false,
+    "type_flag": false,
+    "control": 137,
+    "payload": [
+      3,
+      11,
+      32,
+      2,
+      55
+    ]
+  },
+  {
+    "offset": 23692,
+    "cpu_address": 40076,
+    "trigger": 8199,
+    "type": 25,
+    "trigger_flag": false,
+    "type_flag": false,
+    "control": 6,
+    "payload": [
+      128,
+      8
+    ]
+  },
+  {
+    "offset": 23698,
+    "cpu_address": 40082,
+    "trigger": 8199,
+    "type": 25,
+    "trigger_flag": false,
+    "type_flag": false,
+    "control": 6,
+    "payload": [
+      128,
+      10
+    ]
+  },
+  {
+    "offset": 23704,
+    "cpu_address": 40088,
+    "trigger": 8199,
+    "type": 25,
+    "trigger_flag": false,
+    "type_flag": false,
+    "control": 6,
+    "payload": [
+      128,
+      16
+    ]
+  },
+  {
+    "offset": 23710,
+    "cpu_address": 40094,
+    "trigger": 8212,
+    "type": 57,
+    "trigger_flag": false,
+    "type_flag": false,
+    "control": 6,
+    "payload": [
+      140,
+      3
+    ]
+  },
+  {
+    "offset": 23716,
+    "cpu_address": 40100,
+    "trigger": 8215,
+    "type": 25,
+    "trigger_flag": false,
+    "type_flag": false,
+    "control": 6,
+    "payload": [
+      128,
+      8
+    ]
+  },
+  {
+    "offset": 23722,
+    "cpu_address": 40106,
+    "trigger": 8215,
+    "type": 25,
+    "trigger_flag": false,
+    "type_flag": false,
+    "control": 6,
+    "payload": [
+      0,
+      24
+    ]
+  },
+  {
+    "offset": 23728,
+    "cpu_address": 40112,
+    "trigger": 8228,
+    "type": 57,
+    "trigger_flag": false,
+    "type_flag": false,
+    "control": 6,
+    "payload": [
+      8,
+      2
+    ]
+  },
+  {
+    "offset": 23734,
+    "cpu_address": 40118,
+    "trigger": 8231,
+    "type": 25,
+    "trigger_flag": false,
+    "type_flag": false,
+    "control": 6,
+    "payload": [
+      0,
+      20
+    ]
+  },
+  {
+    "offset": 23740,
+    "cpu_address": 40124,
+    "trigger": 8231,
+    "type": 25,
+    "trigger_flag": false,
+    "type_flag": false,
+    "control": 6,
+    "payload": [
+      128,
+      22
+    ]
+  },
+  {
+    "offset": 23746,
+    "cpu_address": 40130,
+    "trigger": 8247,
+    "type": 25,
+    "trigger_flag": true,
+    "type_flag": false,
+    "control": 6,
+    "payload": [
+      0,
+      3
+    ]
+  },
+  {
+    "offset": 23752,
+    "cpu_address": 40136,
+    "trigger": 8247,
+    "type": 25,
+    "trigger_flag": true,
+    "type_flag": false,
+    "control": 6,
+    "payload": [
+      128,
+      3
+    ]
+  },
+  {
+    "offset": 23758,
+    "cpu_address": 40142,
+    "trigger": 8247,
+    "type": 25,
+    "trigger_flag": false,
+    "type_flag": false,
+    "control": 6,
+    "payload": [
+      128,
+      25
+    ]
+  },
+  {
+    "offset": 23764,
+    "cpu_address": 40148,
+    "trigger": 8247,
+    "type": 25,
+    "trigger_flag": false,
+    "type_flag": false,
+    "control": 6,
+    "payload": [
+      0,
+      25
+    ]
+  },
+  {
+    "offset": 23770,
+    "cpu_address": 40154,
+    "trigger": 8259,
+    "type": 25,
+    "trigger_flag": false,
+    "type_flag": false,
+    "control": 6,
+    "payload": [
+      128,
+      4
+    ]
+  },
+  {
+    "offset": 23776,
+    "cpu_address": 40160,
+    "trigger": 8259,
+    "type": 25,
+    "trigger_flag": false,
+    "type_flag": false,
+    "control": 6,
+    "payload": [
+      0,
+      18
+    ]
+  },
+  {
+    "offset": 23782,
+    "cpu_address": 40166,
+    "trigger": 12304,
+    "type": 56,
+    "trigger_flag": false,
+    "type_flag": false,
+    "control": 5,
+    "payload": [
+      12
+    ]
+  },
+  {
+    "offset": 23787,
+    "cpu_address": 40171,
+    "trigger": 12304,
+    "type": 25,
+    "trigger_flag": false,
+    "type_flag": false,
+    "control": 6,
+    "payload": [
+      134,
+      1
+    ]
+  },
+  {
+    "offset": 23793,
+    "cpu_address": 40177,
+    "trigger": 12308,
+    "type": 25,
+    "trigger_flag": false,
+    "type_flag": false,
+    "control": 6,
+    "payload": [
+      134,
+      1
+    ]
+  },
+  {
+    "offset": 23799,
+    "cpu_address": 40183,
+    "trigger": 12309,
+    "type": 56,
+    "trigger_flag": false,
+    "type_flag": false,
+    "control": 5,
+    "payload": [
+      4
+    ]
+  },
+  {
+    "offset": 23804,
+    "cpu_address": 40188,
+    "trigger": 12318,
+    "type": 56,
+    "trigger_flag": false,
+    "type_flag": false,
+    "control": 5,
+    "payload": [
+      12
+    ]
+  },
+  {
+    "offset": 23809,
+    "cpu_address": 40193,
+    "trigger": 12320,
+    "type": 25,
+    "trigger_flag": false,
+    "type_flag": false,
+    "control": 6,
+    "payload": [
+      134,
+      1
+    ]
+  },
+  {
+    "offset": 23815,
+    "cpu_address": 40199,
+    "trigger": 12326,
+    "type": 25,
+    "trigger_flag": false,
+    "type_flag": false,
+    "control": 6,
+    "payload": [
+      134,
+      1
+    ]
+  },
+  {
+    "offset": 23821,
+    "cpu_address": 40205,
+    "trigger": 12328,
+    "type": 45,
+    "trigger_flag": false,
+    "type_flag": false,
+    "control": 5,
+    "payload": [
+      18
+    ]
+  },
+  {
+    "offset": 23826,
+    "cpu_address": 40210,
+    "trigger": 12329,
+    "type": 23,
+    "trigger_flag": false,
+    "type_flag": false,
+    "control": 5,
+    "payload": [
+      131
+    ]
+  },
+  {
+    "offset": 23831,
+    "cpu_address": 40215,
+    "trigger": 12332,
+    "type": 23,
+    "trigger_flag": false,
+    "type_flag": false,
+    "control": 5,
+    "payload": [
+      131
+    ]
+  },
+  {
+    "offset": 23836,
+    "cpu_address": 40220,
+    "trigger": 12335,
+    "type": 23,
+    "trigger_flag": false,
+    "type_flag": false,
+    "control": 5,
+    "payload": [
+      131
+    ]
+  },
+  {
+    "offset": 23841,
+    "cpu_address": 40225,
+    "trigger": 12337,
+    "type": 23,
+    "trigger_flag": true,
+    "type_flag": false,
+    "control": 5,
+    "payload": [
+      131
+    ]
+  },
+  {
+    "offset": 23846,
+    "cpu_address": 40230,
+    "trigger": 12345,
+    "type": 57,
+    "trigger_flag": false,
+    "type_flag": false,
+    "control": 6,
+    "payload": [
+      8,
+      0
+    ]
+  },
+  {
+    "offset": 23852,
+    "cpu_address": 40236,
+    "trigger": 12356,
+    "type": 25,
+    "trigger_flag": false,
+    "type_flag": false,
+    "control": 6,
+    "payload": [
+      16,
+      30
+    ]
+  },
+  {
+    "offset": 23858,
+    "cpu_address": 40242,
+    "trigger": 12361,
+    "type": 57,
+    "trigger_flag": false,
+    "type_flag": false,
+    "control": 6,
+    "payload": [
+      8,
+      0
+    ]
+  },
+  {
+    "offset": 23864,
+    "cpu_address": 40248,
+    "trigger": 12372,
+    "type": 25,
+    "trigger_flag": false,
+    "type_flag": false,
+    "control": 6,
+    "payload": [
+      144,
+      1
+    ]
+  },
+  {
+    "offset": 23870,
+    "cpu_address": 40254,
+    "trigger": 12377,
+    "type": 57,
+    "trigger_flag": false,
+    "type_flag": false,
+    "control": 6,
+    "payload": [
+      8,
+      0
+    ]
+  },
+  {
+    "offset": 23876,
+    "cpu_address": 40260,
+    "trigger": 12378,
+    "type": 25,
+    "trigger_flag": false,
+    "type_flag": false,
+    "control": 6,
+    "payload": [
+      18,
+      30
+    ]
+  },
+  {
+    "offset": 23882,
+    "cpu_address": 40266,
+    "trigger": 12380,
+    "type": 25,
+    "trigger_flag": false,
+    "type_flag": false,
+    "control": 6,
+    "payload": [
+      146,
+      1
+    ]
+  },
+  {
+    "offset": 23888,
+    "cpu_address": 40272,
+    "trigger": 12392,
+    "type": 25,
+    "trigger_flag": false,
+    "type_flag": false,
+    "control": 6,
+    "payload": [
+      18,
+      30
+    ]
+  },
+  {
+    "offset": 23894,
+    "cpu_address": 40278,
+    "trigger": 12393,
+    "type": 56,
+    "trigger_flag": false,
+    "type_flag": false,
+    "control": 5,
+    "payload": [
+      6
+    ]
+  },
+  {
+    "offset": 23899,
+    "cpu_address": 40283,
+    "trigger": 12393,
+    "type": 56,
+    "trigger_flag": false,
+    "type_flag": false,
+    "control": 5,
+    "payload": [
+      13
+    ]
+  },
+  {
+    "offset": 23904,
+    "cpu_address": 40288,
+    "trigger": 12400,
+    "type": 25,
+    "trigger_flag": false,
+    "type_flag": false,
+    "control": 6,
+    "payload": [
+      18,
+      30
+    ]
+  },
+  {
+    "offset": 23910,
+    "cpu_address": 40294,
+    "trigger": 12402,
+    "type": 56,
+    "trigger_flag": false,
+    "type_flag": false,
+    "control": 5,
+    "payload": [
+      6
+    ]
+  },
+  {
+    "offset": 23915,
+    "cpu_address": 40299,
+    "trigger": 12402,
+    "type": 56,
+    "trigger_flag": false,
+    "type_flag": false,
+    "control": 5,
+    "payload": [
+      13
+    ]
+  },
+  {
+    "offset": 23920,
+    "cpu_address": 40304,
+    "trigger": 12408,
+    "type": 25,
+    "trigger_flag": false,
+    "type_flag": false,
+    "control": 6,
+    "payload": [
+      18,
+      30
+    ]
+  },
+  {
+    "offset": 23926,
+    "cpu_address": 40310,
+    "trigger": 16385,
+    "type": 57,
+    "trigger_flag": false,
+    "type_flag": false,
+    "control": 6,
+    "payload": [
+      8,
+      2
+    ]
+  },
+  {
+    "offset": 23932,
+    "cpu_address": 40316,
+    "trigger": 16387,
+    "type": 25,
+    "trigger_flag": false,
+    "type_flag": false,
+    "control": 6,
+    "payload": [
+      128,
+      8
+    ]
+  },
+  {
+    "offset": 23938,
+    "cpu_address": 40322,
+    "trigger": 16387,
+    "type": 25,
+    "trigger_flag": false,
+    "type_flag": false,
+    "control": 6,
+    "payload": [
+      0,
+      18
+    ]
+  },
+  {
+    "offset": 23944,
+    "cpu_address": 40328,
+    "trigger": 16387,
+    "type": 25,
+    "trigger_flag": false,
+    "type_flag": false,
+    "control": 6,
+    "payload": [
+      0,
+      24
+    ]
+  },
+  {
+    "offset": 23950,
+    "cpu_address": 40334,
+    "trigger": 16392,
+    "type": 57,
+    "trigger_flag": false,
+    "type_flag": false,
+    "control": 6,
+    "payload": [
+      16,
+      3
+    ]
+  },
+  {
+    "offset": 23956,
+    "cpu_address": 40340,
+    "trigger": 16430,
+    "type": 95,
+    "trigger_flag": false,
+    "type_flag": false,
+    "control": 5,
+    "payload": [
+      3
+    ]
+  },
+  {
+    "offset": 23961,
+    "cpu_address": 40345,
+    "trigger": 20480,
+    "type": 20,
+    "trigger_flag": false,
+    "type_flag": false,
+    "control": 5,
+    "payload": [
+      255
+    ]
+  }
+]

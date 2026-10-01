@@ -1,0 +1,51 @@
+[
+  {
+    "offset": 87011,
+    "mask": 1,
+    "pattern_base": 172,
+    "object_type": 24,
+    "source": "rle_025F34"
+  },
+  {
+    "offset": 87017,
+    "mask": 1,
+    "pattern_base": 76,
+    "object_type": 19,
+    "source": "rle_025EF4"
+  },
+  {
+    "offset": 87023,
+    "mask": 1,
+    "pattern_base": 84,
+    "object_type": 33,
+    "source": "rle_025DF0"
+  },
+  {
+    "offset": 87029,
+    "mask": 1,
+    "pattern_base": 116,
+    "object_type": 39,
+    "source": "rle_025674"
+  },
+  {
+    "offset": 87035,
+    "mask": 1,
+    "pattern_base": 156,
+    "object_type": 73,
+    "source": "rle_026039"
+  },
+  {
+    "offset": 87041,
+    "mask": 1,
+    "pattern_base": 180,
+    "object_type": 112,
+    "source": "rle_025030"
+  },
+  {
+    "offset": 87047,
+    "mask": 2,
+    "pattern_base": 104,
+    "object_type": 92,
+    "source": "rle_025B6F"
+  }
+]

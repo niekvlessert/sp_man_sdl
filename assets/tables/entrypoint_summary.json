@@ -1,0 +1,20 @@
+{
+  "stage_indices": 9,
+  "checkpoints": 54,
+  "unique_background_roots": 24,
+  "background_nodes": 1134,
+  "unique_metatile_definitions": 844,
+  "unresolved_background": [],
+  "animations": {
+    "tile": {
+      "unique_roots": 44,
+      "parsed_lists": 40,
+      "definitions": 322
+    },
+    "sprite": {
+      "unique_roots": 73,
+      "parsed_lists": 70,
+      "definitions": 243
+    }
+  }
+}

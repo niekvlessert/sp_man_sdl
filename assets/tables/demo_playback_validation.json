@@ -1,0 +1,37 @@
+{
+  "rom_sha256": "bca5696ebbf4a3493bb226baa03ba8f8c5cc4876a4ad0eaa9722f583a42192b0",
+  "openmsx_binary_sha256": "ac3ec4e0baeb4dd29b03976f1bd07838182f75acf1066d41ef981f3d74c82a46",
+  "method": "Original bank01 $789C called once per playback frame; ROM data, countdown, pointer and input bytes compared; RAM fixtures, no ROM patch",
+  "passed": 3750,
+  "total": 3750,
+  "results": [
+    {
+      "id": "demo_0",
+      "frames": 1448,
+      "bytes": 7240,
+      "root": 44212,
+      "exact": true,
+      "actual_sha256": "89eaae68a61ce7f436a6d98ec5ebffe7a48687a75e6d6fb1ba24aa52b09c1f23",
+      "expected_sha256": "89eaae68a61ce7f436a6d98ec5ebffe7a48687a75e6d6fb1ba24aa52b09c1f23"
+    },
+    {
+      "id": "demo_1",
+      "frames": 1291,
+      "bytes": 6455,
+      "root": 40960,
+      "exact": true,
+      "actual_sha256": "7e465d87ff049434670d99783312ac183c4e5333ade8c777cdc09c0de2a5c342",
+      "expected_sha256": "7e465d87ff049434670d99783312ac183c4e5333ade8c777cdc09c0de2a5c342"
+    },
+    {
+      "id": "demo_2",
+      "frames": 1011,
+      "bytes": 5055,
+      "root": 42724,
+      "exact": true,
+      "actual_sha256": "1cf7026b92b6ec52ba8d9a01e36d5db8a9f29f7f28a63e26d3779e1255bfa07e",
+      "expected_sha256": "1cf7026b92b6ec52ba8d9a01e36d5db8a9f29f7f28a63e26d3779e1255bfa07e"
+    }
+  ],
+  "limitations": "Playback helper timing, not full-game attract reachability or final outer lookahead termination."
+}

@@ -1,0 +1,30 @@
+#pragma once
+#include "play_sound.hpp"
+#include "spawn.hpp"
+
+namespace sm {
+struct PlayerUpgrades {
+    unsigned power=0,speed=0,options=0;
+    bool wave=false,mega_bomb=false;
+    unsigned power_level() const { return power==0?0:(power<9?1:2); }
+};
+// Original bullet pool $D460 (18 records), damageable cannon handlers and
+// pickup selector $7042. The main stage stream retains ownership of scenery.
+class Stage0Combat {
+public:
+    void reset() { bullets_={};upgrades_={};pickup_cursor_=0;turret_count_=0; }
+    void spawned(Entity64& enemy);
+    void step(const Rom& rom,GameState& game,unsigned frame,int camera_dx,int camera_dy,
+              std::vector<PlaySound>& sounds);
+    void drop(const Rom& rom,Entity64& slot,std::uint16_t x,std::uint16_t y);
+    void collect(std::uint8_t kind,GameState& game,std::vector<PlaySound>& sounds);
+    const PlayerUpgrades& upgrades() const {return upgrades_;}
+    void consume_mega_bomb() {upgrades_.mega_bomb=false;}
+    std::span<const Entity64> bullets() const {return bullets_;}
+private:
+    bool fire(const Rom& rom,const Entity64& source,const Entity64& target,int yoff=0,int xoff=0);
+    std::array<Entity64,18> bullets_{};
+    PlayerUpgrades upgrades_{};
+    unsigned pickup_cursor_=0,turret_count_=0;
+};
+}

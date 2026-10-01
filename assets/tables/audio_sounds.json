@@ -1,0 +1,2423 @@
+{
+  "sounds": [
+    {
+      "id": 1,
+      "address": 30458,
+      "flags": 8,
+      "priority": 254,
+      "streams": [
+        {
+          "channel": 3,
+          "address": 31406
+        }
+      ],
+      "possible_A000_banks": [
+        23,
+        24,
+        30
+      ],
+      "bank_rule": "retained previous audio bank; alternatives are conservative"
+    },
+    {
+      "id": 2,
+      "address": 30462,
+      "flags": 12,
+      "priority": 16,
+      "streams": [
+        {
+          "channel": 2,
+          "address": 31428
+        },
+        {
+          "channel": 3,
+          "address": 31480
+        }
+      ],
+      "possible_A000_banks": [
+        23,
+        24,
+        30
+      ],
+      "bank_rule": "retained previous audio bank; alternatives are conservative"
+    },
+    {
+      "id": 3,
+      "address": 30468,
+      "flags": 12,
+      "priority": 22,
+      "streams": [
+        {
+          "channel": 2,
+          "address": 31544
+        },
+        {
+          "channel": 3,
+          "address": 31587
+        }
+      ],
+      "possible_A000_banks": [
+        23,
+        24,
+        30
+      ],
+      "bank_rule": "retained previous audio bank; alternatives are conservative"
+    },
+    {
+      "id": 4,
+      "address": 30474,
+      "flags": 12,
+      "priority": 20,
+      "streams": [
+        {
+          "channel": 2,
+          "address": 31638
+        },
+        {
+          "channel": 3,
+          "address": 31725
+        }
+      ],
+      "possible_A000_banks": [
+        23,
+        24,
+        30
+      ],
+      "bank_rule": "retained previous audio bank; alternatives are conservative"
+    },
+    {
+      "id": 5,
+      "address": 30480,
+      "flags": 12,
+      "priority": 20,
+      "streams": [
+        {
+          "channel": 2,
+          "address": 31813
+        },
+        {
+          "channel": 3,
+          "address": 31813
+        }
+      ],
+      "possible_A000_banks": [
+        23,
+        24,
+        30
+      ],
+      "bank_rule": "retained previous audio bank; alternatives are conservative"
+    },
+    {
+      "id": 6,
+      "address": 30486,
+      "flags": 12,
+      "priority": 24,
+      "streams": [
+        {
+          "channel": 2,
+          "address": 31813
+        },
+        {
+          "channel": 3,
+          "address": 31813
+        }
+      ],
+      "possible_A000_banks": [
+        23,
+        24,
+        30
+      ],
+      "bank_rule": "retained previous audio bank; alternatives are conservative"
+    },
+    {
+      "id": 7,
+      "address": 30492,
+      "flags": 12,
+      "priority": 24,
+      "streams": [
+        {
+          "channel": 2,
+          "address": 31813
+        },
+        {
+          "channel": 3,
+          "address": 31813
+        }
+      ],
+      "possible_A000_banks": [
+        23,
+        24,
+        30
+      ],
+      "bank_rule": "retained previous audio bank; alternatives are conservative"
+    },
+    {
+      "id": 8,
+      "address": 30498,
+      "flags": 12,
+      "priority": 52,
+      "streams": [
+        {
+          "channel": 2,
+          "address": 31814
+        },
+        {
+          "channel": 3,
+          "address": 31887
+        }
+      ],
+      "possible_A000_banks": [
+        23,
+        24,
+        30
+      ],
+      "bank_rule": "retained previous audio bank; alternatives are conservative"
+    },
+    {
+      "id": 9,
+      "address": 30504,
+      "flags": 12,
+      "priority": 92,
+      "streams": [
+        {
+          "channel": 2,
+          "address": 31964
+        },
+        {
+          "channel": 3,
+          "address": 32041
+        }
+      ],
+      "possible_A000_banks": [
+        23,
+        24,
+        30
+      ],
+      "bank_rule": "retained previous audio bank; alternatives are conservative"
+    },
+    {
+      "id": 10,
+      "address": 30510,
+      "flags": 12,
+      "priority": 96,
+      "streams": [
+        {
+          "channel": 2,
+          "address": 32125
+        },
+        {
+          "channel": 3,
+          "address": 32216
+        }
+      ],
+      "possible_A000_banks": [
+        23,
+        24,
+        30
+      ],
+      "bank_rule": "retained previous audio bank; alternatives are conservative"
+    },
+    {
+      "id": 11,
+      "address": 30516,
+      "flags": 12,
+      "priority": 100,
+      "streams": [
+        {
+          "channel": 2,
+          "address": 32300
+        },
+        {
+          "channel": 3,
+          "address": 32300
+        }
+      ],
+      "possible_A000_banks": [
+        23,
+        24,
+        30
+      ],
+      "bank_rule": "retained previous audio bank; alternatives are conservative"
+    },
+    {
+      "id": 12,
+      "address": 30522,
+      "flags": 12,
+      "priority": 104,
+      "streams": [
+        {
+          "channel": 2,
+          "address": 32301
+        },
+        {
+          "channel": 3,
+          "address": 32335
+        }
+      ],
+      "possible_A000_banks": [
+        23,
+        24,
+        30
+      ],
+      "bank_rule": "retained previous audio bank; alternatives are conservative"
+    },
+    {
+      "id": 13,
+      "address": 30528,
+      "flags": 12,
+      "priority": 108,
+      "streams": [
+        {
+          "channel": 2,
+          "address": 32386
+        },
+        {
+          "channel": 3,
+          "address": 32425
+        }
+      ],
+      "possible_A000_banks": [
+        23,
+        24,
+        30
+      ],
+      "bank_rule": "retained previous audio bank; alternatives are conservative"
+    },
+    {
+      "id": 14,
+      "address": 30534,
+      "flags": 12,
+      "priority": 108,
+      "streams": [
+        {
+          "channel": 2,
+          "address": 32503
+        },
+        {
+          "channel": 3,
+          "address": 32561
+        }
+      ],
+      "possible_A000_banks": [
+        23,
+        24,
+        30
+      ],
+      "bank_rule": "retained previous audio bank; alternatives are conservative"
+    },
+    {
+      "id": 15,
+      "address": 30540,
+      "flags": 12,
+      "priority": 112,
+      "streams": [
+        {
+          "channel": 2,
+          "address": 32646
+        },
+        {
+          "channel": 3,
+          "address": 32683
+        }
+      ],
+      "possible_A000_banks": [
+        23,
+        24,
+        30
+      ],
+      "bank_rule": "retained previous audio bank; alternatives are conservative"
+    },
+    {
+      "id": 16,
+      "address": 30546,
+      "flags": 12,
+      "priority": 48,
+      "streams": [
+        {
+          "channel": 2,
+          "address": 32722
+        },
+        {
+          "channel": 3,
+          "address": 32780
+        }
+      ],
+      "possible_A000_banks": [
+        23,
+        24,
+        30
+      ],
+      "bank_rule": "retained previous audio bank; alternatives are conservative"
+    },
+    {
+      "id": 17,
+      "address": 30552,
+      "flags": 12,
+      "priority": 48,
+      "streams": [
+        {
+          "channel": 2,
+          "address": 32849
+        },
+        {
+          "channel": 3,
+          "address": 32952
+        }
+      ],
+      "possible_A000_banks": [
+        23,
+        24,
+        30
+      ],
+      "bank_rule": "retained previous audio bank; alternatives are conservative"
+    },
+    {
+      "id": 18,
+      "address": 30558,
+      "flags": 12,
+      "priority": 44,
+      "streams": [
+        {
+          "channel": 2,
+          "address": 33037
+        },
+        {
+          "channel": 3,
+          "address": 33108
+        }
+      ],
+      "possible_A000_banks": [
+        23,
+        24,
+        30
+      ],
+      "bank_rule": "retained previous audio bank; alternatives are conservative"
+    },
+    {
+      "id": 19,
+      "address": 30564,
+      "flags": 12,
+      "priority": 76,
+      "streams": [
+        {
+          "channel": 2,
+          "address": 33183
+        },
+        {
+          "channel": 3,
+          "address": 33250
+        }
+      ],
+      "possible_A000_banks": [
+        23,
+        24,
+        30
+      ],
+      "bank_rule": "retained previous audio bank; alternatives are conservative"
+    },
+    {
+      "id": 20,
+      "address": 30570,
+      "flags": 12,
+      "priority": 84,
+      "streams": [
+        {
+          "channel": 2,
+          "address": 33326
+        },
+        {
+          "channel": 3,
+          "address": 33436
+        }
+      ],
+      "possible_A000_banks": [
+        23,
+        24,
+        30
+      ],
+      "bank_rule": "retained previous audio bank; alternatives are conservative"
+    },
+    {
+      "id": 21,
+      "address": 30576,
+      "flags": 12,
+      "priority": 56,
+      "streams": [
+        {
+          "channel": 2,
+          "address": 33547
+        },
+        {
+          "channel": 3,
+          "address": 33594
+        }
+      ],
+      "possible_A000_banks": [
+        23,
+        24,
+        30
+      ],
+      "bank_rule": "retained previous audio bank; alternatives are conservative"
+    },
+    {
+      "id": 22,
+      "address": 30582,
+      "flags": 12,
+      "priority": 36,
+      "streams": [
+        {
+          "channel": 2,
+          "address": 33641
+        },
+        {
+          "channel": 3,
+          "address": 33684
+        }
+      ],
+      "possible_A000_banks": [
+        23,
+        24,
+        30
+      ],
+      "bank_rule": "retained previous audio bank; alternatives are conservative"
+    },
+    {
+      "id": 23,
+      "address": 30588,
+      "flags": 12,
+      "priority": 68,
+      "streams": [
+        {
+          "channel": 2,
+          "address": 33729
+        },
+        {
+          "channel": 3,
+          "address": 33775
+        }
+      ],
+      "possible_A000_banks": [
+        23,
+        24,
+        30
+      ],
+      "bank_rule": "retained previous audio bank; alternatives are conservative"
+    },
+    {
+      "id": 24,
+      "address": 30594,
+      "flags": 12,
+      "priority": 40,
+      "streams": [
+        {
+          "channel": 2,
+          "address": 33874
+        },
+        {
+          "channel": 3,
+          "address": 33874
+        }
+      ],
+      "possible_A000_banks": [
+        23,
+        24,
+        30
+      ],
+      "bank_rule": "retained previous audio bank; alternatives are conservative"
+    },
+    {
+      "id": 25,
+      "address": 30600,
+      "flags": 12,
+      "priority": 68,
+      "streams": [
+        {
+          "channel": 2,
+          "address": 33929
+        },
+        {
+          "channel": 3,
+          "address": 34056
+        }
+      ],
+      "possible_A000_banks": [
+        23,
+        24,
+        30
+      ],
+      "bank_rule": "retained previous audio bank; alternatives are conservative"
+    },
+    {
+      "id": 26,
+      "address": 30606,
+      "flags": 12,
+      "priority": 76,
+      "streams": [
+        {
+          "channel": 2,
+          "address": 34179
+        },
+        {
+          "channel": 3,
+          "address": 34277
+        }
+      ],
+      "possible_A000_banks": [
+        23,
+        24,
+        30
+      ],
+      "bank_rule": "retained previous audio bank; alternatives are conservative"
+    },
+    {
+      "id": 27,
+      "address": 30612,
+      "flags": 12,
+      "priority": 32,
+      "streams": [
+        {
+          "channel": 2,
+          "address": 34379
+        },
+        {
+          "channel": 3,
+          "address": 34412
+        }
+      ],
+      "possible_A000_banks": [
+        23,
+        24,
+        30
+      ],
+      "bank_rule": "retained previous audio bank; alternatives are conservative"
+    },
+    {
+      "id": 28,
+      "address": 30618,
+      "flags": 12,
+      "priority": 68,
+      "streams": [
+        {
+          "channel": 2,
+          "address": 33326
+        },
+        {
+          "channel": 3,
+          "address": 33436
+        }
+      ],
+      "possible_A000_banks": [
+        23,
+        24,
+        30
+      ],
+      "bank_rule": "retained previous audio bank; alternatives are conservative"
+    },
+    {
+      "id": 29,
+      "address": 30624,
+      "flags": 12,
+      "priority": 80,
+      "streams": [
+        {
+          "channel": 2,
+          "address": 34447
+        },
+        {
+          "channel": 3,
+          "address": 34478
+        }
+      ],
+      "possible_A000_banks": [
+        23,
+        24,
+        30
+      ],
+      "bank_rule": "retained previous audio bank; alternatives are conservative"
+    },
+    {
+      "id": 30,
+      "address": 30630,
+      "flags": 12,
+      "priority": 28,
+      "streams": [
+        {
+          "channel": 2,
+          "address": 34511
+        },
+        {
+          "channel": 3,
+          "address": 34560
+        }
+      ],
+      "possible_A000_banks": [
+        23,
+        24,
+        30
+      ],
+      "bank_rule": "retained previous audio bank; alternatives are conservative"
+    },
+    {
+      "id": 31,
+      "address": 30636,
+      "flags": 12,
+      "priority": 32,
+      "streams": [
+        {
+          "channel": 2,
+          "address": 34611
+        },
+        {
+          "channel": 3,
+          "address": 34660
+        }
+      ],
+      "possible_A000_banks": [
+        23,
+        24,
+        30
+      ],
+      "bank_rule": "retained previous audio bank; alternatives are conservative"
+    },
+    {
+      "id": 32,
+      "address": 30642,
+      "flags": 12,
+      "priority": 32,
+      "streams": [
+        {
+          "channel": 2,
+          "address": 34715
+        },
+        {
+          "channel": 3,
+          "address": 34761
+        }
+      ],
+      "possible_A000_banks": [
+        23,
+        24,
+        30
+      ],
+      "bank_rule": "retained previous audio bank; alternatives are conservative"
+    },
+    {
+      "id": 33,
+      "address": 30648,
+      "flags": 12,
+      "priority": 76,
+      "streams": [
+        {
+          "channel": 2,
+          "address": 34809
+        },
+        {
+          "channel": 3,
+          "address": 34919
+        }
+      ],
+      "possible_A000_banks": [
+        23,
+        24,
+        30
+      ],
+      "bank_rule": "retained previous audio bank; alternatives are conservative"
+    },
+    {
+      "id": 34,
+      "address": 30654,
+      "flags": 12,
+      "priority": 72,
+      "streams": [
+        {
+          "channel": 2,
+          "address": 35032
+        },
+        {
+          "channel": 3,
+          "address": 35181
+        }
+      ],
+      "possible_A000_banks": [
+        23,
+        24,
+        30
+      ],
+      "bank_rule": "retained previous audio bank; alternatives are conservative"
+    },
+    {
+      "id": 35,
+      "address": 30660,
+      "flags": 12,
+      "priority": 40,
+      "streams": [
+        {
+          "channel": 2,
+          "address": 35245
+        },
+        {
+          "channel": 3,
+          "address": 35265
+        }
+      ],
+      "possible_A000_banks": [
+        23,
+        24,
+        30
+      ],
+      "bank_rule": "retained previous audio bank; alternatives are conservative"
+    },
+    {
+      "id": 36,
+      "address": 30666,
+      "flags": 12,
+      "priority": 40,
+      "streams": [
+        {
+          "channel": 2,
+          "address": 35346
+        },
+        {
+          "channel": 3,
+          "address": 35417
+        }
+      ],
+      "possible_A000_banks": [
+        23,
+        24,
+        30
+      ],
+      "bank_rule": "retained previous audio bank; alternatives are conservative"
+    },
+    {
+      "id": 37,
+      "address": 30672,
+      "flags": 12,
+      "priority": 60,
+      "streams": [
+        {
+          "channel": 2,
+          "address": 35490
+        },
+        {
+          "channel": 3,
+          "address": 35513
+        }
+      ],
+      "possible_A000_banks": [
+        23,
+        24,
+        30
+      ],
+      "bank_rule": "retained previous audio bank; alternatives are conservative"
+    },
+    {
+      "id": 38,
+      "address": 30678,
+      "flags": 12,
+      "priority": 64,
+      "streams": [
+        {
+          "channel": 2,
+          "address": 35543
+        },
+        {
+          "channel": 3,
+          "address": 35572
+        }
+      ],
+      "possible_A000_banks": [
+        23,
+        24,
+        30
+      ],
+      "bank_rule": "retained previous audio bank; alternatives are conservative"
+    },
+    {
+      "id": 39,
+      "address": 30684,
+      "flags": 12,
+      "priority": 64,
+      "streams": [
+        {
+          "channel": 2,
+          "address": 35604
+        },
+        {
+          "channel": 3,
+          "address": 35771
+        }
+      ],
+      "possible_A000_banks": [
+        23,
+        24,
+        30
+      ],
+      "bank_rule": "retained previous audio bank; alternatives are conservative"
+    },
+    {
+      "id": 40,
+      "address": 30690,
+      "flags": 12,
+      "priority": 52,
+      "streams": [
+        {
+          "channel": 2,
+          "address": 35892
+        },
+        {
+          "channel": 3,
+          "address": 35936
+        }
+      ],
+      "possible_A000_banks": [
+        23,
+        24,
+        30
+      ],
+      "bank_rule": "retained previous audio bank; alternatives are conservative"
+    },
+    {
+      "id": 41,
+      "address": 30696,
+      "flags": 12,
+      "priority": 56,
+      "streams": [
+        {
+          "channel": 2,
+          "address": 35967
+        },
+        {
+          "channel": 3,
+          "address": 36024
+        }
+      ],
+      "possible_A000_banks": [
+        23,
+        24,
+        30
+      ],
+      "bank_rule": "retained previous audio bank; alternatives are conservative"
+    },
+    {
+      "id": 42,
+      "address": 30702,
+      "flags": 12,
+      "priority": 64,
+      "streams": [
+        {
+          "channel": 2,
+          "address": 36081
+        },
+        {
+          "channel": 3,
+          "address": 36109
+        }
+      ],
+      "possible_A000_banks": [
+        23,
+        24,
+        30
+      ],
+      "bank_rule": "retained previous audio bank; alternatives are conservative"
+    },
+    {
+      "id": 43,
+      "address": 30708,
+      "flags": 12,
+      "priority": 64,
+      "streams": [
+        {
+          "channel": 2,
+          "address": 36140
+        },
+        {
+          "channel": 3,
+          "address": 36221
+        }
+      ],
+      "possible_A000_banks": [
+        23,
+        24,
+        30
+      ],
+      "bank_rule": "retained previous audio bank; alternatives are conservative"
+    },
+    {
+      "id": 44,
+      "address": 30714,
+      "flags": 12,
+      "priority": 72,
+      "streams": [
+        {
+          "channel": 2,
+          "address": 36314
+        },
+        {
+          "channel": 3,
+          "address": 36354
+        }
+      ],
+      "possible_A000_banks": [
+        23,
+        24,
+        30
+      ],
+      "bank_rule": "retained previous audio bank; alternatives are conservative"
+    },
+    {
+      "id": 45,
+      "address": 30720,
+      "flags": 12,
+      "priority": 56,
+      "streams": [
+        {
+          "channel": 2,
+          "address": 36392
+        },
+        {
+          "channel": 3,
+          "address": 36453
+        }
+      ],
+      "possible_A000_banks": [
+        23,
+        24,
+        30
+      ],
+      "bank_rule": "retained previous audio bank; alternatives are conservative"
+    },
+    {
+      "id": 46,
+      "address": 30726,
+      "flags": 12,
+      "priority": 56,
+      "streams": [
+        {
+          "channel": 2,
+          "address": 36524
+        },
+        {
+          "channel": 3,
+          "address": 36549
+        }
+      ],
+      "possible_A000_banks": [
+        23,
+        24,
+        30
+      ],
+      "bank_rule": "retained previous audio bank; alternatives are conservative"
+    },
+    {
+      "id": 47,
+      "address": 30732,
+      "flags": 12,
+      "priority": 56,
+      "streams": [
+        {
+          "channel": 2,
+          "address": 36632
+        },
+        {
+          "channel": 3,
+          "address": 36739
+        }
+      ],
+      "possible_A000_banks": [
+        23,
+        24,
+        30
+      ],
+      "bank_rule": "retained previous audio bank; alternatives are conservative"
+    },
+    {
+      "id": 48,
+      "address": 30738,
+      "flags": 12,
+      "priority": 76,
+      "streams": [
+        {
+          "channel": 2,
+          "address": 36848
+        },
+        {
+          "channel": 3,
+          "address": 37048
+        }
+      ],
+      "possible_A000_banks": [
+        23,
+        24,
+        30
+      ],
+      "bank_rule": "retained previous audio bank; alternatives are conservative"
+    },
+    {
+      "id": 49,
+      "address": 30744,
+      "flags": 12,
+      "priority": 84,
+      "streams": [
+        {
+          "channel": 2,
+          "address": 37248
+        },
+        {
+          "channel": 3,
+          "address": 37320
+        }
+      ],
+      "possible_A000_banks": [
+        23,
+        24,
+        30
+      ],
+      "bank_rule": "retained previous audio bank; alternatives are conservative"
+    },
+    {
+      "id": 50,
+      "address": 30750,
+      "flags": 12,
+      "priority": 52,
+      "streams": [
+        {
+          "channel": 2,
+          "address": 37389
+        },
+        {
+          "channel": 3,
+          "address": 37473
+        }
+      ],
+      "possible_A000_banks": [
+        23,
+        24,
+        30
+      ],
+      "bank_rule": "retained previous audio bank; alternatives are conservative"
+    },
+    {
+      "id": 51,
+      "address": 30756,
+      "flags": 12,
+      "priority": 84,
+      "streams": [
+        {
+          "channel": 2,
+          "address": 37558
+        },
+        {
+          "channel": 3,
+          "address": 37558
+        }
+      ],
+      "possible_A000_banks": [
+        23,
+        24,
+        30
+      ],
+      "bank_rule": "retained previous audio bank; alternatives are conservative"
+    },
+    {
+      "id": 52,
+      "address": 30762,
+      "flags": 12,
+      "priority": 86,
+      "streams": [
+        {
+          "channel": 2,
+          "address": 37559
+        },
+        {
+          "channel": 3,
+          "address": 37665
+        }
+      ],
+      "possible_A000_banks": [
+        23,
+        24,
+        30
+      ],
+      "bank_rule": "retained previous audio bank; alternatives are conservative"
+    },
+    {
+      "id": 53,
+      "address": 30768,
+      "flags": 12,
+      "priority": 32,
+      "streams": [
+        {
+          "channel": 2,
+          "address": 37822
+        },
+        {
+          "channel": 3,
+          "address": 37915
+        }
+      ],
+      "possible_A000_banks": [
+        23,
+        24,
+        30
+      ],
+      "bank_rule": "retained previous audio bank; alternatives are conservative"
+    },
+    {
+      "id": 54,
+      "address": 30774,
+      "flags": 12,
+      "priority": 1,
+      "streams": [
+        {
+          "channel": 2,
+          "address": 39679
+        },
+        {
+          "channel": 3,
+          "address": 39679
+        }
+      ],
+      "possible_A000_banks": [
+        23,
+        24,
+        30
+      ],
+      "bank_rule": "retained previous audio bank; alternatives are conservative"
+    },
+    {
+      "id": 55,
+      "address": 30780,
+      "flags": 12,
+      "priority": 1,
+      "streams": [
+        {
+          "channel": 2,
+          "address": 39679
+        },
+        {
+          "channel": 3,
+          "address": 39679
+        }
+      ],
+      "possible_A000_banks": [
+        23,
+        24,
+        30
+      ],
+      "bank_rule": "retained previous audio bank; alternatives are conservative"
+    },
+    {
+      "id": 56,
+      "address": 30786,
+      "flags": 243,
+      "priority": 144,
+      "streams": [
+        {
+          "channel": 0,
+          "address": 40960
+        },
+        {
+          "channel": 1,
+          "address": 41071
+        },
+        {
+          "channel": 4,
+          "address": 41131
+        },
+        {
+          "channel": 5,
+          "address": 41187
+        },
+        {
+          "channel": 6,
+          "address": 41364
+        },
+        {
+          "channel": 7,
+          "address": 41466
+        }
+      ],
+      "possible_A000_banks": [
+        23,
+        24,
+        30
+      ],
+      "bank_rule": "retained previous audio bank; alternatives are conservative"
+    },
+    {
+      "id": 57,
+      "address": 30786,
+      "flags": 243,
+      "priority": 144,
+      "streams": [
+        {
+          "channel": 0,
+          "address": 40960
+        },
+        {
+          "channel": 1,
+          "address": 41071
+        },
+        {
+          "channel": 4,
+          "address": 41131
+        },
+        {
+          "channel": 5,
+          "address": 41187
+        },
+        {
+          "channel": 6,
+          "address": 41364
+        },
+        {
+          "channel": 7,
+          "address": 41466
+        }
+      ],
+      "possible_A000_banks": [
+        24
+      ],
+      "bank_rule": "explicit selector"
+    },
+    {
+      "id": 58,
+      "address": 30800,
+      "flags": 243,
+      "priority": 144,
+      "streams": [
+        {
+          "channel": 0,
+          "address": 48389
+        },
+        {
+          "channel": 1,
+          "address": 48490
+        },
+        {
+          "channel": 4,
+          "address": 48597
+        },
+        {
+          "channel": 5,
+          "address": 48784
+        },
+        {
+          "channel": 6,
+          "address": 49012
+        },
+        {
+          "channel": 7,
+          "address": 49070
+        }
+      ],
+      "possible_A000_banks": [
+        23
+      ],
+      "bank_rule": "explicit selector"
+    },
+    {
+      "id": 59,
+      "address": 30814,
+      "flags": 243,
+      "priority": 144,
+      "streams": [
+        {
+          "channel": 0,
+          "address": 43830
+        },
+        {
+          "channel": 1,
+          "address": 44094
+        },
+        {
+          "channel": 4,
+          "address": 44588
+        },
+        {
+          "channel": 5,
+          "address": 45019
+        },
+        {
+          "channel": 6,
+          "address": 45430
+        },
+        {
+          "channel": 7,
+          "address": 45954
+        }
+      ],
+      "possible_A000_banks": [
+        23
+      ],
+      "bank_rule": "explicit selector"
+    },
+    {
+      "id": 60,
+      "address": 30828,
+      "flags": 243,
+      "priority": 144,
+      "streams": [
+        {
+          "channel": 0,
+          "address": 42282
+        },
+        {
+          "channel": 1,
+          "address": 42430
+        },
+        {
+          "channel": 4,
+          "address": 42742
+        },
+        {
+          "channel": 5,
+          "address": 43135
+        },
+        {
+          "channel": 6,
+          "address": 43440
+        },
+        {
+          "channel": 7,
+          "address": 43889
+        }
+      ],
+      "possible_A000_banks": [
+        30
+      ],
+      "bank_rule": "explicit selector"
+    },
+    {
+      "id": 61,
+      "address": 30842,
+      "flags": 243,
+      "priority": 144,
+      "streams": [
+        {
+          "channel": 0,
+          "address": 44505
+        },
+        {
+          "channel": 1,
+          "address": 44599
+        },
+        {
+          "channel": 4,
+          "address": 44796
+        },
+        {
+          "channel": 5,
+          "address": 45057
+        },
+        {
+          "channel": 6,
+          "address": 45245
+        },
+        {
+          "channel": 7,
+          "address": 45486
+        }
+      ],
+      "possible_A000_banks": [
+        30
+      ],
+      "bank_rule": "explicit selector"
+    },
+    {
+      "id": 62,
+      "address": 30856,
+      "flags": 243,
+      "priority": 144,
+      "streams": [
+        {
+          "channel": 0,
+          "address": 45714
+        },
+        {
+          "channel": 1,
+          "address": 45869
+        },
+        {
+          "channel": 4,
+          "address": 46058
+        },
+        {
+          "channel": 5,
+          "address": 46314
+        },
+        {
+          "channel": 6,
+          "address": 46587
+        },
+        {
+          "channel": 7,
+          "address": 46818
+        }
+      ],
+      "possible_A000_banks": [
+        30
+      ],
+      "bank_rule": "explicit selector"
+    },
+    {
+      "id": 63,
+      "address": 30870,
+      "flags": 243,
+      "priority": 144,
+      "streams": [
+        {
+          "channel": 0,
+          "address": 41622
+        },
+        {
+          "channel": 1,
+          "address": 41795
+        },
+        {
+          "channel": 4,
+          "address": 42110
+        },
+        {
+          "channel": 5,
+          "address": 42484
+        },
+        {
+          "channel": 6,
+          "address": 42821
+        },
+        {
+          "channel": 7,
+          "address": 43139
+        }
+      ],
+      "possible_A000_banks": [
+        24
+      ],
+      "bank_rule": "explicit selector"
+    },
+    {
+      "id": 64,
+      "address": 30884,
+      "flags": 243,
+      "priority": 144,
+      "streams": [
+        {
+          "channel": 0,
+          "address": 43412
+        },
+        {
+          "channel": 1,
+          "address": 43603
+        },
+        {
+          "channel": 4,
+          "address": 43869
+        },
+        {
+          "channel": 5,
+          "address": 44109
+        },
+        {
+          "channel": 6,
+          "address": 44386
+        },
+        {
+          "channel": 7,
+          "address": 44678
+        }
+      ],
+      "possible_A000_banks": [
+        24
+      ],
+      "bank_rule": "explicit selector"
+    },
+    {
+      "id": 65,
+      "address": 30898,
+      "flags": 243,
+      "priority": 144,
+      "streams": [
+        {
+          "channel": 0,
+          "address": 44969
+        },
+        {
+          "channel": 1,
+          "address": 45158
+        },
+        {
+          "channel": 4,
+          "address": 45386
+        },
+        {
+          "channel": 5,
+          "address": 45635
+        },
+        {
+          "channel": 6,
+          "address": 45973
+        },
+        {
+          "channel": 7,
+          "address": 46249
+        }
+      ],
+      "possible_A000_banks": [
+        24
+      ],
+      "bank_rule": "explicit selector"
+    },
+    {
+      "id": 66,
+      "address": 30912,
+      "flags": 243,
+      "priority": 144,
+      "streams": [
+        {
+          "channel": 0,
+          "address": 43185
+        },
+        {
+          "channel": 1,
+          "address": 43241
+        },
+        {
+          "channel": 4,
+          "address": 43346
+        },
+        {
+          "channel": 5,
+          "address": 43418
+        },
+        {
+          "channel": 6,
+          "address": 43584
+        },
+        {
+          "channel": 7,
+          "address": 43707
+        }
+      ],
+      "possible_A000_banks": [
+        23
+      ],
+      "bank_rule": "explicit selector"
+    },
+    {
+      "id": 67,
+      "address": 30926,
+      "flags": 243,
+      "priority": 144,
+      "streams": [
+        {
+          "channel": 0,
+          "address": 40193
+        },
+        {
+          "channel": 1,
+          "address": 40502
+        },
+        {
+          "channel": 4,
+          "address": 40868
+        },
+        {
+          "channel": 5,
+          "address": 41220
+        },
+        {
+          "channel": 6,
+          "address": 41577
+        },
+        {
+          "channel": 7,
+          "address": 41929
+        }
+      ],
+      "possible_A000_banks": [
+        30
+      ],
+      "bank_rule": "explicit selector"
+    },
+    {
+      "id": 68,
+      "address": 30940,
+      "flags": 243,
+      "priority": 144,
+      "streams": [
+        {
+          "channel": 0,
+          "address": 39679
+        },
+        {
+          "channel": 1,
+          "address": 39679
+        },
+        {
+          "channel": 4,
+          "address": 39679
+        },
+        {
+          "channel": 5,
+          "address": 39679
+        },
+        {
+          "channel": 6,
+          "address": 39679
+        },
+        {
+          "channel": 7,
+          "address": 39679
+        }
+      ],
+      "possible_A000_banks": [
+        30
+      ],
+      "bank_rule": "explicit selector"
+    },
+    {
+      "id": 69,
+      "address": 30954,
+      "flags": 243,
+      "priority": 144,
+      "streams": [
+        {
+          "channel": 0,
+          "address": 39679
+        },
+        {
+          "channel": 1,
+          "address": 39679
+        },
+        {
+          "channel": 4,
+          "address": 39679
+        },
+        {
+          "channel": 5,
+          "address": 39679
+        },
+        {
+          "channel": 6,
+          "address": 39679
+        },
+        {
+          "channel": 7,
+          "address": 39679
+        }
+      ],
+      "possible_A000_banks": [
+        30
+      ],
+      "bank_rule": "explicit selector"
+    },
+    {
+      "id": 70,
+      "address": 30968,
+      "flags": 243,
+      "priority": 144,
+      "streams": [
+        {
+          "channel": 0,
+          "address": 39679
+        },
+        {
+          "channel": 1,
+          "address": 39679
+        },
+        {
+          "channel": 4,
+          "address": 39679
+        },
+        {
+          "channel": 5,
+          "address": 39679
+        },
+        {
+          "channel": 6,
+          "address": 39679
+        },
+        {
+          "channel": 7,
+          "address": 39679
+        }
+      ],
+      "possible_A000_banks": [
+        30
+      ],
+      "bank_rule": "explicit selector"
+    },
+    {
+      "id": 71,
+      "address": 30982,
+      "flags": 255,
+      "priority": 144,
+      "streams": [
+        {
+          "channel": 0,
+          "address": 47062
+        },
+        {
+          "channel": 1,
+          "address": 47062
+        },
+        {
+          "channel": 2,
+          "address": 47062
+        },
+        {
+          "channel": 3,
+          "address": 47062
+        },
+        {
+          "channel": 4,
+          "address": 47062
+        },
+        {
+          "channel": 5,
+          "address": 47062
+        },
+        {
+          "channel": 6,
+          "address": 47062
+        },
+        {
+          "channel": 7,
+          "address": 47062
+        }
+      ],
+      "possible_A000_banks": [
+        30
+      ],
+      "bank_rule": "explicit selector"
+    },
+    {
+      "id": 72,
+      "address": 30982,
+      "flags": 255,
+      "priority": 144,
+      "streams": [
+        {
+          "channel": 0,
+          "address": 47062
+        },
+        {
+          "channel": 1,
+          "address": 47062
+        },
+        {
+          "channel": 2,
+          "address": 47062
+        },
+        {
+          "channel": 3,
+          "address": 47062
+        },
+        {
+          "channel": 4,
+          "address": 47062
+        },
+        {
+          "channel": 5,
+          "address": 47062
+        },
+        {
+          "channel": 6,
+          "address": 47062
+        },
+        {
+          "channel": 7,
+          "address": 47062
+        }
+      ],
+      "possible_A000_banks": [
+        24
+      ],
+      "bank_rule": "explicit selector"
+    },
+    {
+      "id": 73,
+      "address": 31000,
+      "flags": 255,
+      "priority": 144,
+      "streams": [
+        {
+          "channel": 0,
+          "address": 47063
+        },
+        {
+          "channel": 1,
+          "address": 47285
+        },
+        {
+          "channel": 2,
+          "address": 47504
+        },
+        {
+          "channel": 3,
+          "address": 47729
+        },
+        {
+          "channel": 4,
+          "address": 48154
+        },
+        {
+          "channel": 5,
+          "address": 48312
+        },
+        {
+          "channel": 6,
+          "address": 48631
+        },
+        {
+          "channel": 7,
+          "address": 48889
+        }
+      ],
+      "possible_A000_banks": [
+        24
+      ],
+      "bank_rule": "explicit selector"
+    },
+    {
+      "id": 74,
+      "address": 31018,
+      "flags": 255,
+      "priority": 144,
+      "streams": [
+        {
+          "channel": 0,
+          "address": 40960
+        },
+        {
+          "channel": 1,
+          "address": 41082
+        },
+        {
+          "channel": 2,
+          "address": 41333
+        },
+        {
+          "channel": 3,
+          "address": 41400
+        },
+        {
+          "channel": 4,
+          "address": 41535
+        },
+        {
+          "channel": 5,
+          "address": 41928
+        },
+        {
+          "channel": 6,
+          "address": 42328
+        },
+        {
+          "channel": 7,
+          "address": 42732
+        }
+      ],
+      "possible_A000_banks": [
+        23
+      ],
+      "bank_rule": "explicit selector"
+    },
+    {
+      "id": 75,
+      "address": 31036,
+      "flags": 255,
+      "priority": 144,
+      "streams": [
+        {
+          "channel": 0,
+          "address": 46553
+        },
+        {
+          "channel": 1,
+          "address": 46569
+        },
+        {
+          "channel": 2,
+          "address": 46645
+        },
+        {
+          "channel": 3,
+          "address": 46721
+        },
+        {
+          "channel": 4,
+          "address": 46756
+        },
+        {
+          "channel": 5,
+          "address": 46844
+        },
+        {
+          "channel": 6,
+          "address": 46920
+        },
+        {
+          "channel": 7,
+          "address": 46995
+        }
+      ],
+      "possible_A000_banks": [
+        24
+      ],
+      "bank_rule": "explicit selector"
+    },
+    {
+      "id": 76,
+      "address": 31054,
+      "flags": 255,
+      "priority": 144,
+      "streams": [
+        {
+          "channel": 0,
+          "address": 38131
+        },
+        {
+          "channel": 1,
+          "address": 38182
+        },
+        {
+          "channel": 2,
+          "address": 38282
+        },
+        {
+          "channel": 3,
+          "address": 38401
+        },
+        {
+          "channel": 4,
+          "address": 38447
+        },
+        {
+          "channel": 5,
+          "address": 38491
+        },
+        {
+          "channel": 6,
+          "address": 38542
+        },
+        {
+          "channel": 7,
+          "address": 38570
+        }
+      ],
+      "possible_A000_banks": [
+        30
+      ],
+      "bank_rule": "explicit selector"
+    },
+    {
+      "id": 77,
+      "address": 31072,
+      "flags": 255,
+      "priority": 144,
+      "streams": [
+        {
+          "channel": 0,
+          "address": 38804
+        },
+        {
+          "channel": 1,
+          "address": 38915
+        },
+        {
+          "channel": 2,
+          "address": 39068
+        },
+        {
+          "channel": 3,
+          "address": 39196
+        },
+        {
+          "channel": 4,
+          "address": 39280
+        },
+        {
+          "channel": 5,
+          "address": 39351
+        },
+        {
+          "channel": 6,
+          "address": 39418
+        },
+        {
+          "channel": 7,
+          "address": 39460
+        }
+      ],
+      "possible_A000_banks": [
+        30
+      ],
+      "bank_rule": "explicit selector"
+    },
+    {
+      "id": 78,
+      "address": 31090,
+      "flags": 255,
+      "priority": 144,
+      "streams": [
+        {
+          "channel": 0,
+          "address": 47813
+        },
+        {
+          "channel": 1,
+          "address": 47820
+        },
+        {
+          "channel": 2,
+          "address": 47820
+        },
+        {
+          "channel": 3,
+          "address": 47821
+        },
+        {
+          "channel": 4,
+          "address": 47892
+        },
+        {
+          "channel": 5,
+          "address": 47901
+        },
+        {
+          "channel": 6,
+          "address": 47940
+        },
+        {
+          "channel": 7,
+          "address": 47979
+        }
+      ],
+      "possible_A000_banks": [
+        30
+      ],
+      "bank_rule": "explicit selector"
+    },
+    {
+      "id": 79,
+      "address": 31108,
+      "flags": 255,
+      "priority": 144,
+      "streams": [
+        {
+          "channel": 0,
+          "address": 47813
+        },
+        {
+          "channel": 1,
+          "address": 48010
+        },
+        {
+          "channel": 2,
+          "address": 48083
+        },
+        {
+          "channel": 3,
+          "address": 48191
+        },
+        {
+          "channel": 4,
+          "address": 48276
+        },
+        {
+          "channel": 5,
+          "address": 47901
+        },
+        {
+          "channel": 6,
+          "address": 47940
+        },
+        {
+          "channel": 7,
+          "address": 47979
+        }
+      ],
+      "possible_A000_banks": [
+        30
+      ],
+      "bank_rule": "explicit selector"
+    },
+    {
+      "id": 80,
+      "address": 31126,
+      "flags": 255,
+      "priority": 144,
+      "streams": [
+        {
+          "channel": 0,
+          "address": 46511
+        },
+        {
+          "channel": 1,
+          "address": 46663
+        },
+        {
+          "channel": 2,
+          "address": 46903
+        },
+        {
+          "channel": 3,
+          "address": 47126
+        },
+        {
+          "channel": 4,
+          "address": 47329
+        },
+        {
+          "channel": 5,
+          "address": 47540
+        },
+        {
+          "channel": 6,
+          "address": 47794
+        },
+        {
+          "channel": 7,
+          "address": 48114
+        }
+      ],
+      "possible_A000_banks": [
+        23
+      ],
+      "bank_rule": "explicit selector"
+    },
+    {
+      "id": 81,
+      "address": 31144,
+      "flags": 255,
+      "priority": 128,
+      "streams": [
+        {
+          "channel": 0,
+          "address": 47065
+        },
+        {
+          "channel": 1,
+          "address": 47065
+        },
+        {
+          "channel": 2,
+          "address": 47038
+        },
+        {
+          "channel": 3,
+          "address": 47066
+        },
+        {
+          "channel": 4,
+          "address": 47080
+        },
+        {
+          "channel": 5,
+          "address": 47094
+        },
+        {
+          "channel": 6,
+          "address": 47132
+        },
+        {
+          "channel": 7,
+          "address": 47168
+        }
+      ],
+      "possible_A000_banks": [
+        30
+      ],
+      "bank_rule": "explicit selector"
+    },
+    {
+      "id": 82,
+      "address": 31162,
+      "flags": 255,
+      "priority": 144,
+      "streams": [
+        {
+          "channel": 0,
+          "address": 47204
+        },
+        {
+          "channel": 1,
+          "address": 47237
+        },
+        {
+          "channel": 2,
+          "address": 47246
+        },
+        {
+          "channel": 3,
+          "address": 47308
+        },
+        {
+          "channel": 4,
+          "address": 47427
+        },
+        {
+          "channel": 5,
+          "address": 47546
+        },
+        {
+          "channel": 6,
+          "address": 47665
+        },
+        {
+          "channel": 7,
+          "address": 47804
+        }
+      ],
+      "possible_A000_banks": [
+        30
+      ],
+      "bank_rule": "explicit selector"
+    },
+    {
+      "id": 83,
+      "address": 31180,
+      "flags": 255,
+      "priority": 144,
+      "streams": [
+        {
+          "channel": 0,
+          "address": 38012
+        },
+        {
+          "channel": 1,
+          "address": 38026
+        },
+        {
+          "channel": 2,
+          "address": 38040
+        },
+        {
+          "channel": 3,
+          "address": 38054
+        },
+        {
+          "channel": 4,
+          "address": 38069
+        },
+        {
+          "channel": 5,
+          "address": 38084
+        },
+        {
+          "channel": 6,
+          "address": 38099
+        },
+        {
+          "channel": 7,
+          "address": 38114
+        }
+      ],
+      "possible_A000_banks": [
+        23,
+        24,
+        30
+      ],
+      "bank_rule": "retained previous audio bank; alternatives are conservative"
+    },
+    {
+      "id": 84,
+      "address": 31198,
+      "flags": 255,
+      "priority": 1,
+      "streams": [
+        {
+          "channel": 0,
+          "address": 39679
+        },
+        {
+          "channel": 1,
+          "address": 39679
+        },
+        {
+          "channel": 2,
+          "address": 39679
+        },
+        {
+          "channel": 3,
+          "address": 39679
+        },
+        {
+          "channel": 4,
+          "address": 39679
+        },
+        {
+          "channel": 5,
+          "address": 39679
+        },
+        {
+          "channel": 6,
+          "address": 39679
+        },
+        {
+          "channel": 7,
+          "address": 39679
+        }
+      ],
+      "possible_A000_banks": [
+        23,
+        24,
+        30
+      ],
+      "bank_rule": "retained previous audio bank; alternatives are conservative"
+    },
+    {
+      "id": 85,
+      "address": 31216,
+      "flags": 255,
+      "priority": 255,
+      "streams": [
+        {
+          "channel": 0,
+          "address": 31427
+        },
+        {
+          "channel": 1,
+          "address": 31427
+        },
+        {
+          "channel": 2,
+          "address": 31427
+        },
+        {
+          "channel": 3,
+          "address": 31427
+        },
+        {
+          "channel": 4,
+          "address": 31427
+        },
+        {
+          "channel": 5,
+          "address": 31427
+        },
+        {
+          "channel": 6,
+          "address": 31427
+        },
+        {
+          "channel": 7,
+          "address": 31427
+        }
+      ],
+      "possible_A000_banks": [
+        23,
+        24,
+        30
+      ],
+      "bank_rule": "retained previous audio bank; alternatives are conservative"
+    }
+  ],
+  "unresolved_ids": [
+    86
+  ],
+  "skipped_id": 0,
+  "limitations": "Descriptor flags are routing classes, not track titles. Retained-bank variants may be unreachable naturally. IDs>=57 are not inferred as table entries."
+}

@@ -1,0 +1,75 @@
+{
+  "state_tables": [
+    {
+      "type": 67,
+      "bank": 5,
+      "address": 36492,
+      "targets": [
+        36515,
+        36555,
+        36641,
+        36664
+      ]
+    },
+    {
+      "type": 119,
+      "bank": 6,
+      "address": 45271,
+      "targets": [
+        45286,
+        45307,
+        45327,
+        45355,
+        45377,
+        45412
+      ]
+    },
+    {
+      "type": 120,
+      "bank": 6,
+      "address": 43574,
+      "targets": [
+        43592,
+        43620,
+        43663,
+        43685,
+        43711,
+        43737,
+        43779,
+        43814,
+        43834
+      ]
+    }
+  ],
+  "paths": [
+    {
+      "stage": 4,
+      "type": 119,
+      "condition": "child relationship count +37 must reach0 before damage-enable",
+      "children_type": 118,
+      "evidence": "bank06 $B12B..$B15B; $B3A0 creates children"
+    },
+    {
+      "stage": 6,
+      "type": 67,
+      "damage_counter_offset": 2,
+      "damage_routine": 36597,
+      "completion_pc": 36670,
+      "evidence": "bank05 $8EF5 subtracts +04 from +02; +16 is not this counter"
+    },
+    {
+      "stage": 7,
+      "type": 120,
+      "damage_entry": 31851,
+      "completion_pc": 43981,
+      "evidence": "bank06 $AC2C/$AC39 gates damage with +29/+2B; $AC3F sets CE76"
+    },
+    {
+      "stage": 8,
+      "type": 121,
+      "completion_pc": 24644,
+      "evidence": "bank04 $6035 boss-presence latch; observed completion follows type79 destruction"
+    }
+  ],
+  "limitations": "Controlled assisted transitions. Collision geometry, natural encounter timing and complete ending remain separate work."
+}

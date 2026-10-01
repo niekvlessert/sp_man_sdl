@@ -1,0 +1,514 @@
+{
+  "rom_sha256": "bca5696ebbf4a3493bb226baa03ba8f8c5cc4876a4ad0eaa9722f583a42192b0",
+  "openmsx_binary_sha256": "ac3ec4e0baeb4dd29b03976f1bd07838182f75acf1066d41ef981f3d74c82a46",
+  "machine": "Panasonic_FS-A1WSX",
+  "title_demo_duration_seconds": 600,
+  "ending_seconds_after_transition": 160,
+  "interventions": "title_demo: no input; ending: existing stage8 selector/invincibility/pending-damage assistance, then original ending runs; no ROM patches",
+  "sources": [
+    {
+      "context": "title_demo",
+      "path": "tools/probe_out/screen_domains/title_demo/trace.log",
+      "sha256": "abd97310523b10d524e8c8880aa6aee12e2e5851e7291cc6a52e2de956ab1069"
+    },
+    {
+      "context": "ending",
+      "path": "tools/probe_out/screen_domains/ending/trace.log",
+      "sha256": "d63d712bbf6bc875d53aef943c89b2dc8c75744445d4c5c0d398eb78926b5bba"
+    }
+  ],
+  "strip_calls": 61,
+  "checks": [
+    {
+      "context": "title_demo",
+      "line": 27,
+      "source_offset": 184308,
+      "bytes": 72,
+      "expanded_bytes": 288,
+      "exact": true
+    },
+    {
+      "context": "title_demo",
+      "line": 30,
+      "source_offset": 184380,
+      "bytes": 48,
+      "expanded_bytes": 96,
+      "exact": true
+    },
+    {
+      "context": "title_demo",
+      "line": 32,
+      "source_offset": 184428,
+      "bytes": 32,
+      "expanded_bytes": 64,
+      "exact": true
+    },
+    {
+      "context": "title_demo",
+      "line": 34,
+      "source_offset": 184460,
+      "bytes": 64,
+      "expanded_bytes": 128,
+      "exact": true
+    },
+    {
+      "context": "title_demo",
+      "line": 36,
+      "source_offset": 184524,
+      "bytes": 400,
+      "expanded_bytes": 800,
+      "exact": true
+    },
+    {
+      "context": "title_demo",
+      "line": 38,
+      "source_offset": 184924,
+      "bytes": 168,
+      "expanded_bytes": 224,
+      "exact": true
+    },
+    {
+      "context": "title_demo",
+      "line": 41,
+      "source_offset": 185092,
+      "bytes": 840,
+      "expanded_bytes": 1120,
+      "exact": true
+    },
+    {
+      "context": "title_demo",
+      "line": 43,
+      "source_offset": 185932,
+      "bytes": 384,
+      "expanded_bytes": 512,
+      "exact": true
+    },
+    {
+      "context": "title_demo",
+      "line": 45,
+      "source_offset": 186316,
+      "bytes": 192,
+      "expanded_bytes": 256,
+      "exact": true
+    },
+    {
+      "context": "title_demo",
+      "line": 47,
+      "source_offset": 186508,
+      "bytes": 864,
+      "expanded_bytes": 1152,
+      "exact": true
+    },
+    {
+      "context": "title_demo",
+      "line": 49,
+      "source_offset": 187372,
+      "bytes": 336,
+      "expanded_bytes": 448,
+      "exact": true
+    },
+    {
+      "context": "title_demo",
+      "line": 59,
+      "source_offset": 101418,
+      "bytes": 8,
+      "expanded_bytes": 32,
+      "exact": true
+    },
+    {
+      "context": "title_demo",
+      "line": 65,
+      "source_offset": 113858,
+      "bytes": 88,
+      "expanded_bytes": 352,
+      "exact": true
+    },
+    {
+      "context": "title_demo",
+      "line": 72,
+      "source_offset": 96018,
+      "bytes": 2048,
+      "expanded_bytes": 4096,
+      "exact": true
+    },
+    {
+      "context": "title_demo",
+      "line": 74,
+      "source_offset": 91394,
+      "bytes": 3136,
+      "expanded_bytes": 6272,
+      "exact": true
+    },
+    {
+      "context": "title_demo",
+      "line": 76,
+      "source_offset": 98066,
+      "bytes": 2048,
+      "expanded_bytes": 4096,
+      "exact": true
+    },
+    {
+      "context": "title_demo",
+      "line": 80,
+      "source_offset": 100114,
+      "bytes": 128,
+      "expanded_bytes": 256,
+      "exact": true
+    },
+    {
+      "context": "title_demo",
+      "line": 83,
+      "source_offset": 100242,
+      "bytes": 192,
+      "expanded_bytes": 384,
+      "exact": true
+    },
+    {
+      "context": "title_demo",
+      "line": 85,
+      "source_offset": 113730,
+      "bytes": 128,
+      "expanded_bytes": 256,
+      "exact": true
+    },
+    {
+      "context": "title_demo",
+      "line": 87,
+      "source_offset": 100434,
+      "bytes": 208,
+      "expanded_bytes": 416,
+      "exact": true
+    },
+    {
+      "context": "title_demo",
+      "line": 89,
+      "source_offset": 94530,
+      "bytes": 288,
+      "expanded_bytes": 576,
+      "exact": true
+    },
+    {
+      "context": "title_demo",
+      "line": 91,
+      "source_offset": 101026,
+      "bytes": 320,
+      "expanded_bytes": 640,
+      "exact": true
+    },
+    {
+      "context": "title_demo",
+      "line": 95,
+      "source_offset": 94818,
+      "bytes": 888,
+      "expanded_bytes": 1184,
+      "exact": true
+    },
+    {
+      "context": "title_demo",
+      "line": 97,
+      "source_offset": 95706,
+      "bytes": 312,
+      "expanded_bytes": 416,
+      "exact": true
+    },
+    {
+      "context": "title_demo",
+      "line": 99,
+      "source_offset": 113130,
+      "bytes": 600,
+      "expanded_bytes": 800,
+      "exact": true
+    },
+    {
+      "context": "title_demo",
+      "line": 101,
+      "source_offset": 100642,
+      "bytes": 96,
+      "expanded_bytes": 128,
+      "exact": true
+    },
+    {
+      "context": "title_demo",
+      "line": 103,
+      "source_offset": 100738,
+      "bytes": 408,
+      "expanded_bytes": 544,
+      "exact": true
+    },
+    {
+      "context": "title_demo",
+      "line": 105,
+      "source_offset": 101346,
+      "bytes": 72,
+      "expanded_bytes": 96,
+      "exact": true
+    },
+    {
+      "context": "title_demo",
+      "line": 108,
+      "source_offset": 101426,
+      "bytes": 144,
+      "expanded_bytes": 192,
+      "exact": true
+    },
+    {
+      "context": "title_demo",
+      "line": 110,
+      "source_offset": 101570,
+      "bytes": 96,
+      "expanded_bytes": 128,
+      "exact": true
+    },
+    {
+      "context": "title_demo",
+      "line": 112,
+      "source_offset": 110754,
+      "bytes": 144,
+      "expanded_bytes": 192,
+      "exact": true
+    },
+    {
+      "context": "title_demo",
+      "line": 115,
+      "source_offset": 110898,
+      "bytes": 624,
+      "expanded_bytes": 832,
+      "exact": true
+    },
+    {
+      "context": "title_demo",
+      "line": 118,
+      "source_offset": 111522,
+      "bytes": 1032,
+      "expanded_bytes": 1376,
+      "exact": true
+    },
+    {
+      "context": "title_demo",
+      "line": 121,
+      "source_offset": 112554,
+      "bytes": 576,
+      "expanded_bytes": 768,
+      "exact": true
+    },
+    {
+      "context": "title_demo",
+      "line": 1947,
+      "source_offset": 184308,
+      "bytes": 72,
+      "expanded_bytes": 288,
+      "exact": true
+    },
+    {
+      "context": "title_demo",
+      "line": 3445,
+      "source_offset": 184308,
+      "bytes": 72,
+      "expanded_bytes": 288,
+      "exact": true
+    },
+    {
+      "context": "ending",
+      "line": 27,
+      "source_offset": 184308,
+      "bytes": 72,
+      "expanded_bytes": 288,
+      "exact": true
+    },
+    {
+      "context": "ending",
+      "line": 29,
+      "source_offset": 184380,
+      "bytes": 48,
+      "expanded_bytes": 96,
+      "exact": true
+    },
+    {
+      "context": "ending",
+      "line": 31,
+      "source_offset": 184428,
+      "bytes": 32,
+      "expanded_bytes": 64,
+      "exact": true
+    },
+    {
+      "context": "ending",
+      "line": 33,
+      "source_offset": 184460,
+      "bytes": 64,
+      "expanded_bytes": 128,
+      "exact": true
+    },
+    {
+      "context": "ending",
+      "line": 36,
+      "source_offset": 184524,
+      "bytes": 400,
+      "expanded_bytes": 800,
+      "exact": true
+    },
+    {
+      "context": "ending",
+      "line": 38,
+      "source_offset": 184924,
+      "bytes": 168,
+      "expanded_bytes": 224,
+      "exact": true
+    },
+    {
+      "context": "ending",
+      "line": 40,
+      "source_offset": 185092,
+      "bytes": 840,
+      "expanded_bytes": 1120,
+      "exact": true
+    },
+    {
+      "context": "ending",
+      "line": 43,
+      "source_offset": 185932,
+      "bytes": 384,
+      "expanded_bytes": 512,
+      "exact": true
+    },
+    {
+      "context": "ending",
+      "line": 45,
+      "source_offset": 186316,
+      "bytes": 192,
+      "expanded_bytes": 256,
+      "exact": true
+    },
+    {
+      "context": "ending",
+      "line": 47,
+      "source_offset": 186508,
+      "bytes": 864,
+      "expanded_bytes": 1152,
+      "exact": true
+    },
+    {
+      "context": "ending",
+      "line": 49,
+      "source_offset": 187372,
+      "bytes": 336,
+      "expanded_bytes": 448,
+      "exact": true
+    },
+    {
+      "context": "ending",
+      "line": 100,
+      "source_offset": 182892,
+      "bytes": 40,
+      "expanded_bytes": 160,
+      "exact": true
+    },
+    {
+      "context": "ending",
+      "line": 102,
+      "source_offset": 182500,
+      "bytes": 224,
+      "expanded_bytes": 448,
+      "exact": true
+    },
+    {
+      "context": "ending",
+      "line": 105,
+      "source_offset": 182932,
+      "bytes": 128,
+      "expanded_bytes": 256,
+      "exact": true
+    },
+    {
+      "context": "ending",
+      "line": 107,
+      "source_offset": 183060,
+      "bytes": 192,
+      "expanded_bytes": 384,
+      "exact": true
+    },
+    {
+      "context": "ending",
+      "line": 113,
+      "source_offset": 100114,
+      "bytes": 128,
+      "expanded_bytes": 256,
+      "exact": true
+    },
+    {
+      "context": "ending",
+      "line": 120,
+      "source_offset": 98066,
+      "bytes": 2048,
+      "expanded_bytes": 4096,
+      "exact": true
+    },
+    {
+      "context": "ending",
+      "line": 122,
+      "source_offset": 91394,
+      "bytes": 3136,
+      "expanded_bytes": 6272,
+      "exact": true
+    },
+    {
+      "context": "ending",
+      "line": 124,
+      "source_offset": 94818,
+      "bytes": 888,
+      "expanded_bytes": 1184,
+      "exact": true
+    },
+    {
+      "context": "ending",
+      "line": 127,
+      "source_offset": 179716,
+      "bytes": 1392,
+      "expanded_bytes": 1856,
+      "exact": true
+    },
+    {
+      "context": "ending",
+      "line": 129,
+      "source_offset": 181108,
+      "bytes": 600,
+      "expanded_bytes": 800,
+      "exact": true
+    },
+    {
+      "context": "ending",
+      "line": 131,
+      "source_offset": 181708,
+      "bytes": 408,
+      "expanded_bytes": 544,
+      "exact": true
+    },
+    {
+      "context": "ending",
+      "line": 133,
+      "source_offset": 182116,
+      "bytes": 384,
+      "expanded_bytes": 512,
+      "exact": true
+    },
+    {
+      "context": "ending",
+      "line": 135,
+      "source_offset": 182724,
+      "bytes": 168,
+      "expanded_bytes": 224,
+      "exact": true
+    },
+    {
+      "context": "ending",
+      "line": 138,
+      "source_offset": 183252,
+      "bytes": 1056,
+      "expanded_bytes": 1408,
+      "exact": true
+    }
+  ],
+  "demo_byte_reads": 3390,
+  "unique_strip_sources": 44,
+  "limitations": "Natural title/demo and assisted ending contexts; only observed strips. End-screen placement and complete demo timing remain separate."
+}

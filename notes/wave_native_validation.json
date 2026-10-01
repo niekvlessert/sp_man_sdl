@@ -1,0 +1,80 @@
+{
+  "rom_sha256": "bca5696ebbf4a3493bb226baa03ba8f8c5cc4876a4ad0eaa9722f583a42192b0",
+  "passed": 8,
+  "total": 8,
+  "results": [
+    {
+      "id": "wave_0",
+      "power": 0,
+      "x": 1280,
+      "y": 2048,
+      "native": "4,1,15,2,224,8,192,5,0,0,0,2,3,3",
+      "original": "4,1,15,2,224,8,192,5,0,0,0,2,3,3",
+      "exact": true
+    },
+    {
+      "id": "wave_1",
+      "power": 0,
+      "x": 4096,
+      "y": 1024,
+      "native": "4,1,15,2,224,4,192,16,0,0,0,2,3,3",
+      "original": "4,1,15,2,224,4,192,16,0,0,0,2,3,3",
+      "exact": true
+    },
+    {
+      "id": "wave_2",
+      "power": 1,
+      "x": 1280,
+      "y": 2048,
+      "native": "4,1,16,4,224,8,192,5,0,0,0,2,3,3",
+      "original": "4,1,16,4,224,8,192,5,0,0,0,2,3,3",
+      "exact": true
+    },
+    {
+      "id": "wave_3",
+      "power": 1,
+      "x": 4096,
+      "y": 1024,
+      "native": "4,1,16,4,224,4,192,16,0,0,0,2,3,3",
+      "original": "4,1,16,4,224,4,192,16,0,0,0,2,3,3",
+      "exact": true
+    },
+    {
+      "id": "wave_4",
+      "power": 9,
+      "x": 1280,
+      "y": 2048,
+      "native": "4,1,17,6,224,8,192,5,0,0,0,2,3,3",
+      "original": "4,1,17,6,224,8,192,5,0,0,0,2,3,3",
+      "exact": true
+    },
+    {
+      "id": "wave_5",
+      "power": 9,
+      "x": 4096,
+      "y": 1024,
+      "native": "4,1,17,6,224,4,192,16,0,0,0,2,3,3",
+      "original": "4,1,17,6,224,4,192,16,0,0,0,2,3,3",
+      "exact": true
+    },
+    {
+      "id": "wave_6",
+      "power": 16,
+      "x": 1280,
+      "y": 2048,
+      "native": "4,1,17,6,224,8,192,5,0,0,0,2,3,3",
+      "original": "4,1,17,6,224,8,192,5,0,0,0,2,3,3",
+      "exact": true
+    },
+    {
+      "id": "wave_7",
+      "power": 16,
+      "x": 4096,
+      "y": 1024,
+      "native": "4,1,17,6,224,4,192,16,0,0,0,2,3,3",
+      "original": "4,1,17,6,224,4,192,16,0,0,0,2,3,3",
+      "exact": true
+    }
+  ],
+  "limitations": "Original bank02 $8C47 W-shot initializer, fields including power damage and sprite selection. No full weapon lifetime or terrain collision proof."
+}

@@ -1,0 +1,143 @@
+[
+  {
+    "offset": 25675,
+    "cpu_address": 42059,
+    "trigger": 4121,
+    "type": 90,
+    "trigger_flag": false,
+    "type_flag": false,
+    "control": 5,
+    "payload": [
+      130
+    ]
+  },
+  {
+    "offset": 25680,
+    "cpu_address": 42064,
+    "trigger": 4121,
+    "type": 90,
+    "trigger_flag": false,
+    "type_flag": false,
+    "control": 5,
+    "payload": [
+      21
+    ]
+  },
+  {
+    "offset": 25685,
+    "cpu_address": 42069,
+    "trigger": 4128,
+    "type": 78,
+    "trigger_flag": false,
+    "type_flag": false,
+    "control": 5,
+    "payload": [
+      16
+    ]
+  },
+  {
+    "offset": 25690,
+    "cpu_address": 42074,
+    "trigger": 4132,
+    "type": 78,
+    "trigger_flag": false,
+    "type_flag": false,
+    "control": 5,
+    "payload": [
+      8
+    ]
+  },
+  {
+    "offset": 25695,
+    "cpu_address": 42079,
+    "trigger": 4133,
+    "type": 78,
+    "trigger_flag": false,
+    "type_flag": false,
+    "control": 5,
+    "payload": [
+      4
+    ]
+  },
+  {
+    "offset": 25700,
+    "cpu_address": 42084,
+    "trigger": 4136,
+    "type": 78,
+    "trigger_flag": false,
+    "type_flag": false,
+    "control": 5,
+    "payload": [
+      10
+    ]
+  },
+  {
+    "offset": 25705,
+    "cpu_address": 42089,
+    "trigger": 4138,
+    "type": 78,
+    "trigger_flag": false,
+    "type_flag": false,
+    "control": 5,
+    "payload": [
+      22
+    ]
+  },
+  {
+    "offset": 25710,
+    "cpu_address": 42094,
+    "trigger": 4142,
+    "type": 78,
+    "trigger_flag": false,
+    "type_flag": false,
+    "control": 5,
+    "payload": [
+      10
+    ]
+  },
+  {
+    "offset": 25715,
+    "cpu_address": 42099,
+    "trigger": 4143,
+    "type": 78,
+    "trigger_flag": false,
+    "type_flag": false,
+    "control": 5,
+    "payload": [
+      8
+    ]
+  },
+  {
+    "offset": 25720,
+    "cpu_address": 42104,
+    "trigger": 4150,
+    "type": 121,
+    "trigger_flag": false,
+    "type_flag": false,
+    "control": 5,
+    "payload": [
+      8
+    ]
+  },
+  {
+    "offset": 25725,
+    "cpu_address": 42109,
+    "trigger": 4159,
+    "type": 81,
+    "trigger_flag": false,
+    "type_flag": false,
+    "control": 142,
+    "payload": [
+      8,
+      1,
+      31,
+      3,
+      1,
+      32,
+      3,
+      64,
+      2,
+      76
+    ]
+  }
+]

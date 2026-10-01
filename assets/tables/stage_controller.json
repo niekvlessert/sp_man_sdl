@@ -1,0 +1,24 @@
+{
+  "bank": 1,
+  "dispatch_targets": {
+    "main": [
+      25201,
+      25234,
+      25281,
+      25389,
+      25664
+    ],
+    "gameplay": [
+      25296,
+      25320,
+      25352
+    ]
+  },
+  "completion_path": [
+    "fixed $440F: CA0F!=0 returns A=2",
+    "bank01 $62E8..$62FD: completed update advances CA01 to2",
+    "bank01 $6308..$632A: clears CA0F, increments CA10, initializes next stage"
+  ],
+  "stage_limit": 9,
+  "limitation": "All nine assisted stage-selection paths and the final-stage state4 branch observed; complete ending and other state paths remain unverified."
+}

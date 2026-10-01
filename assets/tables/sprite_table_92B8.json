@@ -1,0 +1,37 @@
+[
+  {
+    "offset": 86712,
+    "mask": 7,
+    "pattern_base": 0,
+    "object_type": 13,
+    "source": "rle_024AAA"
+  },
+  {
+    "offset": 86718,
+    "mask": 7,
+    "pattern_base": 60,
+    "object_type": 13,
+    "source": "rle_024BCA"
+  },
+  {
+    "offset": 86724,
+    "mask": 7,
+    "pattern_base": 252,
+    "object_type": 96,
+    "source": "rle_02501F"
+  },
+  {
+    "offset": 86730,
+    "mask": 7,
+    "pattern_base": 204,
+    "object_type": 103,
+    "source": "rle_024FE6"
+  },
+  {
+    "offset": 86736,
+    "mask": 7,
+    "pattern_base": 220,
+    "object_type": 98,
+    "source": "rle_02504B"
+  }
+]

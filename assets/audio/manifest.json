@@ -1,0 +1,41 @@
+{
+  "rom_sha256": "bca5696ebbf4a3493bb226baa03ba8f8c5cc4876a4ad0eaa9722f583a42192b0",
+  "method": "Original bank1C 6000/6003/6006, isolated driver at 60 Hz; OpenMSX PSG/SCC PCM recording",
+  "clips": [
+    {
+      "name": "stage0",
+      "rate": 44100,
+      "channels": 1,
+      "seconds": 180.00562358276645,
+      "sha256": "dff012d35ff2a017fd6287dc3cb32ced2ff904fa46b371fb8b70991dfcecab46"
+    },
+    {
+      "name": "shot",
+      "rate": 44100,
+      "channels": 1,
+      "seconds": 0.9984580498866213,
+      "sha256": "ef84dc1dca5b7be0c1761631e57e8f47e94243dacb0957306f26c4bdd9116417"
+    },
+    {
+      "name": "explosion",
+      "rate": 44100,
+      "channels": 1,
+      "seconds": 1.9969160997732427,
+      "sha256": "ce8f0acdaf2769bae634ba4311aa80f22c03f01165c6395543a2b78706b61359"
+    },
+    {
+      "name": "hit",
+      "rate": 44100,
+      "channels": 1,
+      "seconds": 0.9984580498866213,
+      "sha256": "015fb6177d015b4215e37fa54dbe0519005308acc3b4fa34d3f12b42e7a08deb"
+    },
+    {
+      "name": "enemy_shot",
+      "rate": 44100,
+      "channels": 1,
+      "seconds": 0.9984580498866213,
+      "sha256": "93e33c5a447d5713f30ab29d2ff94aac116d3f8331786d991993cd3dfcd97d71"
+    }
+  ]
+}

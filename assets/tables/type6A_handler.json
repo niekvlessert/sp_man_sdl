@@ -1,0 +1,29 @@
+{
+  "type": 106,
+  "handler_bank": 5,
+  "handler": 39639,
+  "tile_selector_domain": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7
+  ],
+  "matrix_index_domain": [
+    0,
+    1,
+    2,
+    3,
+    4
+  ],
+  "transitions": [
+    "state0 stamps and advances tile selector modulo8",
+    "on wrap, calls $7058/$7523, sets timer30h/state1 and immediately executes state1 timer body",
+    "state1 decrements timer; on zero sets CA0F=1 then removes object"
+  ],
+  "evidence": "bank05 $9AD7..$9B09; bank04 $6AC2/$6AD2; fixed $440F returns2 when CA0F !=0",
+  "limitations": "Stage0-to-stage1 transition traced with one logged pending-damage intervention. Completion at $9B04 is also traced for stages1..5; detailed per-boss animation timing remains unverified."
+}
