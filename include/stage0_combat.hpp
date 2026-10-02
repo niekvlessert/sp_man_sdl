@@ -23,9 +23,17 @@ public:
     unsigned score() const noexcept { return score_; }
     const PlayerUpgrades& upgrades() const {return upgrades_;}
     void consume_missile() {upgrades_.missile_armed=false;}
+    // Native play-test convenience: equivalent to collecting the reusable
+    // stage-0 upgrades to their maxima. The one-shot LARGE capsule is kept
+    // unarmed so every jump starts with the same repeatable weapon state.
+    void set_max_test_loadout() noexcept {
+        upgrades_.power=16;upgrades_.speed=4;upgrades_.options=2;
+        upgrades_.wave=true;upgrades_.missile=true;upgrades_.missile_armed=false;
+    }
     std::span<const Entity64> bullets() const {return bullets_;}
 private:
     bool fire(const Rom& rom,const Entity64& source,const Entity64& target,int yoff=0,int xoff=0);
+    bool fire_type15_pair(const Entity64& source);
     std::array<Entity64,18> bullets_{};
     PlayerUpgrades upgrades_{};
     unsigned pickup_cursor_=0,turret_count_=0,score_=0;

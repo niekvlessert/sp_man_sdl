@@ -93,6 +93,36 @@ int main(int argc,char** argv) {
     assert(!sounds.empty());
     bool projectile=false;for(auto& b:combat.bullets()) projectile|=b.active();
     assert(projectile);
+
+    // Early pre-vehicle flyer attacks are separate ROM projectile types. $15
+    // emits the paired $61 rounds at pause-timer 3; after six logic ticks the
+    // rounds stop separating and turn left. $18 periodically emits aimed $60.
+    game={};combat.reset();sounds.clear();
+    auto& hover=game.enemies[0];hover.type()=0x15;hover.state()=2;hover.raw[0x18]=3;
+    hover.set_x_fixed(0x1900);hover.set_y_fixed(0x0600);
+    combat.step(rom,game,0,0,0,sounds);
+    unsigned split=0;for(const auto& b:combat.bullets()) if(b.type()==0x61) {
+        ++split;assert(b.state()==0 && b.flags15()==0x31 && b.raw[0x17]==6);
+        assert(b.x_fixed()==0x1900 && b.y_fixed()==0x0600);
+    }
+    assert(split==2 && !sounds.empty() && sounds.back()==sm::PlaySound::EnemyShot);
+    hover.raw[0x18]=2; // the real enemy handler continues counting after the fire point
+    for(unsigned frame=4;frame<=24;frame+=4) combat.step(rom,game,frame,0,0,sounds);
+    for(const auto& b:combat.bullets()) if(b.type()==0x61) {
+        assert(b.state()==1 && b.raw[0x17]==0);
+        assert(std::int16_t(std::uint16_t(b.raw[13])|(std::uint16_t(b.raw[14])<<8))==-0x80);
+    }
+    game={};combat.reset();sounds.clear();
+    game.player.set_x_fixed(0x0500);game.player.set_y_fixed(0x0800);
+    auto& attacker=game.enemies[0];attacker.type()=0x18;attacker.state()=1;attacker.raw[0x17]=1;
+    attacker.set_x_fixed(0x1900);attacker.set_y_fixed(0x0600);
+    combat.step(rom,game,0,0,0,sounds);
+    auto it60=std::find_if(combat.bullets().begin(),combat.bullets().end(),[](const auto& b){return b.type()==0x60;});
+    assert(it60!=combat.bullets().end() && it60->state()==0 && it60->flags15()==0x21 && it60->raw[0x17]==4);
+    for(unsigned frame=4;frame<=16;frame+=4) combat.step(rom,game,frame,0,0,sounds);
+    it60=std::find_if(combat.bullets().begin(),combat.bullets().end(),[](const auto& b){return b.type()==0x60;});
+    assert(it60!=combat.bullets().end() && it60->state()==1 && it60->flags15()==0x31 && it60->raw[0x17]==0);
+
     // Blue clears vulnerable enemies and their bullets but leaves the chassis.
     auto& chassis=game.enemies[4];chassis.type()=0x24;chassis.raw[0x14]=5;
     combat.collect(rom,13,game,sounds);

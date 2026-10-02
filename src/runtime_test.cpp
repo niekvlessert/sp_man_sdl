@@ -248,12 +248,74 @@ int main(int argc, char** argv) {
     assert(e->y_fixed() == 0x789a && e->y_pixel() == 0x78);
     assert(game.active_enemy_count() == 1u);
 
+    // The real terminal encounter is an extended spawn record at $5000.
+    // This used to be rejected by instantiate_stage0_spawn(), after which
+    // PlaySession hid the bug by replacing the pool with a hand-seeded fixture.
+    const auto real_gate_it=std::find_if(spawns.records().begin(),spawns.records().end(),
+        [](const auto& r){return r.trigger==0x5000u && r.type==0x64u;});
+    assert(real_gate_it!=spawns.records().end() && real_gate_it->control==0x88u);
+    sm::GameState real_gate;
+    assert(sm::instantiate_stage0_spawn(rom,*real_gate_it,real_gate,0));
+    auto& real64=real_gate.enemies[0];
+    assert(real64.type()==0x64u && real64.state()==0u);
+    assert(real64.raw[0x14]==0x06u && real64.raw[0x15]==0x3du && real64.raw[0x16]==0x3cu);
+    assert(real64.raw[0x3f]==1u);
+    sm::Stage0Enemies real_gate_logic;
+    real_gate_logic.step_15hz(rom,real_gate,0,0x5000u);
+    assert(real64.state()==1u && real64.x_fixed()==0x2800u && real64.y_fixed()==0x0c00u && real64.raw[6]==6u);
+    real_gate_logic.step_15hz(rom,real_gate,1,0x5000u);
+    assert(real64.state()==2u && real64.raw[0x17]==0x58u && real64.raw[0x20]==1u);
+    for(unsigned i=0;i<88u;++i) real_gate_logic.step_15hz(rom,real_gate,i+2u,0x5000u);
+    assert(real64.state()==3u && real64.x_fixed()==0x1200u && real64.raw[6]==5u);
+    assert(real64.raw[0x14]==0x86u);
+    bool real_gate_hittable=false;
+    for(unsigned y=0;y<24u && !real_gate_hittable;++y) for(unsigned x=0;x<32u;++x) {
+        sm::Entity64 hit_shot{};hit_shot.type()=4u;hit_shot.raw[5]=12u;
+        hit_shot.set_x_fixed(std::uint16_t(x<<8));hit_shot.set_y_fixed(std::uint16_t(y<<8));
+        if(sm::stage0_sprite_overlap(rom,hit_shot,real64)){real_gate_hittable=true;break;}
+    }
+    assert(real_gate_hittable);
+    assert(video.tower_red_palette[1]==0xff6d0000u && video.tower_red_palette[2]==0xff922400u);
+
+    // Composed tile+sprite actors are owned by the native sub-tile overlay,
+    // not D988. Re-stamping them into the name table reintroduces an 8-pixel
+    // R18/tile carry that makes cannon bodies and the type-$64 core wobble
+    // relative to their sprite components during/after the upward section.
+    sm::Stage0BackgroundStream overlay_stream(rom);
+    overlay_stream.seek_world_x(3902u);
+    auto overlay_before=overlay_stream.compose_d988_raw();
+    auto overlay_after=overlay_before;
+    sm::GameState overlay_game;
+    overlay_game.enemies[0]=real64;
+    overlay_game.enemies[1].type()=0x1fu;
+    overlay_game.enemies[1].flags15()=0x7fu;
+    overlay_game.enemies[1].set_x_fixed(0x1080u);
+    overlay_game.enemies[1].set_y_fixed(0x0f00u);
+    sm::stamp_stage0_tile_objects(rom,overlay_stream,overlay_game,overlay_after);
+    assert(overlay_after==overlay_before);
+
     sm::GameState gate_ref;
     sm::seed_stage0_gate_reference(gate_ref);
     assert(gate_ref.enemies[1].type() == 0x64u);
     assert(gate_ref.enemies[1].x_fixed() == 0x1200u);
     const auto gate64 = sm::decode_stage0_tile_visuals(rom, gate_ref.enemies[1]);
     assert(gate64.size() == 4u);
+    assert(gate_ref.enemies[1].raw[0x14] == 0x86u);
+    assert(gate_ref.enemies[1].raw[0x16] == 0x3cu);
+    // The stage-0 tower is a real damageable gate. A hit larger than its
+    // remaining HP follows $6E44/$7CC3 and replaces it with type $6A.
+    auto gate_dead=gate_ref.enemies[1];
+    assert(sm::apply_stage0_damage(rom,gate_dead,0x3du)==sm::Stage0DamageResult::Destroyed);
+    assert(gate_dead.type()==0x6au && gate_dead.state()==0u);
+    assert(!sm::decode_stage0_tile_visuals(rom,gate_dead).empty());
+    sm::GameState gate_death_game; gate_death_game.enemies[0]=gate_dead;
+    sm::Stage0Enemies gate_death_logic;
+    for(unsigned i=0;i<7;++i) {
+        gate_death_logic.step_15hz(rom,gate_death_game,i,0);
+        assert(gate_death_game.enemies[0].active());
+    }
+    gate_death_logic.step_15hz(rom,gate_death_game,7,0);
+    assert(gate_death_game.enemies[0].state()==1u && gate_death_game.enemies[0].raw[0x17]==0x2fu);
     assert(gate64[0].rows == 9u && gate64[0].cols == 10u);
     assert(gate64[1].rows == 9u && gate64[1].cols == 10u);
     assert(gate64[2].rows == 5u && gate64[2].cols == 13u);

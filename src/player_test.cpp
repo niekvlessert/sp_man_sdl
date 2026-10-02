@@ -45,7 +45,7 @@ int main(int argc,char** argv) {
             player.set_x_fixed(std::uint16_t(x));player.set_y_fixed(std::uint16_t(y));
             if(kind=="primary") {
                 sm::initialize_primary_shot(rom,player,shot,speed,true);
-                const unsigned fields[]={0,3,5,6,7,8,9,10,11,12,13,14,0x13,0x14};
+                const unsigned fields[]={0,3,5,6,7,8,9,10,11,12,13,14,0x13,0x14,0x15};
                 std::cout<<id<<' ';bool first=true;
                 for(auto field:fields) {std::cout<<(first?"":",")<<unsigned(shot.raw[field]);first=false;}
                 std::cout<<'\n';continue;

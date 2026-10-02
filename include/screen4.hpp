@@ -13,6 +13,9 @@ struct Screen4Snapshot {
     std::array<std::uint32_t, 16> palette{};
     std::array<std::uint32_t, 16> late_palette{};
     std::array<std::uint32_t, 16> tower_palette{};
+    std::array<std::uint32_t, 16> tower_red_palette{};
+    std::array<std::uint32_t, 16> vehicle_tower_palette{};
+    std::array<std::uint32_t, 16> vehicle_tower_red_palette{};
     std::array<std::uint8_t, 0x80> object_pattern_base{};
 
     static Screen4Snapshot load(const std::filesystem::path& vram_path,

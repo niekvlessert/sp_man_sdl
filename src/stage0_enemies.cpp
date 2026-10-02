@@ -12,6 +12,20 @@ void put(Entity64& e,unsigned p,int value) {
 }
 int signed_word(const Entity64& e,unsigned p) {return std::int16_t(word(e.raw,p));}
 bool flight(std::uint8_t t) {return t==0x10 || t==0x12 || t==0x15 || t==0x18;}
+std::uint8_t direction8(const GameState& game,const Entity64& e) noexcept {
+    // Fixed bank $6B94-$6BE5, used by the type-$64 core when the tower is
+    // fully open/closed. Only the high coordinate bytes participate.
+    auto sm=[](std::uint8_t target,std::uint8_t object) {
+        const int d=int(target)-int(object);
+        return std::pair<unsigned,bool>{unsigned(d<0?-d:d)&0x7fu,d<0};
+    };
+    const auto [dx,left]=sm(game.player.raw[0x0a],e.raw[0x0a]);
+    const auto [dy,above]=sm(game.player.raw[0x08],e.raw[0x08]);
+    std::uint8_t c=left?(above?0u:6u):(above?2u:4u);
+    const bool same=left==above;
+    if((dy>=(dx>>1u)&&same)||(dy<(dx>>1u)&&!same)) ++c;
+    return std::uint8_t(c&7u);
+}
 Entity64* create(const Rom& rom, GameState& game,std::uint8_t type) {
     auto* e=game.allocate_enemy();if(!e) return nullptr;
     e->clear();e->type()=type;
@@ -24,6 +38,82 @@ Entity64* create(const Rom& rom, GameState& game,std::uint8_t type) {
 bool expired(Entity64& e,unsigned field) {
     if(e.raw[field]==1) return true;
     --e.raw[field];return false;
+}
+void step_stage0_gate_object(GameState& game,Entity64& e) {
+    if(e.type()==0x64u) {
+        // Bank06 $A2D8-$A493. Keep the actual phase records in the object
+        // just like the Z80 does; this also reproduces the $2800 -> $1200
+        // entrance and the $0800..$1200 open/close travel seen in traces.
+        static constexpr std::array<std::array<std::uint8_t,4>,5> phase{{
+            {{0xc0,0xff,0x58,0x01}}, {{0x00,0x00,0x24,0x01}},
+            {{0xc0,0xff,0x28,0x10}}, {{0x00,0x00,0x24,0x01}},
+            {{0x40,0x00,0x28,0x14}} }};
+        static constexpr std::array<std::uint8_t,8> directional{2,3,4,5,5,5,2,2};
+        auto load_phase=[&](unsigned state) {
+            const auto& q=phase[std::min(6u,state)-2u];
+            e.raw[0x11]=q[0];e.raw[0x12]=q[1];e.raw[0x17]=q[2];e.raw[0x20]=q[3];
+        };
+        auto sprite=[&] {
+            const unsigned tile=std::min<unsigned>(e.raw[0x06],6u);
+            if(tile>=1u && tile<=4u) {
+                static constexpr std::array<std::uint8_t,5> direct{0,0,1,4,4};
+                e.raw[0x05]=direct[tile];
+            } else if(tile==6u) e.raw[0x05]=2u;
+            else e.raw[0x05]=directional[direction8(game,e)];
+        };
+        // $6A13 consumes the movement installed by the preceding A3F9.
+        // For this boss that movement is horizontal and stored at +11/+12.
+        if(e.state()>=2u && e.state()<=6u)
+            e.set_x_fixed(std::uint16_t(e.x_fixed()+signed_word(e,0x11)));
+        if(e.state()==0u) {
+            e.set_x_fixed(0x2800u);e.set_y_fixed(0x0c00u);
+            e.raw[0x06]=6u;e.raw[0x26]=0x12u;e.raw[0x3f]=1u;
+            e.state()=1u;
+        } else if(e.state()==1u) {
+            e.state()=2u;load_phase(2u);
+        } else if(e.state()==2u) {
+            // A338 decrements +26 continuously; tile 6 -> 5 only on the
+            // single zero crossing. Afterwards the byte simply underflows.
+            if(--e.raw[0x26]==0u && e.raw[0x06]) --e.raw[0x06];
+            sprite();
+            // Native playability cleanup: as soon as the main tower body is
+            // substantially inside the viewport, accept player damage. The
+            // original waits until the full entrance timer expires at $1200;
+            // that made several seconds of visibly intersecting shots appear
+            // to pass through the boss in the native test flow.
+            if(e.x_fixed()<=0x1800u) e.raw[0x14]|=0x80u;
+            if(expired(e,0x17)) {e.raw[0x14]|=0x80u;e.state()=3u;load_phase(3u);}
+        } else if(e.state()==3u) {
+            sprite();
+            if(expired(e,0x17)) {e.state()=4u;load_phase(4u);}
+        } else if(e.state()==4u) {
+            // A3DF: once +20 reaches one it stays there, so the selector
+            // decreases on every following logic tick down to zero.
+            if(expired(e,0x20) && e.raw[0x06]) --e.raw[0x06];
+            sprite();
+            if(expired(e,0x17)) {e.state()=5u;load_phase(5u);}
+        } else if(e.state()==5u) {
+            sprite();
+            if(expired(e,0x17)) {e.state()=6u;load_phase(6u);}
+        } else {
+            // A3C4 mirrors A3DF and stops at selector 5; on phase expiry
+            // state 6 returns directly to state 3.
+            if(expired(e,0x20) && e.raw[0x06]<5u) ++e.raw[0x06];
+            sprite();
+            if(expired(e,0x17)) {e.state()=3u;load_phase(3u);}
+        }
+    } else if(e.type()==0x6au) {
+        // Bank05 $9AD7..$9B04. Eight explosion stamp selectors run once;
+        // on wrap the original installs timer $30 and immediately enters
+        // state1, whose first externally observed value is $2F.
+        if(e.state()==0u) {
+            e.raw[0x06]=std::uint8_t((e.raw[0x06]+1u)&7u);
+            if(e.raw[0x06]==0u) {e.state()=1u;e.raw[0x17]=0x2fu;}
+        } else if(e.state()==1u) {
+            if(e.raw[0x17]>1u) --e.raw[0x17];
+            else e.clear();
+        }
+    }
 }
 unsigned target_global_angle(const Rom& rom,const Entity64& e,const Entity64& player) {
     const int dx=int(std::uint8_t(player.x_fixed()/32))-int(std::uint8_t(e.x_fixed()/32));
@@ -73,19 +163,35 @@ bool stage0_sprite_overlap(const Rom& rom,const Entity64& a,const Entity64& b) {
         return x.w && x.h && y.w && y.h && x.x<y.x+y.w && y.x<x.x+x.w &&
                x.y<y.y+y.h && y.y<x.y+x.h;
     };
-    // Type $26 is tile-only on screen. Its ROM sprite/collision frame 0 is
-    // displaced 17 pixels below the visible 32x16 hatch, so using that frame
-    // for native hit testing makes shots pass through the object the player
-    // actually sees. For the native renderer, collide against the exact
-    // nonzero tile cells that are drawn by the $BE5F/$7A43 tile path.
-    if(b.type()==0x26u) {
+    // Several late-stage actors are drawn as composed tile matrices rather
+    // than ordinary sprites. Their sprite definitions therefore do not cover
+    // the pixels the player actually sees. In particular type $56 is the
+    // destructible 64x80 upper section of the large vertical tower. Collide
+    // against the exact nonzero tile cells used by the native compositor.
+    if(b.type()==0x26u || b.type()==0x56u || b.type()==0x64u || b.type()==0x6au) {
+        if(b.type()==0x56u && std::int16_t(b.x_fixed())>0x1000)
+            return false; // first natural ROM hits occur at X=$0F80 under continuous fire
+        if(b.type()==0x64u) {
+            // Type $64 mixes several tile matrices with a sprite-plane core.
+            // The original coarse collision service effectively treats the
+            // complete visible boss body as one target. Keep a contiguous
+            // envelope around that silhouette so W/max-power shots cannot fly
+            // through visual seams between individual matrix/core hit boxes.
+            const int bx=int(std::int16_t(b.x_fixed()))/32;
+            const int by=int(std::int16_t(b.y_fixed()))/32;
+            const Box boss{bx-72,by-72,200,160};
+            for(const auto& x:abox) if(overlaps(x,boss)) return true;
+        }
         for(const auto& v:decode_stage0_tile_visuals(rom,b))
             for(unsigned ty=0;ty<v.rows;++ty) for(unsigned tx=0;tx<v.cols;++tx) {
                 if(!v.tiles[ty*unsigned(v.cols)+tx]) continue;
                 const Box cell{v.x+int(tx*8u),v.y+int(ty*8u),8,8};
                 for(const auto& x:abox) if(overlaps(x,cell)) return true;
             }
-        return false;
+        // Type $64 also has the animated round core on the sprite plane. The
+        // original damage target is the complete boss object, so keep testing
+        // its ROM sprite boxes after the composed tile cells missed.
+        if(b.type()!=0x64u) return false;
     }
     const auto bbox=boxes(rom,b);
     for(const auto& x:abox) for(const auto& y:bbox) if(overlaps(x,y)) return true;
@@ -177,7 +283,13 @@ void Stage0Enemies::move_60hz(GameState& game) {
         }
     }
 }
-void Stage0Enemies::step_15hz(const Rom& rom,GameState& game,unsigned tick,std::uint16_t trigger) {
+void Stage0Enemies::step_gate_20hz(GameState& game) {
+    for(auto& e:game.enemies)
+        if(e.active() && (e.type()==0x64u || e.type()==0x6au))
+            step_stage0_gate_object(game,e);
+}
+void Stage0Enemies::step_15hz(const Rom& rom,GameState& game,unsigned tick,std::uint16_t trigger,
+                              bool include_gate,std::vector<PlaySound>* sounds) {
     // Bank05:$9A41 calls $6AB8 with B=4 on the object-logic cadence. Live
     // OpenMSX traces show frames 0->1->2->3 over roughly 0.2 s, not four
     // consecutive video frames. Keep frame 0 for one logic interval, then
@@ -223,7 +335,75 @@ void Stage0Enemies::step_15hz(const Rom& rom,GameState& game,unsigned tick,std::
     static constexpr std::array<std::uint8_t,16> k26Delay{
         2,3,4,4,5,5,6,6,7,7,8,9,10,11,12,13}; // bank06 $BF04
     for(auto& e:game.enemies) if(e.active()) {
-        if(e.type()==0x55u) {
+        if(e.type()==0x56u) {
+            // Bank06 $BF14-$BFB7: the large vertical tower is a boss-like
+            // object with its own damage/death continuation. It must not be
+            // replaced immediately through the generic death table.
+            if(e.state()==1u) {
+                const auto pending=e.raw[0x04];
+                if(pending) {
+                    e.raw[0x04]=0;
+                    const auto old=e.raw[0x16];
+                    e.raw[0x16]=std::uint8_t(old-pending);
+                    if(sounds) sounds->push_back(PlaySound::BossHit); // $25
+                    if(e.raw[0x16]<=0x0bu) e.raw[0x3c]=1u; // CE4A=HP/4=$0B
+                    // $7C6B preserves subtraction carry: equality (HP=0) is
+                    // not fatal; only damage > previous HP enters state 2.
+                    if(pending>old) {
+                        e.raw[0x3c]=1u;
+                        e.state()=2u;e.raw[0x17]=5u;
+                        e.raw[0x18]=std::uint8_t(e.raw[0x18]+1u);
+                        if(!e.raw[0x20]) e.raw[0x20]=1u;
+                        if(sounds) {
+                            sounds->push_back(PlaySound::PlatformBurst);       // direct $34
+                            sounds->push_back(PlaySound::LargeCannonExplosion); // $7CBE death-record $14
+                        }
+                    }
+                }
+            } else if(e.state()==2u || e.state()==3u) {
+                // $BF9A: random 1..8 destruction cadence. Use a deterministic
+                // phase of the same domain for the native replay.
+                if(e.raw[0x20]>1u) --e.raw[0x20];
+                else {
+                    const unsigned slot=unsigned(&e-game.enemies.data());
+                    e.raw[0x20]=std::uint8_t(1u+((tick+slot*3u)&7u));
+                    e.raw[0x3c]=1u;
+                    if(sounds) sounds->push_back(PlaySound::PlatformRumble); // $35
+                }
+                if(e.state()==2u) {
+                    if(e.raw[0x18]>1u) --e.raw[0x18];
+                    else {
+                        e.raw[0x18]=4u;
+                        if(e.raw[0x17]<=1u) {
+                            e.raw[0x17]=0x70u;e.state()=3u;
+                        } else {
+                            const auto next=std::uint8_t(e.raw[0x17]-1u);
+                            e.raw[0x17]=next;
+                            if(next==3u) e.raw[0x06]=4u;
+                            static constexpr std::array<std::uint16_t,4> off{
+                                0x02fdu,0x08feu,0x0402u,0xfe04u}; // bank06 $BFB8
+                            const auto q=off[std::min<unsigned>(next-1u,3u)];
+                            const auto yo=std::int8_t(q&0xffu);
+                            const auto xo=std::int8_t(q>>8u);
+                            if(auto* x=create(rom,game,0x69u)) {
+                                x->set_y_fixed(std::uint16_t(std::uint8_t(e.raw[0x08]+yo))<<8u);
+                                x->set_x_fixed(std::uint16_t(std::uint8_t(e.raw[0x0a]+xo))<<8u);
+                                x->state()=1u;x->raw[0x06]=0u;
+                            }
+                        }
+                    }
+                } else {
+                    if(e.raw[0x17]>1u) --e.raw[0x17];
+                    else e.clear();
+                }
+            }
+        } else if(e.type()==0x69u) {
+            // Bank05 $9A7C-$9AAA: six-frame distributed platform blast.
+            if(e.state()!=1u) e.state()=1u;
+            e.raw[0x06]=std::uint8_t((e.raw[0x06]+1u)%6u);
+            if(e.raw[0x06]==0u) e.clear();
+            else if(e.raw[0x06]==1u && sounds) sounds->push_back(PlaySound::PlatformExplosion); // $33
+        } else if(e.type()==0x55u) {
             // Fixed $58F0-$59D0. Large carrier/assault craft used throughout
             // the vehicle section. +20 is the X trigger, +21 selects the
             // hover/return variant, +22 is the original deck Y and +23 is the
@@ -269,6 +449,8 @@ void Stage0Enemies::step_15hz(const Rom& rom,GameState& game,unsigned tick,std::
             const unsigned d=std::uint8_t(e.raw[0x22]-e.raw[0x08]);
             e.raw[0x06]=std::uint8_t(std::min(5u,d));
             e.raw[0x05]=(tick&1u)?0u:std::uint8_t(d<3u?0u:(d==3u?1u:2u));
+        } else if(e.type()==0x64u || e.type()==0x6au) {
+            if(include_gate) step_stage0_gate_object(game,e);
         } else if(e.type()==0x6bu) {
             // Bank05 $9B38. $6B is the persistent wreck/replacement used by
             // destroyed $1F/$22/$26/$55 actors. The source actor's +3E is

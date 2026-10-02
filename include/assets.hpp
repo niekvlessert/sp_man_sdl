@@ -9,7 +9,10 @@ struct Stage0VideoAssets {
     std::vector<std::uint8_t> vram; // reconstructed 128 KiB V9958 VRAM image
     std::array<std::uint16_t, 16> palette_grb{};       // early blue corridor
     std::array<std::uint16_t, 16> late_palette_grb{};   // ROM palette script $A43A
-    std::array<std::uint16_t, 16> tower_palette_grb{};  // ROM palette script $A44D
+    std::array<std::uint16_t, 16> tower_palette_grb{};      // normal boss palette, bank07:$86E4
+    std::array<std::uint16_t, 16> tower_red_palette_grb{};  // low-HP terminal boss palette, bank07:$8764
+    std::array<std::uint16_t, 16> vehicle_tower_palette_grb{};     // type-$56 normal palette, bank07:$8754
+    std::array<std::uint16_t, 16> vehicle_tower_red_palette_grb{}; // type-$56 low-HP palette, bank07:$87D4
     std::array<std::uint8_t, 0x80> object_pattern_base{}; // original $DF00-$DF7F
 };
 

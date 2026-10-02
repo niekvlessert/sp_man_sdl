@@ -27,6 +27,7 @@ public:
     explicit PlaySession(const Rom& rom);
     void reset();
     void seek_decile(unsigned step); // 0=start, 9=90% of stage0's route to its fight gate
+    void set_max_test_loadout() noexcept { combat_.set_max_test_loadout(); }
     void step_60hz(PlayerInput input);
     std::vector<std::uint32_t> render();
     // 512x212 native presentation: two horizontal samples per logical pixel.
@@ -49,6 +50,14 @@ private:
     LevelMap visual_level_;
     LevelRuntime stream_runtime_;
     Screen4Snapshot video_;
+    std::array<std::uint32_t,16> late_normal_palette_{};
+    std::array<std::uint32_t,16> tower_normal_palette_{};
+    std::array<std::uint32_t,16> tower_flash_palette_{};
+    std::array<std::uint32_t,16> vehicle_tower_normal_palette_{};
+    std::array<std::uint32_t,16> vehicle_tower_flash_palette_{};
+    std::uint8_t boss_hit_timer_=0;   // original CE47
+    std::uint8_t boss_palette_flags_=0; // original CE48: bit0 red, bit1 hit flash
+    std::uint8_t boss_palette_kind_=0;  // 0, $56 vertical tower, or $64 terminal gate
     StageSpawnStream spawns_;
     Stage0BackgroundStream background_;
     Stage0Enemies enemies_;

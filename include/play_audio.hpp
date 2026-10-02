@@ -23,7 +23,7 @@ private:
     SDL_AudioDeviceID device_=0;
     SDL_AudioSpec format_{};
     std::vector<Sint16> music_;
-    std::array<std::vector<Sint16>,8> effects_;
+    std::array<std::vector<Sint16>,static_cast<std::size_t>(PlaySound::Count)> effects_;
     std::array<Voice,16> voices_{};
     std::size_t music_position_=0;
     bool muted_=false;

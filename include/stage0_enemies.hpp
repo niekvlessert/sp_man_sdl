@@ -1,5 +1,6 @@
 #pragma once
 #include "spawn.hpp"
+#include "play_sound.hpp"
 
 namespace sm {
 // Native opening-flight handlers, selected by the original $51 wave records.
@@ -13,7 +14,10 @@ public:
     bool spawn(const Rom& rom, const SpawnRecord& record, GameState& game,
                std::uint8_t direction=1);
     void move_60hz(GameState& game);
-    void step_15hz(const Rom& rom, GameState& game, unsigned tick, std::uint16_t trigger);
+    // The terminal $64/$6A handler is clocked at 20 Hz in the original.
+    void step_gate_20hz(GameState& game);
+    void step_15hz(const Rom& rom, GameState& game, unsigned tick, std::uint16_t trigger,
+                   bool include_gate=true, std::vector<PlaySound>* sounds=nullptr);
     bool destroyed(const Entity64& enemy);
 private:
     struct Wave {

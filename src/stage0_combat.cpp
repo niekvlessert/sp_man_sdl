@@ -33,7 +33,7 @@ void Stage0Combat::spawned(Entity64& e) {
 bool Stage0Combat::fire(const Rom& rom,const Entity64& source,const Entity64& target,int yo,int xo) {
     auto it=std::find_if(bullets_.begin(),bullets_.end(),[](auto& b){return !b.active();});
     if(it==bullets_.end()) return false;
-    auto& b=*it;b.clear();b.type()=0x60;b.flags15()=0x21;
+    auto& b=*it;b.clear();b.type()=0x60;b.state()=0;b.raw[5]=0;b.flags15()=0x21;b.raw[0x17]=4;
     b.set_x_fixed(std::uint16_t(source.x_fixed()+xo*32));
     b.set_y_fixed(std::uint16_t(source.y_fixed()+yo*32));
     const int dx=int(std::uint8_t(target.x_fixed()/32))-int(std::uint8_t(b.x_fixed()/32));
@@ -52,6 +52,22 @@ bool Stage0Combat::fire(const Rom& rom,const Entity64& source,const Entity64& ta
         put(b,13,(signs&2?-1:1)*int(unsigned(bank[0x13ad+63-a])*speed/32));
     }
     return true;
+}
+bool Stage0Combat::fire_type15_pair(const Entity64& source) {
+    // Bank05 $9BFA/$9C07: the hovering type-$15 flyer emits two type-$61
+    // rounds from its coarse cell. They first separate vertically for six
+    // logic ticks, then both turn left at $0080 per logic tick.
+    bool fired=false;
+    for(int vy:{-0x0060,0x0060}) {
+        auto it=std::find_if(bullets_.begin(),bullets_.end(),[](auto& b){return !b.active();});
+        if(it==bullets_.end()) break;
+        auto& b=*it;b.clear();b.type()=0x61;b.state()=0;b.raw[5]=0;
+        b.flags15()=0x31;b.raw[0x17]=6;
+        b.set_x_fixed(std::uint16_t(source.raw[0x0a])<<8u);
+        b.set_y_fixed(std::uint16_t(source.raw[0x08])<<8u);
+        put(b,11,vy);put(b,13,0);fired=true;
+    }
+    return fired;
 }
 void Stage0Combat::drop(const Rom& rom,Entity64& slot,std::uint16_t x,std::uint16_t y) {
     const auto bank=rom.bank(4);
@@ -127,6 +143,18 @@ void Stage0Combat::collect(const Rom& rom,std::uint8_t kind,GameState& game,std:
 }
 void Stage0Combat::step(const Rom& rom,GameState& game,unsigned frame,int dx,int dy,std::vector<PlaySound>& sounds) {
     for(auto& b:bullets_) if(b.active()) {
+        // Exact projectile-state cadence from the original D460 pool. Type $60
+        // exposes flags $21 for its four-tick launch phase and then $31. Type
+        // $61 separates vertically for six ticks before turning left.
+        if((frame&3u)==0u) {
+            if(b.type()==0x60u && b.state()==0u && b.raw[0x17]) {
+                if(--b.raw[0x17]==0u) {b.state()=1;b.flags15()=0x31;}
+            } else if(b.type()==0x61u && b.state()==0u && b.raw[0x17]) {
+                if(--b.raw[0x17]==0u) {
+                    b.state()=1;put(b,11,0);put(b,13,-0x0080);
+                }
+            }
+        }
         // Spread each original 15-Hz velocity over four presentation ticks.
         for(unsigned p:{7u,9u}) {
             const int v=velocity(b,p+4);
@@ -164,10 +192,26 @@ void Stage0Combat::step(const Rom& rom,GameState& game,unsigned frame,int dx,int
         }
         if(frame&3) continue;
         bool shot=false;
+        if(e.type()==0x15u && e.state()==2u && e.raw[0x18]==3u) {
+            // Bank05 $804E->$9BFA. The hover flyer fires the distinctive
+            // vertical type-$61 pair exactly when its six-tick pause timer
+            // reaches three.
+            shot=fire_type15_pair(e);
+        }
+        if(e.type()==0x18u) {
+            // Fixed $5525-$5548. +17 is a 23-tick attack timer; at stage-0
+            // difficulty CA19=$05 the $750F gate accepts this zero selector,
+            // then $7143 creates a standard aimed type-$60 round.
+            if(e.raw[0x17]>1u) --e.raw[0x17];
+            else if(e.raw[0x17]==1u) {
+                e.raw[0x17]=0x17;
+                shot=fire(rom,e,game.player);
+            }
+        }
         if(e.type()==0x20 && e.raw[10]<28 && e.raw[8]<22 &&
            (((frame/4)^e.raw[0x2d])&31)==0) {
             const bool below=game.player.y_fixed()>=e.y_fixed();
-            if(below==bool(e.raw[0x20])) shot=fire(rom,e,game.player);
+            if(below==bool(e.raw[0x20])) shot=fire(rom,e,game.player) || shot;
         }
         if(e.type()==0x55 && e.state()>=2u && e.state()<=4u &&
            (((frame/4)^e.raw[0x2d])&15u)==0u) {

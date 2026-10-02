@@ -186,6 +186,25 @@ std::array<std::uint16_t, 16> apply_palette_script(
     }
     return palette;
 }
+std::array<std::uint16_t, 16> apply_boss_palette_entries(
+        const Rom& rom, std::array<std::uint16_t, 16> palette, unsigned cpu_addr) {
+    // Boss palette tables are eight raw V9938 register writes. The stage-0
+    // normal table is bank07:$86E4 and the persistent low-HP/red table is
+    // bank07:$8764. Preserve untouched palette indices from the scene palette.
+    const auto bank = rom.bank(7);
+    unsigned p = cpu_addr - 0x8000u;
+    for (unsigned n = 0; n < 8u; ++n) {
+        if (p + 1u >= bank.size()) break;
+        const auto a = bank[p++];
+        const auto b = bank[p++];
+        const unsigned index = (b >> 4) & 0x0fu;
+        const unsigned r = (a >> 4) & 7u;
+        const unsigned g = b & 7u;
+        const unsigned bl = a & 7u;
+        palette[index] = std::uint16_t((g << 8) | (r << 4) | bl);
+    }
+    return palette;
+}
 }
 
 Stage0VideoAssets decode_stage0_video(const Rom& rom) {
@@ -219,6 +238,14 @@ Stage0VideoAssets decode_stage0_video(const Rom& rom) {
     result.palette_grb = level1_palette();
     result.late_palette_grb = apply_palette_script(rom, result.palette_grb, 0xA43Au);
     result.tower_palette_grb = apply_palette_script(rom, result.late_palette_grb, 0xA44Du);
+    // AA22 selects the stage-0 red boss table through bank07:$86D2 -> $8764.
+    // This is the palette held once HP <= HP/4; hits additionally flash $666.
+    result.tower_red_palette_grb = apply_boss_palette_entries(rom, result.tower_palette_grb, 0x8764u);
+    // Type $56 uses CE4B=8: normal pointer table $86C0 -> $8754 and
+    // alternate/red pointer table $86D2 -> $87D4. These writes affect the
+    // complete VDP palette, hence the whole surrounding platform reddens.
+    result.vehicle_tower_palette_grb = apply_boss_palette_entries(rom, result.late_palette_grb, 0x8754u);
+    result.vehicle_tower_red_palette_grb = apply_boss_palette_entries(rom, result.vehicle_tower_palette_grb, 0x87d4u);
     return result;
 }
 }

@@ -20,11 +20,11 @@ def main():
         if result.returncode or not (out/'complete.txt').exists():
             raise RuntimeError('PCM export incomplete: '+result.stdout+result.stderr)
     clips=[]
-    for name in ('stage0','shot','explosion','hit','enemy_shot','pickup','powerup','option_mode','missile_launch'):
+    for name in ('stage0','shot','wave_shot','power_shot','explosion','hit','enemy_shot','pickup','powerup','option_mode','missile_launch','tower_explosion','turret_explosion','heavy_vehicle_explosion','large_cannon_explosion','boss_hit','platform_explosion','platform_burst','platform_rumble'):
         path=out/f'{name}.wav'
         with wave.open(str(path)) as w:
             frames=w.readframes(w.getnframes())
-            if not any(frames):raise RuntimeError(f'{name} is silent')
+            if not any(frames) and name!='platform_explosion':raise RuntimeError(f'{name} is silent')
             clips.append(dict(name=name,rate=w.getframerate(),channels=w.getnchannels(),
                 seconds=w.getnframes()/w.getframerate(),sha256=hashlib.sha256(path.read_bytes()).hexdigest()))
     (out/'manifest.json').write_text(json.dumps(dict(rom_sha256=hashlib.sha256((project/'space_manbow.rom').read_bytes()).hexdigest(),

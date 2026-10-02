@@ -13,7 +13,7 @@ def main():
             ident=f'wave_{len(jobs)}';level=0 if power==0 else (1 if power<9 else 2)
             writes={0xca47:y&255,0xca48:y>>8,0xca49:x&255,0xca4a:x>>8,
                     0xcb08:power,0xcb40:1,0xcb41:10}
-            fields=[0,3,5,6,7,8,9,10,11,12,13,14,0x13,0x14]
+            fields=[0,3,5,6,7,8,9,10,11,12,13,14,0x13,0x14,0x15]
             values=' '.join(str(v) for pair in writes.items() for v in pair)
             addresses=' '.join(str(0xcc40+i) for i in fields)
             plan.append('{'+f'{ident} {0x8c47} {{{values}}} {{{addresses}}}'+'}')

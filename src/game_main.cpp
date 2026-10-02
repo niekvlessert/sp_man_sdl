@@ -40,7 +40,7 @@ int main(int argc,char** argv) try {
         SDL_TEXTUREACCESS_STREAMING,512,212);
     if(!texture) throw std::runtime_error(SDL_GetError());
     SDL_SetTextureScaleMode(texture,SDL_ScaleModeNearest);
-    std::cout<<"Arrows: move; Z/Space: fire; M: rotate options; F10: mute; 0-9: jump; P: pause; R: restart; Esc: exit\n";
+    std::cout<<"Arrows: move; Z/Space: fire; M: rotate options; F10: mute; 0-9: jump + max weapons; P: pause; R: restart; Esc: exit\n";
     bool running=true,paused=false,fire_pending=false,option_pending=false,muted=false; double accumulator=0;
     const double frequency=double(SDL_GetPerformanceFrequency());
     auto previous=SDL_GetPerformanceCounter();
@@ -63,6 +63,7 @@ int main(int argc,char** argv) try {
                 default:
                     if(event.key.keysym.sym>=SDLK_0 && event.key.keysym.sym<=SDLK_9) {
                         session.seek_decile(unsigned(event.key.keysym.sym-SDLK_0));
+                        session.set_max_test_loadout();
                         if(audio) audio->seek(double(session.frame())/60);
                         reset_clock=true;fire_pending=false;
                     }
@@ -93,7 +94,7 @@ int main(int argc,char** argv) try {
         SDL_RenderCopy(renderer,texture,nullptr,&dst);SDL_RenderPresent(renderer);
         char title[160];std::snprintf(title,sizeof(title),
             "Space Manbow - native play - frame %u%s%s",session.frame(),paused?" PAUSED":"",
-            session.at_fight_gate()?" | boss behavior pending":"");
+            session.at_fight_gate()?" | boss":"");
         SDL_SetWindowTitle(window,title);SDL_Delay(1);
     }
     audio.reset();SDL_DestroyTexture(texture);SDL_DestroyRenderer(renderer);SDL_DestroyWindow(window);SDL_Quit();

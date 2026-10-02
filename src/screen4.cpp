@@ -46,6 +46,9 @@ Screen4Snapshot Screen4Snapshot::from_stage0_rom(const Rom& rom) {
         s.palette[i] = argb_from_grb(assets.palette_grb[i]);
         s.late_palette[i] = argb_from_grb(assets.late_palette_grb[i]);
         s.tower_palette[i] = argb_from_grb(assets.tower_palette_grb[i]);
+        s.tower_red_palette[i] = argb_from_grb(assets.tower_red_palette_grb[i]);
+        s.vehicle_tower_palette[i] = argb_from_grb(assets.vehicle_tower_palette_grb[i]);
+        s.vehicle_tower_red_palette[i] = argb_from_grb(assets.vehicle_tower_red_palette_grb[i]);
     }
     return s;
 }

@@ -295,23 +295,64 @@ std::vector<Stage0TileVisual> decode_stage0_tile_visuals(const Rom& rom,
     if (!entity.active()) return out;
 
     if (entity.type() == 0x64u) {
-        // Gate/tower compositor, traced at the exact A438 152.50-s state.
-        // The handler bypasses the normal type-frame pointer and feeds four
-        // raw bank-07 tile matrices to $7AA8/$7AC0 in this order.  DE at the
-        // live calls proves the placements relative to the object anchor:
-        //   $9179 @ (+0,+0), $91D7 @ (+10,+0),
-        //   $9381 @ (-7,-8), $934B @ (+6,-7).
-        // Zeros remain transparent, exactly as $7AC2-$7AC7.
-        struct Part { std::uint16_t def; int x, y; };
-        static constexpr Part parts[] = {
-            {0x9179u,  0,  0}, {0x91d7u, 10,  0},
-            {0x9381u, -7, -8}, {0x934bu,  6, -7},
-        };
-        for (const auto& part : parts) {
+        // Bank06 $A2D8/$A494: the gate/tower is a composed tile actor.
+        // +06 selects one of seven scripts; each command places a matrix
+        // from the normal type-$64 matrix list at a signed tile offset.
+        // These are the exact exported ROM scripts, not a single snapshot.
+        struct Cmd { std::uint8_t frame; std::int8_t y, x; };
+        static constexpr std::array<std::array<Cmd,4>,7> k = {{
+            {{{0,0,0},{10,0,10},{1,0,4},{7,4,-9}}},
+            {{{0,0,0},{10,0,10},{7,1,-10},{2,0,3}}},
+            {{{0,0,0},{10,0,10},{7,-1,-11},{3,0,2}}},
+            {{{0,0,0},{10,0,10},{7,-3,-10},{4,-2,3}}},
+            {{{0,0,0},{10,0,10},{7,-6,-9},{5,-5,4}}},
+            {{{0,0,0},{10,0,10},{7,-8,-7},{6,-7,6}}},
+            {{{0,0,0},{6,-7,6},{7,-8,-7},{0,0,0}}},
+        }};
+        static constexpr std::array<unsigned,7> count{4,4,4,4,4,4,3};
+        const unsigned selector=std::min<unsigned>(entity.raw[0x06],6u);
+        for(unsigned i=0;i<count[selector];++i) {
+            const auto& c=k[selector][i];
             Stage0TileVisual v;
-            if (decode_stage0_tile_def(rom, entity, part.def, part.x, part.y, v))
+            if(decode_stage0_tile_frame(rom,entity,c.frame,v)) {
+                v.x+=int(c.x)*8; v.y+=int(c.y)*8;
+                v.tile_x_offset+=c.x; v.tile_y_offset+=c.y;
+                // Native cleanup requested for the terminal tower: matrix 7
+                // becomes a detached sliver at the extreme left while the
+                // mechanism retracts. The MSX name-table shows that artifact,
+                // but in the native presentation hide it once its anchor is
+                // within the first 32 pixels instead of showing a duplicate.
+                if(c.frame==7u && v.x<32) continue;
                 out.push_back(std::move(v));
+            }
         }
+        return out;
+    }
+
+    if (entity.type() == 0x6au) {
+        // Bank05 $9AD7: destruction animation for the stage-0 tower. The
+        // eight selectors map to matrix frames 0,1,2,3,4,2,1,0 and use the
+        // exact signed origins exported from the original stamp scripts.
+        static constexpr std::array<std::uint8_t,8> frame{0,1,2,3,4,2,1,0};
+        static constexpr std::array<std::int8_t,8> oy{3,3,2,0,1,2,3,3};
+        static constexpr std::array<std::int8_t,8> ox{2,1,1,0,1,1,1,2};
+        const unsigned selector=entity.raw[0x06]&7u;
+        Stage0TileVisual v;
+        if(decode_stage0_tile_frame(rom,entity,frame[selector],v)) {
+            v.x+=int(ox[selector])*8; v.y+=int(oy[selector])*8;
+            v.tile_x_offset+=ox[selector]; v.tile_y_offset+=oy[selector];
+            out.push_back(std::move(v));
+        }
+        return out;
+    }
+
+    if (entity.type() == 0x69u && entity.state()==1u) {
+        // Bank05 $9A98/$9AAD: distributed type-$56 destruction burst.
+        // Six selectors point at one-matrix packed scripts: 0,1,2,3,4,2.
+        static constexpr std::array<std::uint8_t,6> frame{0,1,2,3,4,2};
+        Stage0TileVisual v;
+        if(decode_stage0_tile_frame(rom,entity,frame[entity.raw[0x06]%6u],v))
+            out.push_back(std::move(v));
         return out;
     }
 
@@ -493,12 +534,16 @@ void stamp_stage0_tile_objects(const Rom& rom, const Stage0BackgroundStream& str
     const auto fine_y = std::uint16_t(stream.ca1a() & 0x00ffu);
     for (const auto& entity : game.enemies) {
         if (!entity.active() || entity.type()==3u) continue;
-        // Native SDL draws the large vehicle tile actors as pixel-positioned
-        // overlays. Stamping them into the 8x8 D988 name table quantizes their
-        // entrance to whole columns and causes the visible right-edge build-up.
+        // Native SDL draws composed tile actors at their real sub-tile pixel
+        // position. The ROM D988 path quantizes these objects to 8x8 cells;
+        // that is correct for the VDP name table but visibly makes mixed
+        // tile+sprite actors (cannon body/barrel and type $64 core) jump at
+        // R18/tile carries. Keep scenery in D988, but render these actors once
+        // as native overlays in every stage-0 raster mode.
         if(entity.type()==0x1fu || entity.type()==0x20u || entity.type()==0x22u ||
            entity.type()==0x24u || entity.type()==0x26u || entity.type()==0x55u ||
-           entity.type()==0x56u || entity.type()==0x6bu) continue;
+           entity.type()==0x56u || entity.type()==0x64u || entity.type()==0x6au ||
+           entity.type()==0x6bu) continue;
         const auto visuals = decode_stage0_tile_visuals(rom, entity);
         if (visuals.empty()) continue;
 
@@ -513,8 +558,12 @@ void stamp_stage0_tile_objects(const Rom& rom, const Stage0BackgroundStream& str
             const int left = object_col + v.tile_x_offset;
             const int top  = object_row + v.tile_y_offset;
             for (unsigned y = 0; y < v.rows; ++y) {
-                const int dy = top + int(y);
-                if (dy < 0 || dy >= 24) continue;
+                int dy = top + int(y);
+                // Type $69 platform blasts deliberately use Y=$FE/$FD for
+                // two children. The original name-table stamper wraps those
+                // signed rows through the stage ring instead of clipping them.
+                if(entity.type()==0x69u) dy=(dy%24+24)%24;
+                else if (dy < 0 || dy >= 24) continue;
                 for (unsigned x = 0; x < v.cols; ++x) {
                     const int dx = left + int(x);
                     if (dx < 0 || dx >= 32) continue;
@@ -533,12 +582,12 @@ void stamp_stage0_tile_objects_right_edge(const Rom& rom, const Stage0Background
     const auto fine_y=std::uint16_t(stream.ca1a()&0x00ffu);
     for(const auto& entity:game.enemies) {
         if(!entity.active() || entity.type()==3u) continue;
-        // The native renderer draws these wide vehicle actors as pixel
-        // overlays; keep the successor-column path consistent with the main
-        // D988 stamper or they reappear as clipped fragments at x=256.
+        // Same ownership rule as the main D988 stamper: native overlays own
+        // these complete actors, including the successor edge.
         if(entity.type()==0x1fu || entity.type()==0x20u || entity.type()==0x22u ||
            entity.type()==0x24u || entity.type()==0x26u || entity.type()==0x55u ||
-           entity.type()==0x56u || entity.type()==0x6bu) continue;
+           entity.type()==0x56u || entity.type()==0x64u || entity.type()==0x6au ||
+           entity.type()==0x6bu) continue;
         const auto visuals=decode_stage0_tile_visuals(rom,entity);
         if(visuals.empty()) continue;
         const auto ax=std::uint16_t(entity.x_fixed()+fine_x);
@@ -549,8 +598,9 @@ void stamp_stage0_tile_objects_right_edge(const Rom& rom, const Stage0Background
             const int left=object_col+v.tile_x_offset;
             const int top=object_row+v.tile_y_offset;
             for(unsigned y=0;y<v.rows;++y) {
-                const int dy=top+int(y);
-                if(dy<0 || dy>=24) continue;
+                int dy=top+int(y);
+                if(entity.type()==0x69u) dy=(dy%24+24)%24;
+                else if(dy<0 || dy>=24) continue;
                 for(unsigned x=0;x<v.cols;++x) {
                     if(left+int(x)!=32) continue;
                     const auto tile=v.tiles[y*unsigned(v.cols)+x];
@@ -577,6 +627,12 @@ void seed_stage0_gate_reference(GameState& game) noexcept {
         e.raw[0x2d] = std::uint8_t(slot + 1u);
     };
     seed(1, 0x64, 3, 4, 5, 0x1200, 0x0c00, 0x3d);
+    // Clean original gate trace: HP=$3C and damage-enable byte +14=$86.
+    // Without these fields the native tower is visible but cannot be shot.
+    game.enemies[1].raw[0x14]=0x86;
+    game.enemies[1].raw[0x16]=0x3c;
+    game.enemies[1].raw[0x17]=0x24;
+    game.enemies[1].raw[0x20]=0x01;
     seed(2, 0x3d, 1, 0, 1, 0x1600, 0x1200, 0x46);
     // These three $40 records are part of the same clean reference pool.
     // Their D988 renderer is not required for the current gate image (they
@@ -638,9 +694,14 @@ bool instantiate_stage0_spawn(const Rom& rom, const SpawnRecord& r, GameState& g
                               std::uint8_t spawn_direction) {
     if (r.trigger_flag() || r.type_flag()) return false;
     const bool special26 = r.type == 0x26u && r.control_flag();
-    if (r.control_flag() && !special26) return false;
+    // The final stage-0 tower is also an extended record: trigger $5000,
+    // control $88. Rejecting every flagged record except $26 silently dropped
+    // type $64 from real gameplay, leaving only the scenery copy visible.
+    const bool special64 = r.type == 0x64u && r.control_flag();
+    if (r.control_flag() && !special26 && !special64) return false;
     if (r.type != 0x1fu && r.type != 0x20u && r.type != 0x22u &&
-        r.type != 0x24u && r.type != 0x26u && r.type != 0x55u && r.type != 0x56u) return false;
+        r.type != 0x24u && r.type != 0x26u && r.type != 0x55u &&
+        r.type != 0x56u && r.type != 0x64u) return false;
     if (r.payload.empty() || (r.type == 0x24u && r.payload.size() < 2u)) return false;
     auto* e = game.allocate_enemy();
     if (!e) return false;
@@ -706,10 +767,17 @@ bool instantiate_stage0_spawn(const Rom& rom, const SpawnRecord& r, GameState& g
         e->raw[0x2e] = 0x01;
         e->raw[0x2f] = 0x01;
         e->raw[0x3f] = 0x01;
+    } else if (r.type == 0x64u) {
+        // Boss/gate objects use the $7C63 continuation. A live unmodified
+        // object dump at the first $7C63 call has +3F=$01; the type handler
+        // itself supplies the exact coordinates, selector and phase state.
+        e->raw[0x3f] = 0x01;
     } else if (r.payload.size() >= 2u && r.type!=0x26u && r.type!=0x22u) {
         e->raw[0x20] = r.payload[1];
     }
-    e->state() = 1;
+    // Type $64 must enter bank06:$A300 (state 0). Starting it at state 1
+    // skips the ROM initializer that positions the tower at X=$2800/Y=$0C00.
+    e->state() = r.type == 0x64u ? 0u : 1u;
     return true;
 }
 }

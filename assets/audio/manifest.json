@@ -17,53 +17,123 @@
       "sha256": "ef84dc1dca5b7be0c1761631e57e8f47e94243dacb0957306f26c4bdd9116417"
     },
     {
+      "name": "wave_shot",
+      "rate": 44100,
+      "channels": 1,
+      "seconds": 0.9984580498866213,
+      "sha256": "ed4aa93180baf9a666c7276d2a682eb7a92e6ed1b1072d72b69e2ad099d071fe"
+    },
+    {
+      "name": "power_shot",
+      "rate": 44100,
+      "channels": 1,
+      "seconds": 0.9984580498866213,
+      "sha256": "50102932b1047efe5ddddebe4357c83d234089b82fe44597fee12fd4144d72c6"
+    },
+    {
       "name": "explosion",
       "rate": 44100,
       "channels": 1,
       "seconds": 1.9969160997732427,
-      "sha256": "ce8f0acdaf2769bae634ba4311aa80f22c03f01165c6395543a2b78706b61359"
+      "sha256": "052d690501141f8cf3c951c2517bda7e184d83ee9f93752506dd3cb5b128ee5b"
     },
     {
       "name": "hit",
       "rate": 44100,
       "channels": 1,
       "seconds": 0.9984580498866213,
-      "sha256": "015fb6177d015b4215e37fa54dbe0519005308acc3b4fa34d3f12b42e7a08deb"
+      "sha256": "66f1e7887d0b9be24374c0a37d1124df5528c4d34ead41c4548af61f321e5a3f"
     },
     {
       "name": "enemy_shot",
       "rate": 44100,
       "channels": 1,
       "seconds": 0.9984580498866213,
-      "sha256": "93e33c5a447d5713f30ab29d2ff94aac116d3f8331786d991993cd3dfcd97d71"
+      "sha256": "3ae198ec5fb6960ea3b1832e4f42903a8b15c4bba367729d3d00f856a5aeae35"
     },
     {
       "name": "pickup",
       "rate": 44100,
       "channels": 1,
       "seconds": 1.003265306122449,
-      "sha256": "fc5ccc4f54d8a0873e0c6c758387eaedcbf15daf36cfc50acd646f14336c3948"
+      "sha256": "48c8704d2b6b6c11bba074d33001e8b3ab73485981056139376bdb8971f60b2b"
     },
     {
       "name": "powerup",
       "rate": 44100,
       "channels": 1,
       "seconds": 1.003015873015873,
-      "sha256": "b9098bd6927cd7bf2b7cad0c09a36efd1a9d98bcb53546ae4d784e2392aed86e"
+      "sha256": "b2edc3ac29d2f16d378f48d871d99795d6f47ed0f444cae46f7e47732a13aff6"
     },
     {
       "name": "option_mode",
       "rate": 44100,
       "channels": 1,
       "seconds": 0.9984580498866213,
-      "sha256": "5f24b3ee333187726cd77b5e5b54e34bb7990c7dd574d8436ee8f78567d23e64"
+      "sha256": "20446fd9c09dedb7cda1c4654e9bf7f72850c90a9399b2b9a89829b5783cbae3"
     },
     {
       "name": "missile_launch",
       "rate": 44100,
       "channels": 1,
       "seconds": 0.9984580498866213,
-      "sha256": "db5f4ca0f7e76ef2c96ca633454ab32abdce36219a0c674d4f1e353bf4324bdf"
+      "sha256": "1a9e3f6ba25a0b3a7ce999d4c3a426c2769c529255aefaf6ec5413bf92e3ed46"
+    },
+    {
+      "name": "tower_explosion",
+      "rate": 44100,
+      "channels": 1,
+      "seconds": 2.995374149659864,
+      "sha256": "0030058cf1720d895470c50e915e430cf2449b17b51a2141857d596228bf2ecb"
+    },
+    {
+      "name": "turret_explosion",
+      "rate": 44100,
+      "channels": 1,
+      "seconds": 1.9969160997732427,
+      "sha256": "6750c88a2f7aeb1f82b6b0937b31cde76b346ce2e070af42fedc931259be3ba1"
+    },
+    {
+      "name": "heavy_vehicle_explosion",
+      "rate": 44100,
+      "channels": 1,
+      "seconds": 1.9969160997732427,
+      "sha256": "ea257239e82b204d655bb012b5b7447cbf68bee52dc0e3e909a6a757098d9dcc"
+    },
+    {
+      "name": "large_cannon_explosion",
+      "rate": 44100,
+      "channels": 1,
+      "seconds": 1.9969160997732427,
+      "sha256": "4e9404350db71ed7128ecece55ba45674a548629497787d0d00e7e107de36b4d"
+    },
+    {
+      "name": "boss_hit",
+      "rate": 44100,
+      "channels": 1,
+      "seconds": 0.9984580498866213,
+      "sha256": "fcce3f24225b559b5198d584935661b4f7dc2733da9319a3e9fb2990e8c7e8e9"
+    },
+    {
+      "name": "platform_explosion",
+      "rate": 44100,
+      "channels": 1,
+      "seconds": 1.9969160997732427,
+      "sha256": "7485ce07e504c4151fb4a9eaaf67e8014a6bcb3daaa479eebc19fee2b0bfa845"
+    },
+    {
+      "name": "platform_burst",
+      "rate": 44100,
+      "channels": 1,
+      "seconds": 2.003356009070295,
+      "sha256": "d560370c451c38ad831b476098896547e606977c1d6bf583e286c09bdff57b6b"
+    },
+    {
+      "name": "platform_rumble",
+      "rate": 44100,
+      "channels": 1,
+      "seconds": 1.9969160997732427,
+      "sha256": "a3377fa8c6377d0e74a7285ed09a0ff108899aaef22c2acd115e570245b1769e"
     }
   ]
 }

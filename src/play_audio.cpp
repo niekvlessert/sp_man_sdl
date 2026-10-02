@@ -12,7 +12,7 @@ PlayAudio::PlayAudio(const std::filesystem::path& directory) {
     try {
         music_=load(directory/"stage0.wav");
         unsigned index=0;
-        for(const auto name:{"shot","explosion","hit","enemy_shot","pickup","powerup","option_mode","missile_launch"})
+        for(const auto name:{"shot","wave_shot","power_shot","explosion","hit","enemy_shot","pickup","powerup","option_mode","missile_launch","tower_explosion","turret_explosion","heavy_vehicle_explosion","large_cannon_explosion","boss_hit","platform_explosion","platform_burst","platform_rumble"})
             effects_[index++]=load(directory/(std::string(name)+".wav"));
     } catch(...) {SDL_CloseAudioDevice(device_);device_=0;throw;}
     SDL_PauseAudioDevice(device_,0);
@@ -58,8 +58,11 @@ void PlayAudio::callback(void* self, Uint8* output, int bytes) {
         int mixed=audio.music_[audio.music_position_++];
         if(audio.music_position_==audio.music_.size()) audio.music_position_=0;
         for(auto& voice:audio.voices_) if(voice.active) {
-            const auto& clip=audio.effects_[voice.clip];mixed+=clip[voice.position++];
-            if(voice.position==clip.size()) voice.active=false;
+            if(voice.clip>=audio.effects_.size()) {voice.active=false;continue;}
+            const auto& clip=audio.effects_[voice.clip];
+            if(clip.empty() || voice.position>=clip.size()) {voice.active=false;continue;}
+            mixed+=clip[voice.position++];
+            if(voice.position>=clip.size()) voice.active=false;
         }
         samples[i]=audio.muted_?0:Sint16(std::clamp(mixed,-32768,32767));
     }
