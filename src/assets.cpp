@@ -201,11 +201,21 @@ Stage0VideoAssets decode_stage0_video(const Rom& rom) {
     // the pointer list at $83C0. These also build the original $DFxx table.
     process_sprite_table(rom, 0x92b8u, result);
     process_sprite_table(rom, 0x92d7u, result);
-    // Bank02 $8732/$8749/$87FB uploads the basic forward-shot bitmap
-    // directly, outside the compressed sprite tables. CB08=0 selects $89B0.
-    const auto weapon = rom.bank(2).subspan(0x9b0u, 0x20u);
+    // Bank02's weapon renderer maintains sprite bitmaps outside the compressed
+    // stage tables.  $871E/$8749 installs the O-direction patterns at $C9A0
+    // (and the second R6 page at $D1A0); $8732 installs the primary shot at
+    // $CA00; $8950 installs the type-8 M/missile patterns at $CA20.  Native
+    // SDL can preload them because visibility is still controlled by the
+    // projectile records themselves.
+    const auto option_weapon = rom.bank(2).subspan(0x9b0u, 0x40u); // $89B0-$89EF
+    for (unsigned destination : {0xc9a0u, 0xd1a0u})
+        std::copy(option_weapon.begin(), option_weapon.end(), result.vram.begin() + destination);
+    const auto primary_weapon = rom.bank(2).subspan(0x9b0u, 0x20u);
     for (unsigned destination : {0xca00u, 0xd200u, 0xda00u})
-        std::copy(weapon.begin(), weapon.end(), result.vram.begin() + destination);
+        std::copy(primary_weapon.begin(), primary_weapon.end(), result.vram.begin() + destination);
+    const auto missile_weapon = rom.bank(2).subspan(0xb30u, 0x40u); // $8B30-$8B6F
+    for (unsigned destination : {0xca20u, 0xd220u})
+        std::copy(missile_weapon.begin(), missile_weapon.end(), result.vram.begin() + destination);
     result.palette_grb = level1_palette();
     result.late_palette_grb = apply_palette_script(rom, result.palette_grb, 0xA43Au);
     result.tower_palette_grb = apply_palette_script(rom, result.late_palette_grb, 0xA44Du);

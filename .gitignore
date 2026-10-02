@@ -17,3 +17,6 @@
 
 # Ad-hoc root captures
 /*.ppm
+
+# Generated diagnostic captures
+/captures/

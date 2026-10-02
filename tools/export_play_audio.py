@@ -20,7 +20,7 @@ def main():
         if result.returncode or not (out/'complete.txt').exists():
             raise RuntimeError('PCM export incomplete: '+result.stdout+result.stderr)
     clips=[]
-    for name in ('stage0','shot','explosion','hit','enemy_shot'):
+    for name in ('stage0','shot','explosion','hit','enemy_shot','pickup','powerup','option_mode','missile_launch'):
         path=out/f'{name}.wav'
         with wave.open(str(path)) as w:
             frames=w.readframes(w.getnframes())

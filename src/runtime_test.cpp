@@ -3,6 +3,7 @@
 #include "rom.hpp"
 #include "runtime.hpp"
 #include "spawn.hpp"
+#include "stage0_enemies.hpp"
 #ifdef NDEBUG
 #undef NDEBUG
 #endif
@@ -50,6 +51,16 @@ int main(int argc, char** argv) {
     assert(s1f.payload.size() == 1u && s1f.payload[0] == 0x08);
     const auto& flagged = spawns.records()[17];
     assert(flagged.trigger == 0x10e4 && flagged.trigger_flag());
+
+    // Native overscan regression: keep the next streamed tile column decoded
+    // before the fine-scroll exposes it. At X=1652 logical column 32 must be
+    // exactly the column that becomes visible as column 31 eight pixels later.
+    {
+        sm::Stage0BackgroundStream now(rom), future(rom);
+        now.seek_world_x(1652u); future.seek_world_x(1660u);
+        for(unsigned y=0;y<24u;++y)
+            assert(now.view_tile(32u,y)==future.view_tile(31u,y));
+    }
 
     spawns.reset();
     std::vector<unsigned> spawn_frames;
@@ -162,15 +173,31 @@ int main(int argc, char** argv) {
     assert(sm::apply_stage0_damage(rom, damage26, 2) == sm::Stage0DamageResult::Destroyed);
     assert(damage26.raw[0x16] == 0xfe && damage26.type() == 0x6b && damage26.state() == 0);
     assert(damage26.flags15() == 0x04 && (damage26.raw[0x14] & 0x80u) == 0);
+    // $9B38 large-object death effect: the initial raw6=0 visual is already
+    // present immediately after $7CC3. Two following logic ticks show frames
+    // 1 and 2; the third wraps 2->0 and only then installs the persistent
+    // +3E wreck selector (type $26 carries $0C).
+    assert(damage26.raw[0x3e] == 0x0c);
+    assert(!sm::decode_stage0_tile_visuals(rom,damage26).empty());
+    sm::GameState wreck_game; wreck_game.enemies[0]=damage26;
+    sm::Stage0Enemies wreck_logic;
+    wreck_logic.step_15hz(rom,wreck_game,1,0);
+    assert(wreck_game.enemies[0].state()==0 && wreck_game.enemies[0].raw[6]==1);
+    assert(!sm::decode_stage0_tile_visuals(rom,wreck_game.enemies[0]).empty());
+    wreck_logic.step_15hz(rom,wreck_game,2,0);
+    assert(wreck_game.enemies[0].state()==0 && wreck_game.enemies[0].raw[6]==2);
+    wreck_logic.step_15hz(rom,wreck_game,3,0);
+    assert(wreck_game.enemies[0].state()==1 && wreck_game.enemies[0].raw[6]==0x0c);
 
-    // Real level-1 trace: both first object types move left by $40 in 8.8
-    // space per 60-Hz tick. Type $1F changes from frame 1 to frame 0 just
-    // left of x=$1C00.
+    // Both first object types move left by $40 in the compatibility tick.
+    // Type $1F frame +05 is NOT an X-threshold animation: bank06:$BCC0 aims
+    // it at the player. The context-free compatibility helper therefore keeps
+    // the current aim frame; interactive PlaySession updates it from the player.
     for (unsigned i = 0; i < 16; ++i) sm::step_stage0_objects(spawned);
     assert(spawned.enemies[0].x_fixed() == 0x1c00);
     assert(spawned.enemies[1].x_fixed() == 0x1c00 && spawned.enemies[1].raw[0x05] == 1);
     sm::step_stage0_objects(spawned);
-    assert(spawned.enemies[1].x_fixed() == 0x1bc0 && spawned.enemies[1].raw[0x05] == 0);
+    assert(spawned.enemies[1].x_fixed() == 0x1bc0 && spawned.enemies[1].raw[0x05] == 1);
 
     // Live vehicle anchor at X=$0BF8 / source $A25F.  The raster builder
     // patches the inactive program, so even C09B means page $31 is currently
@@ -195,6 +222,8 @@ int main(int argc, char** argv) {
     const auto video = sm::Screen4Snapshot::from_stage0_rom(rom);
     assert(video.object_pattern_base[0x1f] == 0xa0);
     sm::Stage0SpriteVisual visual;
+    // Decoder fixture for frame 0 is explicit; runtime aiming now owns +05.
+    spawned.enemies[1].raw[0x05] = 0;
     assert(sm::decode_stage0_sprite_visual(rom, video, spawned.enemies[1], visual));
     assert(visual.x == 0xed && visual.y == 0x89 && visual.layer_count == 2);
     assert(visual.layers[0].pattern == 0xa0 && visual.layers[1].pattern == 0xa4);

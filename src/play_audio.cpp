@@ -12,7 +12,7 @@ PlayAudio::PlayAudio(const std::filesystem::path& directory) {
     try {
         music_=load(directory/"stage0.wav");
         unsigned index=0;
-        for(const auto name:{"shot","explosion","hit","enemy_shot"})
+        for(const auto name:{"shot","explosion","hit","enemy_shot","pickup","powerup","option_mode","missile_launch"})
             effects_[index++]=load(directory/(std::string(name)+".wav"));
     } catch(...) {SDL_CloseAudioDevice(device_);device_=0;throw;}
     SDL_PauseAudioDevice(device_,0);

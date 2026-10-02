@@ -23,9 +23,17 @@ public:
     // Original stage-0 composition state (ring -> D988 -> parallax).
     std::array<std::uint8_t, 24u * 32u> compose_d988_raw() const;
     void apply_d988_parallax(std::array<std::uint8_t, 24u * 32u>& d988) const;
+    void apply_d988_parallax_phase(std::array<std::uint8_t, 24u * 32u>& d988,
+                                   std::uint16_t phase) const;
     void apply_fast_ground(std::array<std::uint8_t, 24u * 32u>& d988,
                            bool alternate = false) const;
+    void apply_fast_ground_phase(std::array<std::uint8_t,24u*32u>& d988,
+                                 bool alternate,std::uint8_t phase,
+                                 std::uint8_t row_offset) const;
     std::array<std::uint8_t, 24u * 32u> compose_d988_base() const;
+    // Fully composed logical column immediately to the right of D988. This is
+    // native-only staging for borderless fine-scroll presentation.
+    std::array<std::uint8_t,24u> compose_right_edge() const;
     std::uint16_t ca1a() const noexcept; // signed Y tile-scroll delta, 8.8
     std::uint16_t ca1c() const noexcept; // signed X tile-scroll delta, 8.8
     std::int32_t x_velocity_fp() const noexcept { return x_vel_fp_; }
@@ -46,6 +54,10 @@ public:
         return graphics_set_ == 6u || c0b5_ == 6u;
     }
     std::uint8_t fast_ground_phase() const noexcept { return ca3a_; }
+    std::uint16_t parallax_phase() const noexcept {
+        return std::uint16_t((std::uint16_t(parallax_h_)<<8u)|
+                             (std::uint16_t(0xcdu-parallax_l_)<<5u));
+    }
     std::uint8_t star_tile() const noexcept { return parallax_l_; }
     std::uint8_t vertical_scroll() const noexcept;
     Stage0PresentationState presentation_state() const noexcept;
@@ -80,6 +92,7 @@ private:
     std::uint8_t parallax_l_ = 0xcd;
     std::uint16_t trigger_cursor_ = 0x10c0; // original $CA34 at $A13F entry
     bool gated_ = false;
+    bool suppress_prefetch_ = false;
 
     unsigned ring_col() const noexcept;
     unsigned ring_row() const noexcept;
@@ -92,5 +105,6 @@ private:
                           unsigned row_phase);
     void put(int col, int row, std::uint8_t tile) noexcept;
     void step_parallax();
+    void prefetch_successor_column();
 };
 }

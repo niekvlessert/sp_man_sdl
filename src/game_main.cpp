@@ -37,11 +37,11 @@ int main(int argc,char** argv) try {
     if(!renderer) renderer=SDL_CreateRenderer(window,-1,SDL_RENDERER_SOFTWARE);
     if(!renderer) throw std::runtime_error(SDL_GetError());
     auto* texture=SDL_CreateTexture(renderer,SDL_PIXELFORMAT_ARGB8888,
-        SDL_TEXTUREACCESS_STREAMING,256,212);
+        SDL_TEXTUREACCESS_STREAMING,512,212);
     if(!texture) throw std::runtime_error(SDL_GetError());
     SDL_SetTextureScaleMode(texture,SDL_ScaleModeNearest);
-    std::cout<<"Arrows: move; Z/Space: fire; 0-9: jump to 0-90%; M: mute; P: pause; R: restart; Esc: exit\n";
-    bool running=true,paused=false,fire_pending=false,muted=false; double accumulator=0;
+    std::cout<<"Arrows: move; Z/Space: fire; M: rotate options; F10: mute; 0-9: jump; P: pause; R: restart; Esc: exit\n";
+    bool running=true,paused=false,fire_pending=false,option_pending=false,muted=false; double accumulator=0;
     const double frequency=double(SDL_GetPerformanceFrequency());
     auto previous=SDL_GetPerformanceCounter();
     while(running) {
@@ -57,7 +57,8 @@ int main(int argc,char** argv) try {
                 case SDLK_ESCAPE:running=false;break;
                 case SDLK_p:paused=!paused;reset_clock=true;fire_pending=false;break;
                 case SDLK_r:session.reset();if(audio) audio->seek(0);reset_clock=true;fire_pending=false;break;
-                case SDLK_m:muted=!muted;if(audio) audio->mute(muted);break;
+                case SDLK_m:if(!paused) option_pending=true;break;
+                case SDLK_F10:muted=!muted;if(audio) audio->mute(muted);break;
                 case SDLK_z:case SDLK_SPACE:if(!paused) fire_pending=true;break;
                 default:
                     if(event.key.keysym.sym>=SDLK_0 && event.key.keysym.sym<=SDLK_9) {
@@ -80,10 +81,11 @@ int main(int argc,char** argv) try {
             bool(keys[SDL_SCANCODE_Z]||keys[SDL_SCANCODE_SPACE])};
         while(accumulator>=1.0/60.0) {
             input.fire_pressed=fire_pending;fire_pending=false;
+            input.option_mode_pressed=option_pending;option_pending=false;
             session.step_60hz(input);accumulator-=1.0/60.0;
             if(audio) for(const auto sound:session.sound_events()) audio->play(sound);
         }
-        const auto pixels=session.render(); SDL_UpdateTexture(texture,nullptr,pixels.data(),256*4);
+        const auto pixels=session.render_wide(); SDL_UpdateTexture(texture,nullptr,pixels.data(),512*4);
         int w,h;SDL_GetRendererOutputSize(renderer,&w,&h);
         const int dw=std::min(w,h*256/212),dh=dw*212/256;
         SDL_Rect dst{(w-dw)/2,(h-dh)/2,dw,dh};

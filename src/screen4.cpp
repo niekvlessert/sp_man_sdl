@@ -143,19 +143,27 @@ std::vector<std::uint32_t> render_stage0_page(
         const Stage0BackgroundStream& stream, const Screen4Snapshot& video,
         const std::array<std::uint8_t, 32u * 32u>& page,
         const Stage0PresentationState& presentation,
-        int extra_x_pixels, int extra_y_pixels) {
+        int extra_x_pixels, int extra_y_pixels,
+        const std::array<std::uint8_t,24u>* right_edge,
+        int start_row_override, int graphics_set_override, int palette_set_override) {
     std::vector<std::uint32_t> out(256u * 212u, 0xff000000u);
     static constexpr std::array<std::uint8_t, 7> kR4{
         0x33u, 0x0bu, 0x13u, 0x23u, 0x2bu, 0x33u, 0x3bu};
     static constexpr std::array<std::uint8_t, 7> kR10{
         0x06u, 0x01u, 0x02u, 0x04u, 0x05u, 0x06u, 0x07u};
-    const unsigned set = std::min<unsigned>(stream.graphics_set(), 6u);
+    const unsigned set = std::min<unsigned>(graphics_set_override >= 0 ? unsigned(graphics_set_override) : stream.graphics_set(), 6u);
     const unsigned pattern_base = (unsigned(kR4[set]) & 0x3cu) << 11u;
     const unsigned color_base = 0x02000u + unsigned(kR10[set]) * 0x4000u;
-    const auto& palette = stream.palette_set() >= 2u ? video.tower_palette : video.late_palette;
+    const unsigned palette_set = palette_set_override >= 0 ? unsigned(palette_set_override) : stream.palette_set();
+    const auto& palette = palette_set >= 2u ? video.tower_palette : video.late_palette;
     const int r23 = int(presentation.r23) + extra_y_pixels;
-    const int x_sub = int(presentation.r18 & 7u) + extra_x_pixels;
-    const unsigned start_row = (unsigned(stream.scroll_row()) & 0xf8u) >> 3u;
+    // V99x8 R#18 low nibble is NOT a linear 0..7 source offset. The hardware
+    // decodes it around neutral 7: displayShift=((R18&15)^7)-7. This renderer
+    // samples source coordinates, so apply the opposite sign. Keep this exactly
+    // aligned with rpmsx_portable/src/video/v9938.cpp.
+    const int horizontal_shift = int((presentation.r18 & 0x0fu) ^ 0x07u) - 7;
+    const int x_sub = -horizontal_shift + extra_x_pixels;
+    const unsigned start_row = start_row_override >= 0 ? unsigned(start_row_override) : ((unsigned(stream.scroll_row()) & 0xf8u) >> 3u);
     for (unsigned sy = 0; sy < 212u; ++sy) {
         const unsigned display_y = unsigned(int(sy) + r23) & 255u;
         const unsigned physical_row = display_y >> 3u;
@@ -169,11 +177,29 @@ std::vector<std::uint32_t> render_stage0_page(
         const int row_x_sub = x_sub;
         for (unsigned sx = 0; sx < 256u; ++sx) {
             const int xq = row_x_sub + int(sx);
-            // R18 adjusts the display into its border, not a wrapping tilemap.
-            if (xq < 0 || xq >= 256) continue;
-            const unsigned tx = unsigned(xq >> 3);
-            const unsigned px = unsigned(xq) & 7u;
-            const unsigned tile = page[physical_row * 32u + tx];
+            const unsigned logical_row=(physical_row+32u-start_row)&31u;
+            unsigned px=0;
+            std::uint8_t tile=0;
+            if(xq<0 && xq>=-8) {
+                // Native left-edge extension used only while a newly integrated
+                // coarse state is presented 1..2 pixels back toward its old
+                // position. Reuse the first complete tile instead of exposing
+                // black or wrapping column 31.
+                tile=page[physical_row*32u];
+                px=unsigned(xq+8);
+            } else if(xq>=0 && xq<256) {
+                const unsigned tx=unsigned(xq)>>3;
+                px=unsigned(xq)&7u;
+                tile=page[physical_row*32u+tx];
+            } else if(xq<264 && logical_row<24u && right_edge) {
+                // Native right-edge extension. The background streamer already
+                // exposes the real successor column (logical x=32); use it
+                // instead of repeating tile 31. Repeating the final visible
+                // tile produced the 1..7px-wide vertical fragments at the
+                // right edge whenever R18 exposed the next column.
+                px=unsigned(xq-256);
+                tile=(*right_edge)[logical_row];
+            } else continue;
             const unsigned index = quarter + tile * 8u + py;
             if (pattern_base + index >= video.vram.size() ||
                 color_base + index >= video.vram.size()) continue;
@@ -197,8 +223,10 @@ std::vector<std::uint32_t> Stage0Screen4Presenter::render(
         const Stage0BackgroundStream& stream, const Screen4Snapshot& video,
         const std::array<std::uint8_t, 24u * 32u>& d988,
         const Stage0PresentationState* supplied_presentation,
-        int extra_x_pixels, int extra_y_pixels) {
-    const unsigned start_row = (unsigned(stream.scroll_row()) & 0xf8u) >> 3u;
+        int extra_x_pixels, int extra_y_pixels,
+        const std::array<std::uint8_t,24u>* right_edge,
+        int start_row_override, int graphics_set_override, int palette_set_override) {
+    const unsigned start_row = start_row_override >= 0 ? unsigned(start_row_override) : ((unsigned(stream.scroll_row()) & 0xf8u) >> 3u);
     if (!initialized_) {
         upload_d988_page(page30_, d988, start_row);
         upload_d988_page(page31_, d988, start_row);
@@ -214,7 +242,8 @@ std::vector<std::uint32_t> Stage0Screen4Presenter::render(
     auto& active = presentation.r2 == 0x31u ? page31_ : page30_;
     upload_d988_page(active, d988, start_row);
     return render_stage0_page(stream, video, active, presentation,
-                              extra_x_pixels, extra_y_pixels);
+                              extra_x_pixels, extra_y_pixels, right_edge,
+                              int(start_row), graphics_set_override, palette_set_override);
 }
 
 std::vector<std::uint32_t> render_stage0_d988_screen4(

@@ -169,43 +169,53 @@ std::array<std::uint8_t, 24u * 32u> Stage0BackgroundStream::compose_d988_raw() c
     return out;
 }
 
-void Stage0BackgroundStream::apply_fast_ground(
-        std::array<std::uint8_t, 24u * 32u>& out, bool alternate) const {
-    // Fixed-bank $5DD8-$5E3C: the fast vehicle-ground strip is not part
-    // of the E000 ring. CA3A advances at 60 Hz; CA3B=(CA3A+CA1D)&7
-    // selects an 8-byte window from $5E4B (or $5E6B), repeated four
-    // times into D988 rows 21/22. -CA1B moves the strip down by 0..2
-    // rows during vertical camera motion; destinations >= $DE00 clip.
-    const auto ca1b = std::uint8_t(ca1a() >> 8u);
-    const unsigned row_offset = std::uint8_t(0u - ca1b);
-    if (row_offset >= 3u) return;
-    const auto ca1d = std::uint8_t(ca1c() >> 8u);
-    const unsigned phase = (unsigned(ca3a_) + unsigned(ca1d)) & 7u;
-    const auto fixed = rom_.bank(0);
-    const unsigned table = (alternate ? 0x1e6bu : 0x1e4bu); // CPU $5E6B/$5E4B
-    for (unsigned line = 0; line < 2u; ++line) {
-        const unsigned row = 21u + row_offset + line;
-        if (row >= 24u) continue;
-        const unsigned src = table + line * 16u + phase;
-        if (src + 7u >= fixed.size()) return;
-        for (unsigned x = 0; x < 32u; ++x)
-            out[row * 32u + x] = fixed[src + (x & 7u)];
+void Stage0BackgroundStream::apply_fast_ground_phase(
+        std::array<std::uint8_t,24u*32u>& out,bool alternate,
+        std::uint8_t phase,std::uint8_t row_offset) const {
+    if(row_offset>=3u) return;
+    const auto fixed=rom_.bank(0);
+    const unsigned table=alternate?0x1e6bu:0x1e4bu;
+    for(unsigned line=0;line<2u;++line) {
+        const unsigned row=21u+unsigned(row_offset)+line;
+        if(row>=24u) continue;
+        const unsigned src=table+line*16u+(unsigned(phase)&7u);
+        if(src+7u>=fixed.size()) return;
+        for(unsigned x=0;x<32u;++x) out[row*32u+x]=fixed[src+(x&7u)];
     }
 }
 
+void Stage0BackgroundStream::apply_fast_ground(
+        std::array<std::uint8_t, 24u * 32u>& out, bool alternate) const {
+    // Fixed-bank $5DD8-$5E3C. Keep phase/row selection factored out so the
+    // native renderer can present the previous coarse graphics phase for the
+    // first subframe while logic already owns the new state.
+    const auto ca1b=std::uint8_t(ca1a()>>8u);
+    const auto ca1d=std::uint8_t(ca1c()>>8u);
+    apply_fast_ground_phase(out,alternate,
+        std::uint8_t((unsigned(ca3a_)+unsigned(ca1d))&7u),
+        std::uint8_t(0u-ca1b));
+}
+
+void Stage0BackgroundStream::apply_d988_parallax_phase(
+        std::array<std::uint8_t, 24u * 32u>& out, std::uint16_t phase) const {
+    // Bank09 $6EBC-$6F0D. H selects the display column and L selects one
+    // of the eight pre-shifted star tiles $C6..$CD. The interactive native
+    // path supplies the original per-video-frame presentation phase; the
+    // coarse stream state remains separately validated at the ROM anchors.
+    const auto h=std::uint8_t(phase>>8u);
+    const auto l=std::uint8_t(0xcdu-((phase&0xffu)>>5u));
+    for (unsigned y = 0; y < 24u; ++y) {
+        const unsigned c0=(unsigned(e800_[y])+h)&31u;
+        const unsigned c1=(unsigned(e800_[y+1u])+h+13u)&31u;
+        auto& a=out[y*32u+c0]; if(a==0u) a=l;
+        auto& b=out[y*32u+c1]; if(b==0u) b=l;
+    }
+}
 void Stage0BackgroundStream::apply_d988_parallax(
         std::array<std::uint8_t, 24u * 32u>& out) const {
-    // Original $6EE7 runs AFTER the tile/object stampers. It fills only empty
-    // cells, so stamped vehicle/ground tiles take priority over stars.
-    for (unsigned y = 0; y < 24u; ++y) {
-        // $6EF1/$6F05: first star adds H only; second adds H+$0D.
-        const unsigned c0 = (unsigned(e800_[y]) + parallax_h_) & 31u;
-        const unsigned c1 = (unsigned(e800_[y + 1u]) + parallax_h_ + 13u) & 31u;
-        auto& a = out[y * 32u + c0];
-        if (a == 0u) a = parallax_l_;
-        auto& b = out[y * 32u + c1];
-        if (b == 0u) b = parallax_l_;
-    }
+    apply_d988_parallax_phase(out,
+        std::uint16_t((std::uint16_t(parallax_h_)<<8u)|
+                      (std::uint16_t(0xcdu-parallax_l_)<<5u)));
 }
 
 std::array<std::uint8_t, 24u * 32u> Stage0BackgroundStream::compose_d988_base() const {
@@ -214,8 +224,44 @@ std::array<std::uint8_t, 24u * 32u> Stage0BackgroundStream::compose_d988_base() 
     return out;
 }
 
+std::array<std::uint8_t,24u> Stage0BackgroundStream::compose_right_edge() const {
+    std::array<std::uint8_t,24u> out{};
+    // The streamer maintains logical column 32 one tile ahead in the ring,
+    // so fine-scroll can expose it directly without reading stale ring data.
+    for(unsigned y=0;y<24u;++y) out[y]=view_tile(32u,y);
+
+    // Same $5DD8 fast-ground composition as D988, evaluated at x=32.
+    const auto ca1b=std::uint8_t(ca1a()>>8u);
+    const unsigned row_offset=std::uint8_t(0u-ca1b);
+    if(row_offset<3u) {
+        const auto ca1d=std::uint8_t(ca1c()>>8u);
+        const unsigned phase=(unsigned(ca3a_)+unsigned(ca1d))&7u;
+        const auto fixed=rom_.bank(0);
+        const unsigned table=fast_ground_alternate()?0x1e6bu:0x1e4bu;
+        for(unsigned line=0;line<2u;++line) {
+            const unsigned row=21u+row_offset+line;
+            if(row<24u) out[row]=fixed[table+line*16u+phase];
+        }
+    }
+
+    // $6EE7 stars are modulo-32 display columns. Column 32 is the successor
+    // of column31, so a star at logical column0 repeats here for interpolation.
+    for(unsigned y=0;y<24u;++y) if(out[y]==0u) {
+        const unsigned c0=(unsigned(e800_[y])+parallax_h_)&31u;
+        const unsigned c1=(unsigned(e800_[y+1u])+parallax_h_+13u)&31u;
+        if(c0==0u || c1==0u) out[y]=parallax_l_;
+    }
+    return out;
+}
+
 unsigned Stage0BackgroundStream::ring_col() const noexcept {
-    return unsigned(floor_div8(world_x())) & 63u;
+    // The raster program and D988 source window are built before the position
+    // integrator. presentation_state() already rewinds one coarse velocity
+    // step for R18; the tile-window must use the same pre-integrated X.
+    // Otherwise the 8px ring-column carry happens one logic tick before the
+    // fine-scroll wraps (e.g. 1902->1904), producing a whole-screen jerk.
+    const int previous_x=int(world_x())-int(x_vel_fp_/256);
+    return unsigned(floor_div8(previous_x)) & 63u;
 }
 
 unsigned Stage0BackgroundStream::ring_row() const noexcept {
@@ -394,6 +440,31 @@ void Stage0BackgroundStream::write_horizontal(std::uint16_t source, int col_offs
     }
 }
 
+void Stage0BackgroundStream::prefetch_successor_column() {
+    // Native overscan. A real stream event happens every 8 pixels, but the
+    // D988 window's ring_col carry occurs 2 pixels later. Between two stream
+    // events the exposed logical column 32 can therefore move from physical
+    // ring+32 to ring+33 before the Z80 would have decoded another column.
+    // Keep BOTH future physical cells warm. Only logical column 32 is ever
+    // displayed; +33 is staging for the next ring carry.
+    if (suppress_prefetch_ || gated_ || (mode_ != 0u && mode_ != 2u) || x_vel_fp_ <= 0)
+        return;
+    Stage0BackgroundStream future(*this);
+    future.suppress_prefetch_ = true;
+    const int dst_row = int(ring_row());
+    const unsigned base_x = world_x();
+    for (unsigned ahead = 1; ahead <= 2; ++ahead) {
+        const unsigned target = base_x + ahead * 8u;
+        unsigned guard = 16u;
+        while (!future.gated_ && future.world_x() < target && guard--)
+            future.step_15hz();
+        if (future.world_x() < target) break;
+        const int dst_col = int(ring_col()) + 31 + int(ahead);
+        for (unsigned y = 0; y < 24u; ++y)
+            put(dst_col, dst_row + int(y), future.view_tile(31u, y));
+    }
+}
+
 void Stage0BackgroundStream::stream_phase() {
     // $7AEA-$7B08 can execute sub_7C08 twice in one stream event. After the
     // fourth phase of a record, an FE separator causes: skip FE, parse the
@@ -439,6 +510,7 @@ void Stage0BackgroundStream::stream_phase() {
         }
         if (!second_pass) break;
     }
+    prefetch_successor_column();
 }
 
 void Stage0BackgroundStream::step_parallax() {

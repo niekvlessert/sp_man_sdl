@@ -1,7 +1,7 @@
 set throttle off
 set renderer none
 namespace eval smpcm {
- variable clips {{stage0 59 180} {shot 2 1} {explosion 16 2} {hit 22 1} {enemy_shot 21 1}}
+ variable clips {{stage0 59 180} {shot 2 1} {explosion 16 2} {hit 22 1} {enemy_shot 21 1} {pickup 9 1} {powerup 10 1} {option_mode 8 1} {missile_launch 12 1}}
  variable current {}
  variable phase init
  variable ticks 0

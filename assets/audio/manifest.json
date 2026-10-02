@@ -36,6 +36,34 @@
       "channels": 1,
       "seconds": 0.9984580498866213,
       "sha256": "93e33c5a447d5713f30ab29d2ff94aac116d3f8331786d991993cd3dfcd97d71"
+    },
+    {
+      "name": "pickup",
+      "rate": 44100,
+      "channels": 1,
+      "seconds": 1.003265306122449,
+      "sha256": "fc5ccc4f54d8a0873e0c6c758387eaedcbf15daf36cfc50acd646f14336c3948"
+    },
+    {
+      "name": "powerup",
+      "rate": 44100,
+      "channels": 1,
+      "seconds": 1.003015873015873,
+      "sha256": "b9098bd6927cd7bf2b7cad0c09a36efd1a9d98bcb53546ae4d784e2392aed86e"
+    },
+    {
+      "name": "option_mode",
+      "rate": 44100,
+      "channels": 1,
+      "seconds": 0.9984580498866213,
+      "sha256": "5f24b3ee333187726cd77b5e5b54e34bb7990c7dd574d8436ee8f78567d23e64"
+    },
+    {
+      "name": "missile_launch",
+      "rate": 44100,
+      "channels": 1,
+      "seconds": 0.9984580498866213,
+      "sha256": "db5f4ca0f7e76ef2c96ca633454ab32abdce36219a0c674d4f1e353bf4324bdf"
     }
   ]
 }

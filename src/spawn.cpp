@@ -103,8 +103,6 @@ void scroll_stage0_objects(GameState& game, int dx, int dy) noexcept {
         if (dx > 0 && nx < left_guard) { e.clear(); continue; }
         e.set_x_fixed(std::uint16_t(std::int16_t(nx)));
         e.set_y_fixed(std::uint16_t(std::int16_t(ny)));
-        if (e.type() == 0x1fu)
-            e.raw[0x05] = std::int16_t(e.x_fixed()) >= 0x1c00 ? 1u : 0u;
     }
 }
 }
@@ -121,6 +119,15 @@ void step_stage0_object_scroll_60hz(GameState& game, std::int32_t x_velocity_fp,
     // over four 60-Hz presentation frames: /32 in object fixed units.
     const int dx = int(std::int16_t(x_velocity_fp)) / 32;
     const int dy = int(std::int16_t(y_velocity_fp)) / 32;
+    scroll_stage0_objects(game, dx, dy);
+}
+
+void step_stage0_object_scroll_15hz(GameState& game, std::int32_t x_velocity_fp,
+                                    std::int32_t y_velocity_fp) noexcept {
+    // Original scenery/object tick: camera velocity is pixel 8.8, while object
+    // coordinates are tile 8.8, so one complete logic tick contributes /8.
+    const int dx = int(std::int16_t(x_velocity_fp)) / 8;
+    const int dy = int(std::int16_t(y_velocity_fp)) / 8;
     scroll_stage0_objects(game, dx, dy);
 }
 
@@ -234,9 +241,11 @@ bool decode_stage0_tile_def(const Rom& rom, const Entity64& entity,
                             std::uint16_t def_cpu, int place_x, int place_y,
                             Stage0TileVisual& out) {
     out = {};
-    if (def_cpu < 0x8000u || def_cpu >= 0xa000u) return false;
-    const auto bank = rom.bank(7);
-    const unsigned d = unsigned(def_cpu - 0x8000u);
+    if (def_cpu < 0x8000u || def_cpu >= 0xc000u) return false;
+    const bool high = def_cpu >= 0xa000u;
+    const auto bank = rom.bank(high ? 8 : 7);
+    const unsigned base = high ? 0xa000u : 0x8000u;
+    const unsigned d = unsigned(def_cpu - base);
     if (d + 4u > bank.size()) return false;
     const int yoff = int(static_cast<std::int8_t>(bank[d]));
     const int xoff = int(static_cast<std::int8_t>(bank[d + 1u]));
@@ -255,16 +264,19 @@ bool decode_stage0_tile_def(const Rom& rom, const Entity64& entity,
 bool decode_stage0_tile_frame(const Rom& rom, const Entity64& entity,
                               unsigned frame, Stage0TileVisual& out) {
     out = {};
-    const auto bank = rom.bank(7);
+    const auto type_bank = rom.bank(7);
     const unsigned type_entry = (0x8596u - 0x8000u)
                               + (unsigned(entity.type()) - 1u) * 2u;
-    if (type_entry + 1u >= bank.size()) return false;
-    const auto list_cpu = le16(bank, type_entry);
-    if (list_cpu < 0x8000u || list_cpu >= 0xa000u) return false;
-    const unsigned frame_entry = unsigned(list_cpu - 0x8000u) + frame * 2u;
-    if (frame_entry + 1u >= bank.size()) return false;
-    const auto def_cpu = le16(bank, frame_entry);
-    if (def_cpu < 0x8000u || def_cpu >= 0xa000u) return false;
+    if (type_entry + 1u >= type_bank.size()) return false;
+    const auto list_cpu = le16(type_bank, type_entry);
+    if (list_cpu < 0x8000u || list_cpu >= 0xc000u) return false;
+    const bool high_list=list_cpu>=0xa000u;
+    const auto list_bank=rom.bank(high_list?8:7);
+    const unsigned list_base=high_list?0xa000u:0x8000u;
+    const unsigned frame_entry=unsigned(list_cpu-list_base)+frame*2u;
+    if(frame_entry+1u>=list_bank.size()) return false;
+    const auto def_cpu=le16(list_bank,frame_entry);
+    if(def_cpu<0x8000u || def_cpu>=0xc000u) return false;
     return decode_stage0_tile_def(rom, entity, def_cpu, 0, 0, out);
 }
 }
@@ -299,6 +311,99 @@ std::vector<Stage0TileVisual> decode_stage0_tile_visuals(const Rom& rom,
             Stage0TileVisual v;
             if (decode_stage0_tile_def(rom, entity, part.def, part.x, part.y, v))
                 out.push_back(std::move(v));
+        }
+        return out;
+    }
+
+    if (entity.type() == 0x6bu && entity.state()==0u) {
+        // Bank05 $9B38/$9B70: three-frame large-object death compositor.
+        // +3E selects a table at $9B8A (default $9BA2); +06 selects one of
+        // three packed placement lists. $7B65 then uses the normal type-$6B
+        // tile-matrix table at bank07:$8596.
+        const auto bank5=rom.bank(5);
+        auto b5word=[&](unsigned cpu)->std::uint16_t {
+            const unsigned o=cpu-0x8000u;
+            if(o+1u>=bank5.size()) return 0;
+            return std::uint16_t(bank5[o])|(std::uint16_t(bank5[o+1])<<8u);
+        };
+        unsigned table=0x9ba2u;
+        const unsigned sel=entity.raw[0x3e];
+        if(sel>=3u) {
+            const unsigned q=0x9b8au+(sel-3u)*2u;
+            const auto candidate=b5word(q);
+            if(candidate>=0x8000u && candidate<0xa000u) table=candidate;
+        }
+        const auto list_cpu=b5word(table+(unsigned(entity.raw[0x06])%3u)*2u);
+        if(list_cpu<0x8000u || list_cpu>=0xa000u) return out;
+        unsigned p=list_cpu-0x8000u;
+        if(p>=bank5.size()) return out;
+        const unsigned packed_len=bank5[p++];
+        if(packed_len<2u || p+packed_len-1u>bank5.size()) return out;
+        const unsigned end=p+packed_len-1u;
+        int place_y=0,place_x=0; bool need_position=true;
+        while(p<end) {
+            if(need_position) {
+                if(p+2u>end) break;
+                place_y=int(static_cast<std::int8_t>(bank5[p++]));
+                place_x=int(static_cast<std::int8_t>(bank5[p++]));
+                need_position=false;
+            }
+            if(p>=end) break;
+            const auto control=bank5[p++];
+            if(control==0xffu) break;
+            if(control==0xfeu) {need_position=true;continue;}
+            const unsigned count=control;
+            if(p+count>end) break;
+            for(unsigned i=0;i<count;++i) {
+                Stage0TileVisual v;
+                if(decode_stage0_tile_frame(rom,entity,bank5[p++],v)) {
+                    v.x+=place_x*8;v.y+=place_y*8;
+                    v.tile_x_offset+=place_x;v.tile_y_offset+=place_y;
+                    out.push_back(std::move(v));
+                }
+            }
+        }
+        return out;
+    }
+
+    if (entity.type() == 0x55u) {
+        // Fixed $58F0 -> $7B65. $5A19 is a six-entry pointer table indexed
+        // by +06. The pointed lists use the same packed placement grammar as
+        // the later $56 actor, but live in fixed bank 0 rather than bank 6.
+        const auto fixed = rom.bank(0);
+        unsigned frame = std::min<unsigned>(entity.raw[0x06], 5u);
+        const unsigned table = 0x5a19u - 0x4000u;
+        if (table + frame * 2u + 1u >= fixed.size()) return out;
+        const auto list_cpu = le16(fixed, table + frame * 2u);
+        if (list_cpu < 0x4000u || list_cpu >= 0x6000u) return out;
+        unsigned p = unsigned(list_cpu - 0x4000u);
+        if (p >= fixed.size()) return out;
+        const unsigned packed_len = fixed[p++];
+        if (packed_len < 2u || p + packed_len - 1u > fixed.size()) return out;
+        const unsigned end = p + packed_len - 1u;
+        int place_y = 0, place_x = 0;
+        bool need_position = true;
+        while (p < end) {
+            if (need_position) {
+                if (p + 2u > end) break;
+                place_y = int(static_cast<std::int8_t>(fixed[p++]));
+                place_x = int(static_cast<std::int8_t>(fixed[p++]));
+                need_position = false;
+            }
+            if (p >= end) break;
+            const auto control = fixed[p++];
+            if (control == 0xffu) break;
+            if (control == 0xfeu) { need_position = true; continue; }
+            const unsigned count = control;
+            if (p + count > end) break;
+            for (unsigned i = 0; i < count; ++i) {
+                Stage0TileVisual v;
+                if (decode_stage0_tile_frame(rom, entity, fixed[p++], v)) {
+                    v.x += place_x * 8; v.y += place_y * 8;
+                    v.tile_x_offset += place_x; v.tile_y_offset += place_y;
+                    out.push_back(std::move(v));
+                }
+            }
         }
         return out;
     }
@@ -364,9 +469,18 @@ std::vector<Stage0TileVisual> decode_stage0_tile_visuals(const Rom& rom,
     // phase, phase+8 and phase+16. The relation below is byte-for-byte
     // validated against the live $7AC0 trace (e.g. x=$1F00 -> frames 2/10/18).
     const unsigned phase = (6u - (unsigned(entity.x_fixed()) >> 6)) & 7u;
-    for (unsigned band = 0; band < 3u; ++band) {
+    return decode_stage0_t24_visuals_phase(rom,entity,phase);
+}
+
+std::vector<Stage0TileVisual> decode_stage0_t24_visuals_phase(const Rom& rom,
+                                                               const Entity64& entity,
+                                                               unsigned phase) {
+    std::vector<Stage0TileVisual> out;
+    if(!entity.active() || entity.type()!=0x24u) return out;
+    phase&=7u;
+    for(unsigned band=0;band<3u;++band) {
         Stage0TileVisual v;
-        if (decode_stage0_tile_frame(rom, entity, phase + band * 8u, v))
+        if(decode_stage0_tile_frame(rom,entity,phase+band*8u,v))
             out.push_back(std::move(v));
     }
     return out;
@@ -378,7 +492,13 @@ void stamp_stage0_tile_objects(const Rom& rom, const Stage0BackgroundStream& str
     const auto fine_x = std::uint16_t(stream.ca1c() & 0x00ffu);
     const auto fine_y = std::uint16_t(stream.ca1a() & 0x00ffu);
     for (const auto& entity : game.enemies) {
-        if (!entity.active()) continue;
+        if (!entity.active() || entity.type()==3u) continue;
+        // Native SDL draws the large vehicle tile actors as pixel-positioned
+        // overlays. Stamping them into the 8x8 D988 name table quantizes their
+        // entrance to whole columns and causes the visible right-edge build-up.
+        if(entity.type()==0x1fu || entity.type()==0x20u || entity.type()==0x22u ||
+           entity.type()==0x24u || entity.type()==0x26u || entity.type()==0x55u ||
+           entity.type()==0x56u || entity.type()==0x6bu) continue;
         const auto visuals = decode_stage0_tile_visuals(rom, entity);
         if (visuals.empty()) continue;
 
@@ -400,6 +520,41 @@ void stamp_stage0_tile_objects(const Rom& rom, const Stage0BackgroundStream& str
                     if (dx < 0 || dx >= 32) continue;
                     const auto tile = v.tiles[y * unsigned(v.cols) + x];
                     if (tile != 0u) d988[unsigned(dy) * 32u + unsigned(dx)] = tile;
+                }
+            }
+        }
+    }
+}
+
+void stamp_stage0_tile_objects_right_edge(const Rom& rom, const Stage0BackgroundStream& stream,
+                                          const GameState& game,
+                                          std::array<std::uint8_t,24u>& edge) {
+    const auto fine_x=std::uint16_t(stream.ca1c()&0x00ffu);
+    const auto fine_y=std::uint16_t(stream.ca1a()&0x00ffu);
+    for(const auto& entity:game.enemies) {
+        if(!entity.active() || entity.type()==3u) continue;
+        // The native renderer draws these wide vehicle actors as pixel
+        // overlays; keep the successor-column path consistent with the main
+        // D988 stamper or they reappear as clipped fragments at x=256.
+        if(entity.type()==0x1fu || entity.type()==0x20u || entity.type()==0x22u ||
+           entity.type()==0x24u || entity.type()==0x26u || entity.type()==0x55u ||
+           entity.type()==0x56u || entity.type()==0x6bu) continue;
+        const auto visuals=decode_stage0_tile_visuals(rom,entity);
+        if(visuals.empty()) continue;
+        const auto ax=std::uint16_t(entity.x_fixed()+fine_x);
+        const auto ay=std::uint16_t(entity.y_fixed()+fine_y);
+        const int object_col=int(std::int8_t(ax>>8u));
+        const int object_row=int(std::int8_t(ay>>8u));
+        for(const auto& v:visuals) {
+            const int left=object_col+v.tile_x_offset;
+            const int top=object_row+v.tile_y_offset;
+            for(unsigned y=0;y<v.rows;++y) {
+                const int dy=top+int(y);
+                if(dy<0 || dy>=24) continue;
+                for(unsigned x=0;x<v.cols;++x) {
+                    if(left+int(x)!=32) continue;
+                    const auto tile=v.tiles[y*unsigned(v.cols)+x];
+                    if(tile) edge[unsigned(dy)]=tile;
                 }
             }
         }
@@ -485,7 +640,7 @@ bool instantiate_stage0_spawn(const Rom& rom, const SpawnRecord& r, GameState& g
     const bool special26 = r.type == 0x26u && r.control_flag();
     if (r.control_flag() && !special26) return false;
     if (r.type != 0x1fu && r.type != 0x20u && r.type != 0x22u &&
-        r.type != 0x24u && r.type != 0x26u && r.type != 0x56u) return false;
+        r.type != 0x24u && r.type != 0x26u && r.type != 0x55u && r.type != 0x56u) return false;
     if (r.payload.empty() || (r.type == 0x24u && r.payload.size() < 2u)) return false;
     auto* e = game.allocate_enemy();
     if (!e) return false;
@@ -518,6 +673,31 @@ bool instantiate_stage0_spawn(const Rom& rom, const SpawnRecord& r, GameState& g
         e->raw[0x24] = 0x00;
         e->raw[0x17] = 0x20;
         e->raw[0x18] = 0x01;
+    } else if(r.type==0x22u) {
+        // Bank06 $BD0F init: threshold cursor starts at zero and +3E=$0B.
+        e->raw[0x20]=0;e->raw[0x3e]=0x0b;
+    } else if(r.type==0x26u) {
+        // Bank06 $BE5F init. The stage-0 script deterministically yields three
+        // launches for every observed $26 actor in the original trace.
+        e->raw[0x20]=0;e->raw[0x21]=3;e->raw[0x22]=0;
+        e->raw[0x25]=0;e->raw[0x26]=0;e->raw[0x3e]=0x0c;
+    } else if (r.type == 0x55u) {
+        // Fixed $58F0/$5911. First inline byte is the deck Y used by $6754
+        // and is retained at +22. The second byte is the horizontal trigger;
+        // bit 7 selects the hover/return variant. $5927 chooses a 1..7
+        // cruise altitude. Preserve the observed stage-0 deterministic values
+        // for the four scripted carriers.
+        e->raw[0x22] = r.payload[0];
+        if (r.payload.size() >= 2u) {
+            e->raw[0x20] = r.payload[1] & 0x7fu;
+            e->raw[0x21] = (r.payload[1] & 0x80u) ? 1u : 0u;
+            switch (r.payload[1]) {
+            case 0x1au: e->raw[0x23] = 6; break;
+            case 0x96u: e->raw[0x23] = 4; break;
+            case 0x9cu: e->raw[0x23] = 1; break;
+            default:    e->raw[0x23] = 3; break;
+            }
+        }
     } else if (r.type == 0x56u) {
         // Exact live creation state at trigger $3018. The original handler
         // consumes the one-byte payload, leaving +2E/+2F at 1, and chooses
@@ -526,7 +706,7 @@ bool instantiate_stage0_spawn(const Rom& rom, const SpawnRecord& r, GameState& g
         e->raw[0x2e] = 0x01;
         e->raw[0x2f] = 0x01;
         e->raw[0x3f] = 0x01;
-    } else if (r.payload.size() >= 2u) {
+    } else if (r.payload.size() >= 2u && r.type!=0x26u && r.type!=0x22u) {
         e->raw[0x20] = r.payload[1];
     }
     e->state() = 1;

@@ -69,6 +69,8 @@ void step_stage0_objects(GameState& game) noexcept;
 void step_stage0_object_scroll_60hz(GameState& game) noexcept;
 void step_stage0_object_scroll_60hz(GameState& game, std::int32_t x_velocity_fp,
                                     std::int32_t y_velocity_fp) noexcept;
+void step_stage0_object_scroll_15hz(GameState& game, std::int32_t x_velocity_fp,
+                                    std::int32_t y_velocity_fp) noexcept;
 void step_stage0_object_logic_15hz(GameState& game) noexcept;
 bool decode_stage0_sprite_visual(const Rom& rom, const Screen4Snapshot& video,
                                  const Entity64& entity, Stage0SpriteVisual& out);
@@ -76,9 +78,15 @@ bool decode_stage0_tile_visual(const Rom& rom, const Entity64& entity,
                                Stage0TileVisual& out);
 std::vector<Stage0TileVisual> decode_stage0_tile_visuals(const Rom& rom,
                                                          const Entity64& entity);
+std::vector<Stage0TileVisual> decode_stage0_t24_visuals_phase(const Rom& rom,
+                                                               const Entity64& entity,
+                                                               unsigned phase);
 void stamp_stage0_tile_objects(const Rom& rom, const Stage0BackgroundStream& stream,
                                const GameState& game,
                                std::array<std::uint8_t, 24u * 32u>& d988);
+void stamp_stage0_tile_objects_right_edge(const Rom& rom, const Stage0BackgroundStream& stream,
+                                          const GameState& game,
+                                          std::array<std::uint8_t, 24u>& edge);
 // Deterministic A438 / 152.50-s OpenMSX reference pool used while the
 // late fight handlers are being ported. This seeds enemies only; player state
 // and the already byte-exact stage/raster state remain untouched.

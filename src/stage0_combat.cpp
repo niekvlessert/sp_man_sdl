@@ -12,6 +12,19 @@ bool timer(Entity64& e,unsigned field) {
     if(e.raw[field]==1) return true;
     --e.raw[field];return false;
 }
+std::uint8_t direction8(const Entity64& target,const Entity64& source) {
+    // Fixed $6B94-$6BE5, using the high position bytes exactly like the ROM.
+    auto sm=[](std::uint8_t t,std::uint8_t s) {
+        const int d=int(t)-int(s);
+        return std::pair<unsigned,bool>{unsigned(d<0?-d:d)&0x7fu,d<0};
+    };
+    const auto [dx,left]=sm(target.raw[0x0a],source.raw[0x0a]);
+    const auto [dy,above]=sm(target.raw[0x08],source.raw[0x08]);
+    std::uint8_t c=left?(above?0u:6u):(above?2u:4u);
+    const bool same=left==above;
+    if((dy>=(dx>>1u) && same) || (dy<(dx>>1u) && !same)) ++c;
+    return std::uint8_t(c&7u);
+}
 }
 void Stage0Combat::spawned(Entity64& e) {
     // Bank05 $82CA/$82E4, every fourth small turret awards a pickup.
@@ -54,20 +67,63 @@ void Stage0Combat::drop(const Rom& rom,Entity64& slot,std::uint16_t x,std::uint1
     slot.raw[0x13]=4;slot.raw[0x14]=4;
     slot.set_x_fixed(x);slot.set_y_fixed(y);
 }
-void Stage0Combat::collect(std::uint8_t kind,GameState& game,std::vector<PlaySound>& sounds) {
+void Stage0Combat::award_destroyed(const Rom& rom,std::uint8_t original_type) {
+    const auto bank=rom.bank(4);
+    const unsigned rec=0x1e74u+unsigned(original_type)*3u;
+    if(rec+2>=bank.size()) return;
+    const unsigned selector=bank[rec+2];
+    if(selector==0 || selector>10) return;
+    const unsigned q=0x1cf6u+(selector-1u)*2u;
+    const unsigned bcd=unsigned(bank[q])|(unsigned(bank[q+1])<<8);
+    if((bcd&0xffu)==0xffu) return;
+    const unsigned value=(bcd&0xfu)+10u*((bcd>>4)&0xfu)+100u*((bcd>>8)&0xfu)+1000u*((bcd>>12)&0xfu);
+    score_+=value;
+}
+
+void Stage0Combat::clear_vulnerable(const Rom& rom, GameState& game) {
+    // Fixed $7058: scan all 20 object slots, ignore inactive/high-bit types and
+    // this exact 35-type exclusion list, then set pending damage=1 and HP=0.
+    // The normal $7C44->$7CC3 path subsequently creates each actor's real
+    // $62/$6B replacement. $708B handles the final eight special types
+    // separately; they are intentionally included in the exclusion table.
+    static constexpr std::array<std::uint8_t,35> excluded{
+        0x65,0x02,0x03,0x0e,0x24,0x2a,0x35,0x72,0x75,0x39,0x48,0x4d,
+        0x69,0x6a,0x6b,0x52,0x53,0x54,0x3b,0x3c,0x3d,0x7c,0x3f,0x5f,
+        0x78,0x79,0x56,0x3e,0x3e,0x64,0x71,0x7a,0x14,0x77,0x7b};
+    for(auto& e:game.enemies) {
+        if(!e.active() || (e.type()&0x80u) ||
+           std::find(excluded.begin(),excluded.end(),e.type())!=excluded.end()) continue;
+        e.raw[0x04]=1;
+        e.raw[0x16]=0;
+        if(e.raw[0x14]&0x80u) (void)apply_stage0_damage(rom,e,1);
+    }
+    bullets_={};
+}
+
+void Stage0Combat::collect(const Rom& rom,std::uint8_t kind,GameState& game,std::vector<PlaySound>& sounds) {
+    // Original bank02 $87BF->$83A4 always requests SFX $09 after a pickup.
+    // Red/power ($0E) and selector $0D additionally request $0A inside
+    // their item handler before the common $09.
+    if(kind==13 || kind==14) sounds.push_back(PlaySound::PowerUp);
     switch(kind) {
     case 2:upgrades_.speed=std::min(4u,upgrades_.speed+1);break;
-    case 3:upgrades_.wave=false;break; // N, primary weapon state 3
+    case 3:
+        // Original $8443->$84AC selects CB48 and writes state=$80, mode=$03:
+        // this is the persistent M (ground-missile) weapon, independent of W.
+        upgrades_.missile=true;break;
     case 10:upgrades_.wave=true;break; // W, primary weapon state $0A
-    case 11:upgrades_.mega_bomb=true;break;
+    case 11:
+        // Original $8457 sets CB1D. This is the blue one-shot LARGE missile
+        // salvo consumed by the next primary fire, not the normal M upgrade.
+        upgrades_.missile_armed=true;break;
     case 7:upgrades_.options=std::min(2u,upgrades_.options+1);break;
     case 14:upgrades_.power=std::min(16u,upgrades_.power+1);break;
     case 12:case 13:
         // Blue capsule: $7058 marks vulnerable actors for destruction.
-        for(auto& e:game.enemies) if(e.active() && (e.raw[0x14]&128)) e.clear();
-        bullets_={};sounds.push_back(PlaySound::Explosion);break;
+        clear_vulnerable(rom,game);sounds.push_back(PlaySound::Explosion);break;
     default:break;
     }
+    sounds.push_back(PlaySound::Pickup);
 }
 void Stage0Combat::step(const Rom& rom,GameState& game,unsigned frame,int dx,int dy,std::vector<PlaySound>& sounds) {
     for(auto& b:bullets_) if(b.active()) {
@@ -87,9 +143,23 @@ void Stage0Combat::step(const Rom& rom,GameState& game,unsigned frame,int dx,int
             e.set_x_fixed(std::uint16_t(e.x_fixed()-dx));e.set_y_fixed(std::uint16_t(e.y_fixed()-dy));
             const int x=std::int16_t(e.x_fixed())/32,y=std::int16_t(e.y_fixed())/32;
             if(x< -16 || x>=272 || y< -16 || y>=224) {e.clear();continue;}
-            if(std::abs(int(game.player.x_fixed())/32-x-8)<14 &&
-               std::abs(int(game.player.y_fixed())/32-y-8)<14) {
-                collect(e.raw[3],game,sounds);e.clear();
+            // Original $7606->$7622->$7662 special-case for player type 1
+            // against pickup type 3. Positions are 8.8 tile coordinates: the
+            // player anchor is biased by +1 coarse cell and the pickup's +13/
+            // +14 metadata supplies the Y/X extent. $7681/$769D subtract one
+            // from that extent before the final unsigned byte comparison.
+            // Our entity coordinates already include the 60-Hz camera fraction,
+            // so no separate CA1A/CA1C low-byte correction is needed here.
+            auto pickup_axis_hit=[](std::uint16_t player,std::uint16_t item,std::uint8_t extent) {
+                const auto n=std::uint8_t(extent&0x1fu);
+                if(n<=1u) return false;
+                const auto p=std::uint8_t((player>>8u)+1u);
+                const auto q=std::uint8_t(item>>8u);
+                return std::uint8_t(p-q)<std::uint8_t(n-1u);
+            };
+            if(pickup_axis_hit(game.player.x_fixed(),e.x_fixed(),e.raw[0x14]) &&
+               pickup_axis_hit(game.player.y_fixed(),e.y_fixed(),e.raw[0x13])) {
+                collect(rom,e.raw[3],game,sounds);e.clear();
             }
         }
         if(frame&3) continue;
@@ -98,6 +168,24 @@ void Stage0Combat::step(const Rom& rom,GameState& game,unsigned frame,int dx,int
            (((frame/4)^e.raw[0x2d])&31)==0) {
             const bool below=game.player.y_fixed()>=e.y_fixed();
             if(below==bool(e.raw[0x20])) shot=fire(rom,e,game.player);
+        }
+        if(e.type()==0x55 && e.state()>=2u && e.state()<=4u &&
+           (((frame/4)^e.raw[0x2d])&15u)==0u) {
+            // Fixed $59D0. Direction $6B94 is halved to select one of four
+            // signed high-byte muzzle offsets from $5A11, then $7143 creates
+            // a standard aimed type-$60 projectile. Keep the low 8.8 bytes.
+            const auto fixed=rom.bank(0);
+            const unsigned i=(direction8(game.player,e)>>1u)&3u;
+            const int yo=std::int8_t(fixed[0x1a11u+i*2u]);
+            const int xo=std::int8_t(fixed[0x1a12u+i*2u]);
+            auto muzzle=e;
+            muzzle.set_y_fixed(std::uint16_t(int(e.y_fixed())+yo*0x100));
+            muzzle.set_x_fixed(std::uint16_t(int(e.x_fixed())+xo*0x100));
+            const int dxp=std::abs(int(std::int16_t(game.player.x_fixed()-muzzle.x_fixed())));
+            const int dyp=std::abs(int(std::int16_t(game.player.y_fixed()-muzzle.y_fixed())));
+            // $7725 with BC=$0C00 suppresses the shot only in the immediate
+            // close-radius around the player.
+            if(dxp+dyp>=0x0c00) shot=fire(rom,muzzle,game.player);
         }
         if(e.type()==0x1f && e.raw[10]<28 && e.raw[8]<24) {
             if(e.raw[0x24]==0) {

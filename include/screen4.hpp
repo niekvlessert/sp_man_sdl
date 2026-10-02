@@ -43,7 +43,10 @@ public:
         const Stage0BackgroundStream& stream, const Screen4Snapshot& video,
         const std::array<std::uint8_t, 24u * 32u>& d988,
         const Stage0PresentationState* presentation = nullptr,
-        int extra_x_pixels = 0, int extra_y_pixels = 0);
+        int extra_x_pixels = 0, int extra_y_pixels = 0,
+        const std::array<std::uint8_t,24u>* right_edge = nullptr,
+        int start_row_override = -1, int graphics_set_override = -1,
+        int palette_set_override = -1);
 
 private:
     std::array<std::uint8_t, 32u * 32u> page30_{};

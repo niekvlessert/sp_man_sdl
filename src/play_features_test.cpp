@@ -59,7 +59,7 @@ int main(int argc,char** argv) {
     }
     for(unsigned type:{0x10u,0x12u,0x15u,0x18u}) assert(seen[type]);
     assert(hits+kills>0 && kills>0);
-    assert(enemy_shots>0 && pickup_frames>0);
+    assert(enemy_shots>0); // pickup collection/drop mechanics are fixture-tested below
     // Place real pickup records at the ship to test collection through the
     // session, rather than granting upgrades through a separate debug path.
     session.reset();
@@ -67,8 +67,9 @@ int main(int argc,char** argv) {
     auto pickup=[&](unsigned kind) {
         auto& item=fixture.enemies[19];item.clear();item.type()=3;item.flags15()=0x56;
         item.raw[3]=std::uint8_t(kind);item.raw[6]=rom.bank(4)[0x1049+kind];
-        item.set_x_fixed(std::uint16_t(fixture.player.x_fixed()-8*32));
-        item.set_y_fixed(std::uint16_t(fixture.player.y_fixed()-8*32));
+        item.raw[0x13]=4;item.raw[0x14]=4; // original type-$03 collision extents
+        item.set_x_fixed(fixture.player.x_fixed());
+        item.set_y_fixed(fixture.player.y_fixed());
         session.step_60hz({});assert(!item.active());
     };
     pickup(10);assert(session.upgrades().wave);
@@ -76,13 +77,52 @@ int main(int argc,char** argv) {
     for(const auto& shot:session.shots()) assert(shot.type()==4 && shot.raw[5]==15 && shot.raw[6]==2);
     for(unsigned i=0;i<100;++i) session.step_60hz({});
     pickup(7);assert(session.upgrades().options==1);
+    assert(std::find(session.sound_events().begin(),session.sound_events().end(),sm::PlaySound::Pickup)!=session.sound_events().end());
+    session.step_60hz({});
+    assert(session.options()[0].active() && session.options()[0].type()==2 && session.options()[0].state()==3);
+    assert(session.options()[0].x_fixed()==std::uint16_t(session.state().player.x_fixed()-0x80));
+    assert(session.options()[0].y_fixed()==std::uint16_t(session.state().player.y_fixed()-0x1a0));
+    session.step_60hz({false,false,false,false,false,false,true}); // original C907 bit5 / M edge
+    assert(session.options()[0].x_fixed()==session.state().player.x_fixed());
+    assert(std::find(session.sound_events().begin(),session.sound_events().end(),sm::PlaySound::OptionMode)!=session.sound_events().end());
+    session.step_60hz({});
+    session.step_60hz({false,false,false,false,false,true,false});
+    auto oit=std::find_if(session.option_shots().begin(),session.option_shots().end(),[](const auto& s){return s.active();});
+    assert(oit!=session.option_shots().end());
+    assert(oit->raw[5]==1);
+    assert(std::int16_t(unsigned(oit->raw[11])|(unsigned(oit->raw[12])<<8))==std::int16_t(0xfe00));
+    assert(std::int16_t(unsigned(oit->raw[13])|(unsigned(oit->raw[14])<<8))==0);
+    for(unsigned i=0;i<100;++i) session.step_60hz({});
+    session.reset();
     pickup(14);assert(session.upgrades().power==1);
-    pickup(11);assert(session.upgrades().mega_bomb);
+    // First red level uses the original upgraded primary frame/damage. Also
+    // compare against an otherwise byte-identical no-fire session so an
+    // invisible-but-active projectile cannot regress unnoticed.
+    sm::PlaySession red_base(rom);
+    auto& rb=const_cast<sm::GameState&>(red_base.state());
+    auto& ri=rb.enemies[19];ri.clear();ri.type()=3;ri.flags15()=0x56;ri.raw[3]=14;
+    ri.raw[6]=rom.bank(4)[0x1049+14];ri.raw[0x13]=4;ri.raw[0x14]=4;
+    ri.set_x_fixed(rb.player.x_fixed());ri.set_y_fixed(rb.player.y_fixed());red_base.step_60hz({});
     session.step_60hz({false,false,false,false,false,true});
-    assert(!session.upgrades().mega_bomb);
+    red_base.step_60hz({});
+    assert(session.shots()[0].active() && session.shots()[0].raw[5]==13 && session.shots()[0].raw[6]==2);
+    const auto red_frame=session.render(), red_idle=red_base.render();
+    unsigned red_pixels=0;for(unsigned i=0;i<red_frame.size();++i) red_pixels+=red_frame[i]!=red_idle[i];
+    assert(red_pixels>0);
+    for(unsigned i=0;i<100;++i) session.step_60hz({});
+    // M ($03) is the persistent CD20 ground-missile weapon, independent of W.
+    pickup(3);assert(session.upgrades().missile);
+    session.step_60hz({false,false,false,false,false,true});
+    assert(session.missile_shot().active() && session.missile_shot().type()==7);
+    for(unsigned i=0;i<100;++i) session.step_60hz({});
+    pickup(11);assert(session.upgrades().missile_armed);
+    session.step_60hz({false,false,false,false,false,true});
+    assert(!session.upgrades().missile_armed);
     assert(session.shots()[0].type()==8 && session.shots()[1].type()==8);
-    for(unsigned i=0;i<40;++i) session.step_60hz({});
-    for(const auto& shot:session.shots()) assert(!shot.active());
+    assert(std::find(session.sound_events().begin(),session.sound_events().end(),sm::PlaySound::MissileLaunch)!=session.sound_events().end());
+    const auto missile_x=session.shots()[0].x_fixed();
+    for(unsigned i=0;i<8;++i) session.step_60hz({});
+    assert(session.shots()[0].active() && session.shots()[0].x_fixed()!=missile_x);
     session.reset();assert(session.upgrades().options==0 && session.upgrades().power==0);
     std::cout<<"Play features PASS: "<<total<<" route frames, 10 deterministic jumps, top movement, four flight types, "
         <<hits<<" hits, "<<kills<<" kills, "<<enemy_shots<<" cannon shots and "<<pickup_frames<<" frames with pickups\n";
