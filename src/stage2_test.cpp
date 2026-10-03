@@ -242,6 +242,35 @@ int main(int argc,char** argv) {
         assert(game.enemies[0].state()==1u && game.enemies[0].raw[0x17]==8u);
     }
 
+    // Stage-2 wave generator: one $53 controller creates two initial $2A
+    // lanes, then repeats a top-entry child on the original $40-tick cadence.
+    {
+        const auto gen=std::find_if(stream.records().begin(),stream.records().end(),[](const auto& r){return r.type==0x53u;});
+        assert(gen!=stream.records().end() && gen->control==0x88u && gen->payload==std::vector<std::uint8_t>({2u,0u,2u,0x2au}));
+        sm::GameState game;sm::Stage0Enemies enemies;
+        assert(sm::instantiate_stage0_spawn(rom,*gen,game,1));auto& parent=game.enemies[0];
+        assert(parent.state()==0u && parent.raw[0x34]==0x80u && parent.raw[0x08]==0xfcu);
+        enemies.step_15hz(rom,game,0,0,false,nullptr);assert(parent.state()==1u);
+        enemies.step_15hz(rom,game,1,0,false,nullptr);assert(parent.state()==2u && parent.raw[0x18]==0x40u);
+        auto children=[&] {return unsigned(std::count_if(game.enemies.begin(),game.enemies.end(),[](const auto& e){return e.type()==0x2au;}));};
+        assert(children()==2u && parent.raw[0x37]==2u);
+        bool lane1=false,lane16=false;
+        for(const auto& c:game.enemies) if(c.type()==0x2au) {
+            lane1|=c.raw[0x08]==1u;lane16|=c.raw[0x08]==0x10u;
+            assert(c.raw[0x34]==parent.raw[0x2d]);
+            const auto vy=std::int16_t(unsigned(c.raw[11])|(unsigned(c.raw[12])<<8));assert(vy==0x40);
+        }
+        assert(lane1 && lane16);
+        for(unsigned t=0;t<64u;++t) enemies.step_15hz(rom,game,2u+t,0,false,nullptr);
+        assert(children()==3u && parent.raw[0x18]==0x40u && parent.raw[0x37]==3u);
+        assert(std::any_of(game.enemies.begin(),game.enemies.end(),[](const auto& c){return c.type()==0x2au && c.raw[0x08]==0xfcu;}));
+        // $2A/$53 use their own $6C3A horizontal camera compensation and do
+        // not consume the stage's vertical camera delta.
+        const auto px=parent.x_fixed(),py=parent.y_fixed();
+        sm::step_stage0_object_scroll_15hz(game,0x0100,0x0100,&rom);
+        assert(parent.x_fixed()==std::uint16_t(px-0x20u) && parent.y_fixed()==py);
+    }
+
     // Exercise the restored attack through the real combat service, on both
     // sides of the ceiling/floor mounting, rather than calling a shot helper.
     for(unsigned upside_down=0;upside_down<2u;++upside_down) {
@@ -262,5 +291,5 @@ int main(int argc,char** argv) {
         assert(fired);
         assert(std::find(sounds.begin(),sounds.end(),sm::PlaySound::EnemyShot)!=sounds.end());
     }
-    std::cout<<"Stage 2: all 56 regular ROM spawns and launcher families PASS\n";
+    std::cout<<"Stage 2: all 56 regular ROM spawns, launchers and $53 generator PASS\n";
 }

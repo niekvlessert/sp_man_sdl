@@ -299,7 +299,7 @@ void Stage0Enemies::move_60hz(GameState& game,unsigned frame) {
             if(--e.raw[0x3e]==0) e.clear();
             continue;
         }
-        if(e.active() && (flight(e.type()) || e.type()==0x16u || e.type()==0x19u || e.type()==0x1eu || e.type()==0x11u || e.type()==0x27u || e.type()==0x2cu || e.type()==0x2du || e.type()==0x2fu || e.type()==0x31u || e.type()==0x68u || e.type()==0x70u || e.type()==0x40u)) {
+        if(e.active() && (flight(e.type()) || e.type()==0x16u || e.type()==0x19u || e.type()==0x1eu || e.type()==0x11u || e.type()==0x27u || e.type()==0x2au || e.type()==0x2cu || e.type()==0x2du || e.type()==0x2fu || e.type()==0x31u || e.type()==0x68u || e.type()==0x70u || e.type()==0x40u)) {
         const int divisor=e.type()==0x40u?3:4,phase=int(frame%unsigned(divisor));
         auto delta=[&](int v){return v*(phase+1)/divisor-v*phase/divisor;};
         e.set_x_fixed(std::uint16_t(e.x_fixed()+delta(signed_word(e,13))));
@@ -653,6 +653,40 @@ void Stage0Enemies::step_15hz(const Rom& rom,GameState& game,unsigned tick,std::
                     put(e,11,0);put(e,15,0);set_patrol_velocity();set_base_frame();e.state()=1u;
                 }
             }
+        } else if(e.type()==0x53u) {
+            // Bank05 $9940-$9997. Invisible generator for type $2A. State 1
+            // creates the two initial lanes at coarse Y=1 and 16; state 2
+            // repeats one child every $40 object ticks from Y=$FC.
+            auto child_count=[&] {
+                unsigned n=0;for(const auto& c:game.enemies)
+                    n+=c.active() && c.type()==0x2au && c.raw[0x34]==e.raw[0x2d];
+                return n;
+            };
+            auto spawn_child=[&](std::uint8_t yh,std::uint8_t ordinal) {
+                auto* c=create(rom,game,0x2au);if(!c) return false;
+                c->set_x_fixed(e.x_fixed());c->set_y_fixed(std::uint16_t(yh)<<8u);
+                put(*c,11,0x0040);c->raw[0x34]=e.raw[0x2d];c->raw[0x38]=ordinal;
+                return true;
+            };
+            if(e.state()==0u) {
+                e.set_y_fixed(0xfc00u);e.state()=1u;
+            } else if(e.state()==1u) {
+                unsigned ordinal=1u;
+                if(spawn_child(0x01u,std::uint8_t(ordinal))) ++ordinal;
+                if(spawn_child(0x10u,std::uint8_t(ordinal))) ++ordinal;
+                e.raw[0x37]=std::uint8_t(child_count());e.raw[0x18]=0x40u;e.state()=2u;
+            } else {
+                e.raw[0x37]=std::uint8_t(child_count());
+                if(!e.raw[0x20] && e.raw[0x0a]<=0x0du) e.raw[0x20]=1u;
+                if(expired(e,0x18)) {
+                    if(spawn_child(e.raw[0x08],2u)) e.raw[0x18]=0x40u;
+                    e.raw[0x37]=std::uint8_t(child_count());
+                }
+            }
+        } else if(e.type()==0x2au) {
+            // Bank05 $8338: constant downward motion; $6C3A's horizontal
+            // camera compensation is applied by scroll_stage0_objects.
+            put(e,11,0x0040);
         } else if(e.type()==0x2bu) {
             // Bank05 $8367-$83A6. The extended launcher emits type-$16
             // attackers. Two normal 16-tick gaps are followed by a 64-tick

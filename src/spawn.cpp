@@ -93,11 +93,12 @@ void scroll_stage0_objects(GameState& game, int dx, int dy,const Rom* native_vis
     for (auto& e : game.enemies) {
         // Interactive pickups follow the camera through Stage0Combat, including
         // the pre-anchor part of the level where this scenery helper is idle.
-        if (!e.active() || e.type()==3 || (e.flags15() & 0x04u) == 0u) continue;
+        const bool handler_x_scroll=e.type()==0x2au || e.type()==0x53u;
+        if (!e.active() || e.type()==3 || ((e.flags15() & 0x04u) == 0u && !handler_x_scroll)) continue;
         const auto ox = std::int16_t(e.x_fixed());
         const auto oy = std::int16_t(e.y_fixed());
         const int nx = int(ox) - dx;
-        const int ny = int(oy) - dy;
+        const int ny = handler_x_scroll ? int(oy) : int(oy) - dy;
         // The original pool culls scenery only after its complete tile matrix
         // has left the screen. Type $24 is exceptionally wide: the live tank
         // trace still has it active at x=$EF00 (-$1100 in signed 8.8 tile
@@ -117,7 +118,7 @@ void scroll_stage0_objects(GameState& game, int dx, int dy,const Rom* native_vis
                 right_extent=std::max(right_extent,(matrix.tile_x_offset+int(matrix.cols))*8);
             if(right_extent) left_guard=std::min(left_guard,-(right_extent+16)*32);
         }
-        if (dx > 0 && nx < left_guard) { e.clear(); continue; }
+        if (dx > 0 && nx < left_guard && e.type()!=0x53u) { e.clear(); continue; }
         e.set_x_fixed(std::uint16_t(std::int16_t(nx)));
         e.set_y_fixed(std::uint16_t(std::int16_t(ny)));
     }
@@ -776,13 +777,14 @@ bool instantiate_stage0_spawn(const Rom& rom, const SpawnRecord& r, GameState& g
                               std::uint8_t spawn_direction) {
     const bool special26 = r.type == 0x26u && r.control_flag();
     const bool special2b = r.type == 0x2bu && r.control_flag();
+    const bool special53 = r.type == 0x53u && r.control_flag();
     // The final stage-0 tower is also an extended record: trigger $5000,
     // control $88. Rejecting every flagged record except $26 silently dropped
     // type $64 from real gameplay, leaving only the scenery copy visible.
     const bool special64 = r.type == 0x64u && r.control_flag();
-    if (r.control_flag() && !special26 && !special2b && !special64) return false;
+    if (r.control_flag() && !special26 && !special2b && !special53 && !special64) return false;
     if (r.type != 0x19u && r.type != 0x1eu && r.type != 0x1fu && r.type != 0x20u && r.type != 0x27u && r.type != 0x29u && r.type != 0x2bu && r.type != 0x2du && r.type != 0x2eu && r.type != 0x2fu && r.type != 0x31u && r.type != 0x22u &&
-        r.type != 0x24u && r.type != 0x26u && r.type != 0x55u &&
+        r.type != 0x24u && r.type != 0x26u && r.type != 0x53u && r.type != 0x55u &&
         r.type != 0x56u && r.type != 0x47u && r.type != 0x64u) return false;
     if (r.payload.empty() || (r.type == 0x24u && r.payload.size() < 2u)) return false;
     auto* e = game.allocate_enemy();
@@ -892,6 +894,13 @@ bool instantiate_stage0_spawn(const Rom& rom, const SpawnRecord& r, GameState& g
         // launches for every observed $26 actor in the original trace.
         e->raw[0x20]=0;e->raw[0x21]=3;e->raw[0x22]=0;
         e->raw[0x25]=0;e->raw[0x26]=0;e->raw[0x3e]=0x0c;
+    } else if (r.type == 0x53u) {
+        // Bank05 $9940. This is an invisible extended wave controller; its
+        // descriptor is 02 00 02 2A and the handler places itself just above
+        // the viewport before creating type-$2A children.
+        if(r.payload.size()<4u || r.payload[0]!=2u || r.payload[3]!=0x2au) {e->clear();return false;}
+        e->set_x_fixed(0x2000u);e->set_y_fixed(0xfc00u);
+        e->raw[0x34]=0x80u;
     } else if (r.type == 0x55u) {
         // Fixed $58F0/$5911. First inline byte is the deck Y used by $6754
         // and is retained at +22. The second byte is the horizontal trigger;
@@ -930,7 +939,7 @@ bool instantiate_stage0_spawn(const Rom& rom, const SpawnRecord& r, GameState& g
     }
     // Type $64 must enter bank06:$A300 (state 0). Starting it at state 1
     // skips the ROM initializer that positions the tower at X=$2800/Y=$0C00.
-    e->state() = (r.type == 0x64u || r.type==0x47u || r.type==0x2eu || r.type==0x31u) ? 0u : 1u;
+    e->state() = (r.type == 0x64u || r.type==0x47u || r.type==0x2eu || r.type==0x31u || r.type==0x53u) ? 0u : 1u;
     return true;
 }
 }
