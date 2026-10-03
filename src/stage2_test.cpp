@@ -137,6 +137,42 @@ int main(int argc,char** argv) {
         enemies.step_15hz(rom,game,8,0,false,nullptr);
         assert(game.enemies[0].state()==2u && game.enemies[0].raw[0x06]==3u);
     }
+    // Final regular family: six type-$19 terrain walkers. Five start on the
+    // ordinary leftward path; the $94 record uses bit 7 to enter from the
+    // opposite side with the exact +$0060 horizontal velocity.
+    unsigned walkers19=0;bool reverse19=false;
+    for(const auto& record:stream.records()) if(record.type==0x19u) {
+        sm::GameState game;assert(sm::instantiate_stage0_spawn(rom,record,game,1));
+        const auto& e=game.enemies[0];++walkers19;
+        assert(e.state()==1u && e.raw[0x20]==0x40u && e.raw[0x18]==0x10u);
+        assert(e.raw[0x08]==(record.payload[0]&0x7fu) && e.raw[0x0a]==record.payload[1]);
+        const auto vx=std::int16_t(unsigned(e.raw[13])|(unsigned(e.raw[14])<<8));
+        if(record.payload[0]&0x80u) {reverse19=true;assert(e.raw[0x22]==1u && e.raw[5]==2u && vx==0x60);}
+        else assert(e.raw[0x22]==0u && vx==-0x40);
+    }
+    assert(walkers19==6u && reverse19);
+    {
+        sm::GameState game;sm::Stage0Enemies enemies;sm::Stage0Combat combat19;
+        sm::SpawnRecord r;r.type=r.raw_type=0x19u;r.payload={0x14u,0x1eu};
+        assert(sm::instantiate_stage0_spawn(rom,r,game,1));auto& e=game.enemies[0];
+        // Empty support below/front starts the ROM jump arc.
+        auto empty=[](const sm::Entity64&,int,int){return false;};
+        enemies.step_15hz(rom,game,0,0,false,nullptr,empty);
+        assert(e.state()==6u);
+        auto vy=std::int16_t(unsigned(e.raw[11])|(unsigned(e.raw[12])<<8));
+        assert(vy==-0x0100);
+        // Landing returns to patrol with the original leftward velocity.
+        auto ground=[](const sm::Entity64&,int xo,int yo){return xo==0x0100 && yo==0x02c0;};
+        enemies.step_15hz(rom,game,1,0,false,nullptr,ground);
+        assert(e.state()==1u);
+        const auto vx=std::int16_t(unsigned(e.raw[13])|(unsigned(e.raw[14])<<8));assert(vx==-0x40);
+        // State 5 emits the standard aimed shot through the combat service.
+        e.state()=5u;e.raw[0x21]=1u;game.player.set_x_fixed(0x0800u);game.player.set_y_fixed(0x0800u);
+        enemies.step_15hz(rom,game,2,0,false,nullptr,ground);assert(e.raw[0x26]==1u);
+        std::vector<sm::PlaySound> sounds;combat19.step(rom,game,0,0,0,sounds);
+        assert(std::any_of(combat19.bullets().begin(),combat19.bullets().end(),[](const auto& b){return b.type()==0x60u;}));
+    }
+
     // Third regular batch: all seventeen $2F pursuers and ten $31 vertical
     // obstacles, including the conditional $B1 record, instantiate exactly
     // from the stage-2 ROM table.
@@ -226,5 +262,5 @@ int main(int argc,char** argv) {
         assert(fired);
         assert(std::find(sounds.begin(),sounds.end(),sm::PlaySound::EnemyShot)!=sounds.end());
     }
-    std::cout<<"Stage 2: ROM tile rings, turrets, launchers, $27/$2D/$2F/$31 PASS\n";
+    std::cout<<"Stage 2: all 56 regular ROM spawns and launcher families PASS\n";
 }

@@ -240,6 +240,11 @@ void Stage0Combat::step(const Rom& rom,GameState& game,unsigned frame,int dx,int
             // reaches three.
             shot=fire_type15_pair(e);
         }
+        if(e.type()==0x19u && e.raw[0x26]) {
+            // Fixed $5624 -> $7143: one standard aimed enemy round after the
+            // four-tick pivot/fire countdown.
+            e.raw[0x26]=0u;shot=fire(rom,e,game.player,game.difficulty) || shot;
+        }
         if(e.type()==0x2cu && e.raw[0x24]) {
             // $83EA->$8420 queues one fixed-heading shot. The enemy handler
             // owns the three-shot cadence; combat owns the projectile pool.

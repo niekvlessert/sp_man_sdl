@@ -299,7 +299,7 @@ void Stage0Enemies::move_60hz(GameState& game,unsigned frame) {
             if(--e.raw[0x3e]==0) e.clear();
             continue;
         }
-        if(e.active() && (flight(e.type()) || e.type()==0x16u || e.type()==0x1eu || e.type()==0x11u || e.type()==0x27u || e.type()==0x2cu || e.type()==0x2du || e.type()==0x2fu || e.type()==0x31u || e.type()==0x68u || e.type()==0x70u || e.type()==0x40u)) {
+        if(e.active() && (flight(e.type()) || e.type()==0x16u || e.type()==0x19u || e.type()==0x1eu || e.type()==0x11u || e.type()==0x27u || e.type()==0x2cu || e.type()==0x2du || e.type()==0x2fu || e.type()==0x31u || e.type()==0x68u || e.type()==0x70u || e.type()==0x40u)) {
         const int divisor=e.type()==0x40u?3:4,phase=int(frame%unsigned(divisor));
         auto delta=[&](int v){return v*(phase+1)/divisor-v*phase/divisor;};
         e.set_x_fixed(std::uint16_t(e.x_fixed()+delta(signed_word(e,13))));
@@ -574,6 +574,84 @@ void Stage0Enemies::step_15hz(const Rom& rom,GameState& game,unsigned tick,std::
                 put(e,11,0);
                 put(e,13,game.difficulty<4u?-0x00c0:-0x0120); // fixed $5135
                 e.state()=3;
+            }
+        } else if(e.type()==0x19u) {
+            // Fixed $557C-$5762. Stage-2 walker: patrol, timed turn, attack
+            // pivot/fire, and a terrain-driven jump arc. The original helper
+            // probes use 8.8 tile offsets; native receives the same collision
+            // map through TerrainProbe.
+            auto solid=[&](int xo,int yo) {
+                return terrain_probe ? terrain_probe(e,xo,yo) : false;
+            };
+            auto set_patrol_velocity=[&] {
+                put(e,13,e.raw[0x22]?0x0060:-0x0040);
+            };
+            auto set_base_frame=[&] {e.raw[0x05]=e.raw[0x22]?2u:0u;};
+            auto begin_jump=[&](bool steep) {
+                put(e,11,steep?-0x0140:-0x0100);
+                put(e,13,e.raw[0x22]?(steep?0x0040:0x0060):(steep?-0x0020:-0x0040));
+                put(e,15,steep?0x0020:0x0040);
+                e.state()=6u;
+            };
+            if(e.state()==1u) {
+                // $56D8: if the forward/down support point is empty, enter
+                // the normal jump arc. This is the characteristic terrain
+                // following visible in the original stage-2 captures.
+                const int support_x=e.raw[0x22]?0x02e0:-0x0020;
+                if(terrain_probe && !solid(support_x,0x02e0)) {
+                    begin_jump(false);
+                } else {
+                    if((tick&1u)==0u) e.raw[0x05]^=1u; // $5715 / CA02 bit0
+                    if(expired(e,0x18)) {
+                        e.state()=3u;
+                    } else {
+                        // $572F: two front probes distinguish wall, ledge and
+                        // open travel. A wall starts the steeper evasive arc.
+                        const int front_x=e.raw[0x22]?0x0300:-0x0100;
+                        const bool low=terrain_probe && solid(front_x,0x0100);
+                        const bool high=terrain_probe && solid(front_x,-0x0500);
+                        if(low && !high) begin_jump(true);
+                        else if(low && high) {
+                            e.raw[0x17]=0x10u;e.state()=2u;
+                        } else if(--e.raw[0x20]==0u) {
+                            e.raw[0x20]=0x40u;e.raw[0x17]=0x10u;e.state()=2u;
+                        }
+                    }
+                }
+            } else if(e.state()==2u) {
+                put(e,13,0);e.raw[0x05]=4u;
+                if(expired(e,0x17)) {
+                    e.raw[0x22]^=1u;set_base_frame();set_patrol_velocity();e.state()=1u;
+                }
+            } else if(e.state()==3u) {
+                const auto dir=direction8(game,e);e.raw[0x24]=dir;
+                // $55FA compares the player's horizontal half-plane with the
+                // current patrol orientation and chooses the short/long pivot.
+                const bool same=((dir+2u)&4u)==(e.raw[0x22]&4u);
+                e.raw[0x17]=4u;e.raw[0x21]=4u;e.state()=same?5u:4u;
+            } else if(e.state()==4u) {
+                put(e,13,0);e.raw[0x05]=4u;
+                if(expired(e,0x17)) {
+                    e.raw[0x22]^=1u;set_base_frame();e.state()=5u;
+                }
+            } else if(e.state()==5u) {
+                put(e,13,0);
+                if(e.raw[0x21]>1u) --e.raw[0x21];
+                else {
+                    e.raw[0x21]=0u;e.raw[0x26]=1u; // $7143 shot, consumed by combat
+                    set_patrol_velocity();
+                    e.raw[0x18]=std::uint8_t((game.difficulty<6u?0x20u:0x10u)+e.raw[0x2d]);
+                    set_base_frame();e.state()=1u;
+                }
+            } else if(e.state()==6u || e.state()==7u) {
+                e.raw[0x3d]=1u;
+                int vy=signed_word(e,11)+signed_word(e,15);
+                if(vy>0x0100) vy=0x0100;
+                put(e,11,vy);
+                // $564F waits for a solid landing point (+1,+2.75 cells).
+                if(terrain_probe && solid(0x0100,0x02c0)) {
+                    put(e,11,0);put(e,15,0);set_patrol_velocity();set_base_frame();e.state()=1u;
+                }
             }
         } else if(e.type()==0x2bu) {
             // Bank05 $8367-$83A6. The extended launcher emits type-$16

@@ -781,7 +781,7 @@ bool instantiate_stage0_spawn(const Rom& rom, const SpawnRecord& r, GameState& g
     // type $64 from real gameplay, leaving only the scenery copy visible.
     const bool special64 = r.type == 0x64u && r.control_flag();
     if (r.control_flag() && !special26 && !special2b && !special64) return false;
-    if (r.type != 0x1eu && r.type != 0x1fu && r.type != 0x20u && r.type != 0x27u && r.type != 0x29u && r.type != 0x2bu && r.type != 0x2du && r.type != 0x2eu && r.type != 0x2fu && r.type != 0x31u && r.type != 0x22u &&
+    if (r.type != 0x19u && r.type != 0x1eu && r.type != 0x1fu && r.type != 0x20u && r.type != 0x27u && r.type != 0x29u && r.type != 0x2bu && r.type != 0x2du && r.type != 0x2eu && r.type != 0x2fu && r.type != 0x31u && r.type != 0x22u &&
         r.type != 0x24u && r.type != 0x26u && r.type != 0x55u &&
         r.type != 0x56u && r.type != 0x47u && r.type != 0x64u) return false;
     if (r.payload.empty() || (r.type == 0x24u && r.payload.size() < 2u)) return false;
@@ -810,7 +810,19 @@ bool instantiate_stage0_spawn(const Rom& rom, const SpawnRecord& r, GameState& g
     }
     e->set_x_fixed(std::uint16_t(xh) << 8);
     e->set_y_fixed(std::uint16_t(yh) << 8);
-    if (r.type == 0x1eu) {
+    if (r.type == 0x19u) {
+        // Fixed $5592-$55B6. Unlike the common $6754 initializer, type $19
+        // stores both inline coordinates directly. Bit 7 of the first byte
+        // chooses the right-moving variant and is removed from Y.
+        if(r.payload.size()<2u) {e->clear();return false;}
+        e->set_y_fixed(std::uint16_t(r.payload[0]&0x7fu)<<8u);
+        e->set_x_fixed(std::uint16_t(r.payload[1])<<8u);
+        e->raw[0x22]=(r.payload[0]&0x80u)?1u:0u;
+        e->raw[0x05]=e->raw[0x22]?2u:0u;
+        e->raw[0x0d]=e->raw[0x22]?0x60u:0xc0u;
+        e->raw[0x0e]=e->raw[0x22]?0x00u:0xffu;
+        e->raw[0x20]=0x40u;e->raw[0x18]=0x10u;
+    } else if (r.type == 0x1eu) {
         // $BB75: low six bits are altitude; bit 7 chooses rise/fall.
         e->set_y_fixed(std::uint16_t(r.payload[0]&0x3fu)<<8);
         e->set_x_fixed(0x1e00);e->raw[0x20]=(r.payload[0]>>7u)&1u;
