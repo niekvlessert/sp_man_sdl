@@ -38,6 +38,8 @@ public:
 private:
     bool fire(const Rom& rom,const Entity64& source,const Entity64& target,unsigned difficulty,int yoff=0,int xoff=0);
     bool fire_type15_pair(const Entity64& source);
+    bool fire_fixed_pattern(const Rom& rom,const Entity64& source,unsigned speed,
+                            std::span<const std::uint8_t> headings,int y_cells);
     std::array<Entity64,18> bullets_{};
     std::array<bool,18> opening_bullets_{}; // native origin inherited from launch source
     PlayerUpgrades upgrades_{};

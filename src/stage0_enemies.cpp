@@ -190,7 +190,7 @@ bool stage0_sprite_overlap(const Rom& rom,const Entity64& a,const Entity64& b) {
     // the pixels the player actually sees. In particular type $56 is the
     // destructible 64x80 upper section of the large vertical tower. Collide
     // against the exact nonzero tile cells used by the native compositor.
-    if(b.type()==0x26u || b.type()==0x56u || b.type()==0x64u || b.type()==0x6au) {
+    if(b.type()==0x26u || b.type()==0x3cu || b.type()==0x56u || b.type()==0x64u || b.type()==0x6au || b.type()==0x7au) {
         for(const auto& v:decode_stage0_tile_visuals(rom,b))
             for(unsigned ty=0;ty<v.rows;++ty) for(unsigned tx=0;tx<v.cols;++tx) {
                 if(!v.tiles[ty*unsigned(v.cols)+tx]) continue;
@@ -200,7 +200,7 @@ bool stage0_sprite_overlap(const Rom& rom,const Entity64& a,const Entity64& b) {
         // Type $64 also has the animated round core on the sprite plane. The
         // original damage target is the complete boss object, so keep testing
         // its ROM sprite boxes after the composed tile cells missed.
-        if(b.type()!=0x64u) return false;
+        if(b.type()!=0x64u && b.type()!=0x7au) return false;
     }
     const auto bbox=boxes(rom,b);
     for(const auto& x:abox) for(const auto& y:bbox) if(overlaps(x,y)) return true;
@@ -652,6 +652,101 @@ void Stage0Enemies::step_15hz(const Rom& rom,GameState& game,unsigned tick,std::
                 if(terrain_probe && solid(0x0100,0x02c0)) {
                     put(e,11,0);put(e,15,0);set_patrol_velocity();set_base_frame();e.state()=1u;
                 }
+            }
+        } else if(e.type()==0x7au) {
+            // Bank06 $A000-$A17A: stage-2 boss. Its visible body is the tile
+            // actor selected by +06; seven linked type-$3B segments are
+            // created at state zero. Damage bit +14.7 is only enabled while
+            // the animation selector is frame 4.
+            static constexpr std::array<std::uint8_t,14> anim_timer{
+                3,2,4,4,4,8,2,8,2,4,24,4,2,2};
+            static constexpr std::array<std::uint8_t,14> anim_frame{
+                4,0,1,2,1,2,3,4,0,1,2,1,2,3};
+            static constexpr std::array<std::uint8_t,8> attack_phase{
+                0x82,0x83,0x00,0x00,0x82,0x03,0x02,0x81};
+            auto next_animation=[&] {
+                e.raw[0x14]&=0x7fu;
+                unsigned i=e.raw[0x20];if(i>=anim_frame.size()) i=0;
+                e.raw[0x20]=std::uint8_t(i+1u);
+                e.raw[0x17]=anim_timer[i];e.raw[0x06]=anim_frame[i];
+                if(e.raw[0x06]==4u) e.raw[0x14]|=0x80u;
+            };
+            auto update_attack_heading=[&] {
+                const unsigned hp=e.raw[0x16];
+                if(hp<0x18u) e.raw[0x18]=0x18u;
+                auto a=std::uint8_t(0u-std::uint8_t(hp?hp:1u));
+                for(unsigned n=0;n<3u;++n) a=std::uint8_t((a>>1u)|(a<<7u));
+                e.raw[0x22]=a&0x1fu;
+            };
+            if(e.state()==0u) {
+                e.raw[0x37]=0u;
+                for(unsigned ordinal=1;ordinal<=7u;++ordinal) if(auto* c=create(rom,game,0x3bu)) {
+                    c->set_x_fixed(e.x_fixed());c->set_y_fixed(e.y_fixed());
+                    c->raw[0x34]=e.raw[0x2d];c->raw[0x38]=std::uint8_t(ordinal);
+                    ++e.raw[0x37];
+                }
+                next_animation();update_attack_heading();
+                e.raw[0x16]=0x20u; // $A031 with CA04=0 on the normal route
+                e.state()=1u;
+            } else if(e.state()==1u) {
+                if(expired(e,0x17)) next_animation();
+                if(expired(e,0x18)) update_attack_heading();
+                unsigned phase=e.raw[0x21];if(phase>=8u) phase=0u;
+                e.raw[0x21]=std::uint8_t(phase+1u);
+                const auto command=attack_phase[phase];
+                // CA04 is zero on the normal Stage-2 route. High-bit entries
+                // are therefore skipped by $A071-$A075. Low commands 2/3
+                // both issue one $7306 attack; combat consumes this marker.
+                if((command&0x80u)==0u && (command&3u)!=0u)
+                    e.raw[0x26]=command&3u;
+            }
+        } else if(e.type()==0x3bu) {
+            // Bank06 $A17B-$A2A8: linked boss-body segment. +38 is the
+            // one-based ordinal written by the parent. It selects exact
+            // position offsets, animation family and the two phase timers.
+            static constexpr std::array<std::int8_t,7> oy{-3,-3,-3,-3,-2,-2,-2};
+            static constexpr std::array<std::int8_t,7> ox{-3,-7,-10,-13,-16,-18,-21};
+            static constexpr std::array<std::uint8_t,7> variant{0,0,0,0,1,1,1};
+            static constexpr std::array<std::uint8_t,7> wait{0x40,0x80,0x20,0x40,0x30,0x80,0x08};
+            static constexpr std::array<std::uint8_t,5> frame0{0,1,2,3,4};
+            static constexpr std::array<std::uint8_t,5> frame1{0,7,8,9,10};
+            auto reload=[&] {
+                const unsigned o=std::clamp<unsigned>(e.raw[0x38],1u,7u)-1u;
+                e.raw[0x17]=wait[o];e.raw[0x18]=8u;
+            };
+            if(e.state()==0u) {
+                const unsigned o=std::clamp<unsigned>(e.raw[0x38],1u,7u)-1u;
+                e.raw[0x08]=std::uint8_t(e.raw[0x08]+oy[o]);
+                e.raw[0x0a]=std::uint8_t(e.raw[0x0a]+ox[o]);
+                e.raw[0x20]=variant[o];e.raw[0x05]=variant[o]?4u:0u;
+                reload();e.state()=1u;
+            } else if(e.state()==1u) {
+                if(expired(e,0x17)) {
+                    const unsigned count=e.raw[0x20]?8u:4u;
+                    e.raw[0x05]=std::uint8_t((e.raw[0x05]+1u)%count);
+                    if(e.raw[0x05]==0u) {
+                        e.raw[0x21]=0u;reload();e.raw[0x17]=6u;e.state()=2u;
+                    }
+                }
+            } else if(e.state()==2u) {
+                if(expired(e,0x17)) {
+                    const auto& table=e.raw[0x20]?frame1:frame0;
+                    const auto next=std::uint8_t(e.raw[0x21]+1u);
+                    if(next>=5u) e.state()=3u;
+                    else {
+                        e.raw[0x21]=next;e.raw[0x06]=table[next];
+                    }
+                }
+            } else if(e.state()==3u) {
+                const unsigned phase=tick&3u;
+                if(phase==1u || phase==2u) e.raw[0x06]=std::uint8_t((e.raw[0x20]?10u:4u)+phase);
+                else e.raw[0x06]=0u;
+                if(expired(e,0x18)) e.state()=4u;
+            } else if(e.state()==4u) {
+                const auto& table=e.raw[0x20]?frame1:frame0;
+                if(e.raw[0x21]) {
+                    --e.raw[0x21];e.raw[0x06]=table[e.raw[0x21]];
+                } else {reload();e.state()=1u;}
             }
         } else if(e.type()==0x53u) {
             // Bank05 $9940-$9997. Invisible generator for type $2A. State 1

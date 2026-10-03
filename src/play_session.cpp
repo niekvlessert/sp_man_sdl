@@ -858,6 +858,15 @@ void PlaySession::step_60hz(PlayerInput input) {
             // $6A explosion selectors and emitting stray Hit/Explosion sounds.
             if(original.type()==0x64u)
                 for(auto& child:game_.enemies) if(&child!=&enemy && child.type()==0x40u) child.clear();
+            if(original.type()==0x7au) {
+                // Original boss death raises CE52. The seven linked $3B
+                // segments disappear and each final-sector $3C receives the
+                // fatal pending hit on its next object pass.
+                for(auto& child:game_.enemies) if(&child!=&enemy) {
+                    if(child.type()==0x3bu) child.clear();
+                    else if(child.type()==0x3cu) child.raw[0x04]=0xffu;
+                }
+            }
             const bool bonus=enemies_.destroyed(original);
             combat_.award_destroyed(rom_,original.type());
             // Standard destruction becomes type $62. Bank05:$9A41 drives

@@ -264,6 +264,9 @@ int main(int argc,char** argv) {
         }
         assert(control_run.at_fight_gate() && transitions==8u && !control_run.scene_palette_active());
         assert(max_phase>=9u);
+        const auto& live=control_run.state();
+        assert(std::count_if(live.enemies.begin(),live.enemies.end(),[](const auto& e){return e.type()==0x7au;})==1);
+        assert(std::count_if(live.enemies.begin(),live.enemies.end(),[](const auto& e){return e.type()==0x3bu;})==7);
     }
 
     // Final-sector type $3C: five actual ROM objects, selectors 0..4.
@@ -318,6 +321,61 @@ int main(int argc,char** argv) {
         assert(parent.x_fixed()==std::uint16_t(px-0x20u) && parent.y_fixed()==py);
     }
 
+    // Stage-2 boss $7A and its seven linked $3B body segments.
+    {
+        const auto boss_record=std::find_if(stream.records().begin(),stream.records().end(),
+            [](const auto& r){return r.type==0x7au;});
+        assert(boss_record!=stream.records().end());
+        assert(boss_record->control==0x88u && boss_record->payload==std::vector<std::uint8_t>({2u,8u,2u,0x3bu}));
+        sm::GameState game;sm::Stage0Enemies enemies;sm::Stage0Combat boss_combat;
+        assert(sm::instantiate_stage0_spawn(rom,*boss_record,game,1));
+        auto& boss=game.enemies[0];
+        assert(boss.state()==0u && boss.raw[0x0a]==0x20u && boss.raw[0x08]==8u && boss.raw[0x34]==0x80u);
+        enemies.step_15hz(rom,game,0,0,false,nullptr);
+        assert(boss.state()==1u && boss.raw[0x16]==0x20u && boss.raw[0x06]==4u);
+        assert((boss.raw[0x14]&0x80u)!=0u && boss.raw[0x37]==7u);
+        assert(!sm::decode_stage0_tile_visuals(rom,boss).empty());
+        static constexpr std::array<int,7> ox{-3,-7,-10,-13,-16,-18,-21};
+        static constexpr std::array<int,7> oy{-3,-3,-3,-3,-2,-2,-2};
+        static constexpr std::array<unsigned,7> wait{0x40,0x80,0x20,0x40,0x30,0x80,0x08};
+        unsigned children=0;
+        for(const auto& c:game.enemies) if(c.type()==0x3bu) {
+            ++children;const unsigned o=c.raw[0x38]-1u;assert(o<7u);
+            assert(c.state()==1u && c.raw[0x34]==boss.raw[0x2d]);
+            assert(int(std::int16_t(c.x_fixed()-boss.x_fixed()))==ox[o]*0x100);
+            assert(int(std::int16_t(c.y_fixed()-boss.y_fixed()))==oy[o]*0x100);
+            assert(c.raw[0x17]==wait[o] && c.raw[0x18]==8u);
+            assert(c.raw[0x20]==(o>=4u?1u:0u));
+            assert(!sm::decode_stage0_tile_visuals(rom,c).empty());
+        }
+        assert(children==7u);
+        // The initial frame-4 damage window lasts three object ticks; the next
+        // ROM animation entry closes it and selects tile frame zero.
+        enemies.step_15hz(rom,game,1,0,false,nullptr);
+        enemies.step_15hz(rom,game,2,0,false,nullptr);
+        enemies.step_15hz(rom,game,3,0,false,nullptr);
+        assert(boss.raw[0x06]==0u && (boss.raw[0x14]&0x80u)==0u);
+        // Advance to a later frame-4 window and prove the original subtraction-
+        // carry death rule: exact HP is a hit, one additional point is fatal.
+        for(unsigned t=4;t<128u && (boss.raw[0x14]&0x80u)==0u;++t)
+            enemies.step_15hz(rom,game,t,0,false,nullptr);
+        assert((boss.raw[0x14]&0x80u)!=0u);
+        auto damage_copy=boss;
+        assert(sm::apply_stage0_damage(rom,damage_copy,0x20u)==sm::Stage0DamageResult::Hit);
+        assert(sm::apply_stage0_damage(rom,damage_copy,1u)==sm::Stage0DamageResult::Destroyed);
+        assert(damage_copy.type()==0x6au);
+        // Normal-route attack phases 5/6 feed the combat projectile service.
+        game.player.set_x_fixed(0x0800u);game.player.set_y_fixed(0x0a00u);
+        bool fired=false;std::vector<sm::PlaySound> sounds;
+        for(unsigned t=128;t<160u;++t) {
+            enemies.step_15hz(rom,game,t,0,false,nullptr);
+            boss_combat.step(rom,game,t*4u,0,0,sounds);
+            fired|=std::any_of(boss_combat.bullets().begin(),boss_combat.bullets().end(),
+                               [](const auto& b){return b.active();});
+        }
+        assert(fired);
+    }
+
     // Exercise the restored attack through the real combat service, on both
     // sides of the ceiling/floor mounting, rather than calling a shot helper.
     for(unsigned upside_down=0;upside_down<2u;++upside_down) {
@@ -338,5 +396,5 @@ int main(int argc,char** argv) {
         assert(fired);
         assert(std::find(sounds.begin(),sounds.end(),sm::PlaySound::EnemyShot)!=sounds.end());
     }
-    std::cout<<"Stage 2: regular spawns, $53/$5F controllers and five $3C final objects PASS\n";
+    std::cout<<"Stage 2: regular spawns, controllers, final objects and $7A boss core PASS\n";
 }

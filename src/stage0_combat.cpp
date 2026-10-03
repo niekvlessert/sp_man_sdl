@@ -79,6 +79,28 @@ bool Stage0Combat::fire(const Rom& rom,const Entity64& source,const Entity64& ta
     }
     return true;
 }
+bool Stage0Combat::fire_fixed_pattern(const Rom& rom,const Entity64& source,unsigned speed,
+        std::span<const std::uint8_t> headings,int y_cells) {
+    // Fixed $7306. Each list byte selects a (signs,angle) pair from $738D;
+    // $737C then adds the caller's BC offset to the projectile high bytes.
+    bool fired=false;const auto bank=rom.bank(4);
+    for(const auto heading:headings) {
+        auto it=std::find_if(bullets_.begin(),bullets_.end(),[](auto& b){return !b.active();});
+        if(it==bullets_.end()) break;
+        opening_bullets_[std::size_t(it-bullets_.begin())]=false;
+        auto& b=*it;b.clear();b.type()=0x60u;b.state()=0u;b.raw[5]=0u;
+        b.flags15()=0x21u;b.raw[0x17]=4u;
+        b.set_x_fixed(source.x_fixed());
+        b.set_y_fixed(std::uint16_t(source.y_fixed()+y_cells*0x100));
+        const unsigned p=0x138du+unsigned(heading)*2u;
+        const auto signs=bank[p];const unsigned a=bank[p+1u];
+        put(b,11,(signs&1u?-1:1)*int(unsigned(bank[0x13adu+a])*speed/32u));
+        put(b,13,(signs&2u?-1:1)*int(unsigned(bank[0x13adu+63u-a])*speed/32u));
+        fired=true;
+    }
+    return fired;
+}
+
 bool Stage0Combat::fire_type15_pair(const Entity64& source) {
     // Bank05 $9BFA/$9C07: the hovering type-$15 flyer emits two type-$61
     // rounds from its coarse cell. They first separate vertically for six
@@ -239,6 +261,17 @@ void Stage0Combat::step(const Rom& rom,GameState& game,unsigned frame,int dx,int
             // vertical type-$61 pair exactly when its six-tick pause timer
             // reaches three.
             shot=fire_type15_pair(e);
+        }
+        if(e.type()==0x7au && e.raw[0x26]) {
+            // Bank06 $A079-$A0A1 -> fixed $7306. Action 3 is the lower fan
+            // A0B1=[0,1,2,3] at Y+8; action 2 is the upper fan
+            // A0AC=[0,15,14,13] at Y-2. Action 1 performs both. Unlike normal
+            // enemy fire, CA26 is preloaded from boss +22 and is the speed.
+            static constexpr std::array<std::uint8_t,4> lower{0,1,2,3};
+            static constexpr std::array<std::uint8_t,4> upper{0,15,14,13};
+            const auto action=e.raw[0x26];e.raw[0x26]=0u;
+            if(action==1u || action==3u) shot=fire_fixed_pattern(rom,e,e.raw[0x22],lower,8)||shot;
+            if(action==1u || action==2u) shot=fire_fixed_pattern(rom,e,e.raw[0x22],upper,-2)||shot;
         }
         if(e.type()==0x19u && e.raw[0x26]) {
             // Fixed $5624 -> $7143: one standard aimed enemy round after the

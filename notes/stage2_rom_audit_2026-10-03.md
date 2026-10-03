@@ -68,19 +68,22 @@ and the final selector `03` clears the object pool before the end sector.
 The native runtime now models those commands directly; no fake $5F entity is
 created.
 
-The still-missing spawn-table families are therefore:
+There are no missing Stage-2 spawn-table families left. The five `$3C`
+final-sector objects instantiate with their ROM selectors and selector zero now
+executes the fixed `$6C75($FB)` raster-anchor calculation. The `$7A` boss also
+instantiates through its extended record, creates seven linked `$3B` body
+segments with the original offsets/timers, follows the 14-entry vulnerability
+animation, and emits the normal-route `$7306` upper/lower four-shot fans using
+its HP-derived speed field. The natural no-input route reaches the fight gate
+with exactly one `$7A` and seven `$3B` objects alive.
 
-| ROM type | Records | Current gap |
-| --- | ---: | --- |
-| $3C | 5 | Final-sector objects/controllers |
-| $7A | 1 | Stage-2 boss |
-
-There are still fidelity details inside otherwise restored regular families to
-validate visually. In particular $2F's ROM obstacle-avoidance candidate search
-can be tightened beyond the direct eight-way pursuit fallback, and $31's
-background-cell mutation after its exact vertical terrain bounce is not yet
-mirrored. Those are behavior/render refinements rather than missing spawn
-families.
+There are still fidelity details inside otherwise restored families to validate
+visually. In particular `$2F`'s ROM obstacle-avoidance candidate search can be
+tightened beyond the direct eight-way pursuit fallback, `$31`'s background-cell
+mutation after its exact vertical terrain bounce is not yet mirrored, and the
+boss's less-common CA04 attack branch plus complete death-transition audio/
+palette timing still need live A/B validation. Those are behavior/render
+refinements rather than missing spawn families.
 
 ## Checks
 

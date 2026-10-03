@@ -786,14 +786,15 @@ bool instantiate_stage0_spawn(const Rom& rom, const SpawnRecord& r, GameState& g
     const bool special26 = r.type == 0x26u && r.control_flag();
     const bool special2b = r.type == 0x2bu && r.control_flag();
     const bool special53 = r.type == 0x53u && r.control_flag();
+    const bool special7a = r.type == 0x7au && r.control_flag();
     // The final stage-0 tower is also an extended record: trigger $5000,
     // control $88. Rejecting every flagged record except $26 silently dropped
     // type $64 from real gameplay, leaving only the scenery copy visible.
     const bool special64 = r.type == 0x64u && r.control_flag();
-    if (r.control_flag() && !special26 && !special2b && !special53 && !special64) return false;
+    if (r.control_flag() && !special26 && !special2b && !special53 && !special64 && !special7a) return false;
     if (r.type != 0x19u && r.type != 0x1eu && r.type != 0x1fu && r.type != 0x20u && r.type != 0x27u && r.type != 0x29u && r.type != 0x2bu && r.type != 0x2du && r.type != 0x2eu && r.type != 0x2fu && r.type != 0x31u && r.type != 0x3cu && r.type != 0x22u &&
         r.type != 0x24u && r.type != 0x26u && r.type != 0x53u && r.type != 0x55u &&
-        r.type != 0x56u && r.type != 0x47u && r.type != 0x64u) return false;
+        r.type != 0x56u && r.type != 0x47u && r.type != 0x64u && r.type != 0x7au) return false;
     if (r.payload.empty() || (r.type == 0x24u && r.payload.size() < 2u)) return false;
     auto* e = game.allocate_enemy();
     if (!e) return false;
@@ -807,7 +808,7 @@ bool instantiate_stage0_spawn(const Rom& rom, const SpawnRecord& r, GameState& g
     // Original $6754 initializer. The same payload byte is interpreted on a
     // different axis depending on C0D5, so it is NOT an absolute Y value.
     // Extended records expose their first inline byte after the count byte.
-    const unsigned payload_index = (special26 || special2b) ? 1u : 0u;
+    const unsigned payload_index = (special26 || special2b || special7a) ? 1u : 0u;
     if (r.payload.size() <= payload_index) { e->clear(); return false; }
     const std::uint8_t pos = r.payload[payload_index] & 0x7fu;
     std::uint8_t xh = 0x20u, yh = pos;
@@ -942,6 +943,12 @@ bool instantiate_stage0_spawn(const Rom& rom, const SpawnRecord& r, GameState& g
         e->raw[0x2e] = 0x01;
         e->raw[0x2f] = 0x01;
         e->raw[0x3f] = 0x01;
+    } else if (r.type == 0x7au) {
+        // Bank06 $A000: extended descriptor 02 08 02 3B. $6754 consumes
+        // the position byte after the count and the handler creates seven
+        // linked type-$3B body parts on its first logic tick.
+        if(r.payload.size()<4u || r.payload[0]!=2u || r.payload[3]!=0x3bu) {e->clear();return false;}
+        e->raw[0x34]=0x80u;
     } else if (r.type == 0x64u) {
         // Boss/gate objects use the $7C63 continuation. A live unmodified
         // object dump at the first $7C63 call has +3F=$01; the type handler
@@ -952,7 +959,7 @@ bool instantiate_stage0_spawn(const Rom& rom, const SpawnRecord& r, GameState& g
     }
     // Type $64 must enter bank06:$A300 (state 0). Starting it at state 1
     // skips the ROM initializer that positions the tower at X=$2800/Y=$0C00.
-    e->state() = (r.type == 0x64u || r.type==0x47u || r.type==0x2eu || r.type==0x31u || r.type==0x53u) ? 0u : 1u;
+    e->state() = (r.type == 0x64u || r.type==0x47u || r.type==0x2eu || r.type==0x31u || r.type==0x53u || r.type==0x7au) ? 0u : 1u;
     return true;
 }
 }
