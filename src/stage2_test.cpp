@@ -123,6 +123,23 @@ int main(int argc,char** argv) {
         enemies.step_15hz(rom,game,0,0,false,nullptr);
         auto children=[&] {return unsigned(std::count_if(game.enemies.begin(),game.enemies.end(),[](const auto& e){return e.type()==0x2cu;}));};
         assert(children()==2u && game.enemies[0].state()==1u && game.enemies[0].raw[0x37]==2u);
+        // $7B65 packed frame 2: three columns, each with a top/bottom cap
+        // and twelve repeated $CC/$CD body matrices ($8C,$02 in the ROM).
+        const auto barrier=sm::decode_stage0_tile_visuals(rom,game.enemies[0]);
+        unsigned body=0,caps=0;
+        for(const auto& v:barrier) {
+            if(v.tiles==std::vector<std::uint8_t>{0xccu,0xcdu}) ++body;
+            if(v.tiles==std::vector<std::uint8_t>{0xcau,0xcbu}) ++caps;
+        }
+        assert(barrier.size()==42u && body==36u && caps==6u);
+        // $8650/$865C launch the linked modules in opposite Y directions.
+        std::array<int,2> child_vy{};unsigned cv=0;
+        for(const auto& c:game.enemies) if(c.type()==0x2cu) {
+            assert(cv<child_vy.size());
+            child_vy[cv++]=std::int16_t(unsigned(c.raw[11])|(unsigned(c.raw[12])<<8u));
+        }
+        std::sort(child_vy.begin(),child_vy.end());
+        assert(child_vy[0]==-0x60 && child_vy[1]==0x60);
         auto child=std::find_if(game.enemies.begin(),game.enemies.end(),[](const auto& e){return e.type()==0x2cu;});
         assert(child!=game.enemies.end());
         child->set_x_fixed(0x1200u);child->set_y_fixed(0x0800u);

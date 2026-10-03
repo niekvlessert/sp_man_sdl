@@ -803,9 +803,31 @@ void Stage0Enemies::step_15hz(const Rom& rom,GameState& game,unsigned tick,std::
                 }
             }
         } else if(e.type()==0x2cu) {
-            // Bank05 $83BF-$8401. The child sleeps until the player is left
-            // of it and 0..7 coarse cells below, then fires three fixed-angle
-            // rounds at five-tick spacing and cools down for ten ticks.
+            // Bank05 $83BF-$8401. $8402 runs before the state dispatch:
+            // probe (+2,+2) in the composed name table and reverse Y whenever
+            // that cell is not $CC.  For the linked $2E launcher we can test
+            // the exact parent compositor directly; this keeps the two child
+            // modules trapped between the laser caps just like the original.
+            bool on_cc=false;
+            const int probe_y=int(std::int8_t(std::uint16_t(e.y_fixed()+0x0200u)>>8u));
+            const int probe_x=int(std::int8_t(std::uint16_t(e.x_fixed()+0x0200u)>>8u));
+            for(const auto& parent:game.enemies) if(parent.active() && parent.type()==0x2eu &&
+                    e.raw[0x34] && parent.raw[0x2d]==e.raw[0x34]) {
+                const int py=int(std::int8_t(parent.y_fixed()>>8u));
+                const int px=int(std::int8_t(parent.x_fixed()>>8u));
+                for(const auto& v:decode_stage0_tile_visuals(rom,parent)) {
+                    const int top=py+v.tile_y_offset,left=px+v.tile_x_offset;
+                    for(unsigned yy=0;yy<v.rows && !on_cc;++yy)
+                        for(unsigned xx=0;xx<v.cols;++xx)
+                            if(top+int(yy)==probe_y && left+int(xx)==probe_x &&
+                               v.tiles[yy*unsigned(v.cols)+xx]==0xccu) {on_cc=true;break;}
+                }
+                break;
+            }
+            if(!on_cc) put(e,11,-signed_word(e,11));
+            // The child sleeps until the player is left of it and 0..7 coarse
+            // cells below, then fires three fixed-angle rounds at five-tick
+            // spacing and cools down for ten ticks.
             if(e.state()==0u) {
                 const int dx=int(game.player.raw[0x0a])-int(e.raw[0x0a]);
                 const int dy=int(game.player.raw[0x08])-int(e.raw[0x08]);
@@ -836,7 +858,9 @@ void Stage0Enemies::step_15hz(const Rom& rom,GameState& game,unsigned tick,std::
                 for(unsigned n=0;n<count;++n) if(auto* c=create(rom,game,0x2cu)) {
                     c->set_x_fixed(std::uint16_t(e.x_fixed()-0x0200u));
                     c->set_y_fixed(std::uint16_t((unsigned(e.raw[0x08])+5u)<<8u));
-                    put(*c,11,0x0060);c->raw[0x34]=e.raw[0x2d];
+                    // $8650/$865C: first child -$0060, second +$0060.
+                    put(*c,11,n==0u?-0x0060:0x0060);
+                    c->raw[0x34]=e.raw[0x2d];c->raw[0x38]=std::uint8_t(n+1u);
                 }
                 e.raw[0x37]=std::uint8_t(linked_children());
                 e.state()=1u;

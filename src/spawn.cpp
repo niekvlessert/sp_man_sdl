@@ -475,8 +475,17 @@ std::vector<Stage0TileVisual> decode_stage0_tile_visuals(const Rom& rom,
     }
 
     if (entity.type() == 0x2eu) {
-        // Bank05 $84F9 -> $7B65. $858F is a six-entry pointer table indexed
-        // by +06; each target uses the standard packed placement grammar.
+        // Bank05 $84F9 -> fixed $7B65.  The packed compositor uses a
+        // delta-accumulating matrix grammar, not a flat list of frame IDs:
+        //   len, y,x, control, ...
+        // control < $80 consumes that many matrix indices;
+        // control $80..$FD repeats ONE matrix (control&$7f) times;
+        // $FE starts a new y,x group and $FF terminates the script.
+        //
+        // $7BBE/$7BC4 updates CA29 with each matrix definition's signed
+        // y/x delta before drawing it, so repeated matrix $02 walks down the
+        // barrier one cell at a time.  Frame 2 uses $8C,$02 to draw the long
+        // twelve-cell $CC/$CD laser body seen in the original stage-2 D800.
         const auto bank5=rom.bank(5);
         const unsigned frame=std::min<unsigned>(entity.raw[0x06],5u);
         const unsigned table=0x858fu-0x8000u;
@@ -488,27 +497,38 @@ std::vector<Stage0TileVisual> decode_stage0_tile_visuals(const Rom& rom,
         const unsigned packed_len=bank5[p++];
         if(packed_len<2u || p+packed_len-1u>bank5.size()) return out;
         const unsigned end=p+packed_len-1u;
-        int place_y=0,place_x=0; bool need_position=true;
+
+        int current_y=0,current_x=0;
+        bool need_position=true;
+        auto append_matrix=[&](unsigned index) {
+            Stage0TileVisual v;
+            if(!decode_stage0_tile_frame(rom,entity,index,v)) return;
+            const int dy=v.tile_y_offset,dx=v.tile_x_offset;
+            current_y+=dy; current_x+=dx;
+            v.y+=current_y*8-dy*8; v.x+=current_x*8-dx*8;
+            v.tile_y_offset=current_y; v.tile_x_offset=current_x;
+            out.push_back(std::move(v));
+        };
         while(p<end) {
             if(need_position) {
                 if(p+2u>end) break;
-                place_y=int(static_cast<std::int8_t>(bank5[p++]));
-                place_x=int(static_cast<std::int8_t>(bank5[p++]));
+                current_y=int(static_cast<std::int8_t>(bank5[p++]));
+                current_x=int(static_cast<std::int8_t>(bank5[p++]));
                 need_position=false;
             }
             if(p>=end) break;
             const auto control=bank5[p++];
             if(control==0xffu) break;
             if(control==0xfeu) {need_position=true;continue;}
-            const unsigned count=control;
-            if(p+count>end) break;
-            for(unsigned i=0;i<count;++i) {
-                Stage0TileVisual v;
-                if(decode_stage0_tile_frame(rom,entity,bank5[p++],v)) {
-                    v.x+=place_x*8;v.y+=place_y*8;
-                    v.tile_x_offset+=place_x;v.tile_y_offset+=place_y;
-                    out.push_back(std::move(v));
-                }
+            if(control&0x80u) {
+                const unsigned count=control&0x7fu;
+                if(!count || p>=end) break;
+                const unsigned index=bank5[p++];
+                for(unsigned i=0;i<count;++i) append_matrix(index);
+            } else {
+                const unsigned count=control;
+                if(p+count>end) break;
+                for(unsigned i=0;i<count;++i) append_matrix(bank5[p++]);
             }
         }
         return out;
