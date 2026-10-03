@@ -42,6 +42,7 @@ void Stage0Combat::spawned(Entity64& e) {
 bool Stage0Combat::fire(const Rom& rom,const Entity64& source,const Entity64& target,unsigned difficulty,int yo,int xo) {
     auto it=std::find_if(bullets_.begin(),bullets_.end(),[](auto& b){return !b.active();});
     if(it==bullets_.end()) return false;
+    opening_bullets_[std::size_t(it-bullets_.begin())]=source.type()==0x10u || source.type()==0x12u || source.type()==0x15u || source.type()==0x18u;
     auto& b=*it;b.clear();b.type()=0x60;b.state()=0;b.raw[5]=0;b.flags15()=0x21;b.raw[0x17]=4;
     b.set_x_fixed(std::uint16_t(source.x_fixed()+xo*32));
     b.set_y_fixed(std::uint16_t(source.y_fixed()+yo*32));
@@ -76,6 +77,7 @@ bool Stage0Combat::fire_type15_pair(const Entity64& source) {
     for(int vy:{-0x0060,0x0060}) {
         auto it=std::find_if(bullets_.begin(),bullets_.end(),[](auto& b){return !b.active();});
         if(it==bullets_.end()) break;
+        opening_bullets_[std::size_t(it-bullets_.begin())]=true;
         auto& b=*it;b.clear();b.type()=0x61;b.state()=0;b.raw[5]=0;
         b.flags15()=0x31;b.raw[0x17]=6;
         b.set_x_fixed(std::uint16_t(source.raw[0x0a])<<8u);

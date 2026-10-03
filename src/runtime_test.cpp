@@ -221,6 +221,12 @@ int main(int argc, char** argv) {
 
     const auto video = sm::Screen4Snapshot::from_stage0_rom(rom);
     assert(video.object_pattern_base[0x1f] == 0xa0);
+    // Bank06:$BDAD exact track/chassis matrix phase. Live $7AC0 traces at
+    // t=90.014 use frame 6 for X=$1200 with CA3B=4; a low-byte carry selects 7.
+    sm::Entity64 tread;tread.type()=0x24u;tread.set_x_fixed(0x1200u);
+    assert(sm::stage0_t24_phase(tread,4u,0u)==6u);
+    tread.set_x_fixed(0x12e0u);
+    assert(sm::stage0_t24_phase(tread,4u,0x40u)==7u);
     sm::Stage0SpriteVisual visual;
     // Decoder fixture for frame 0 is explicit; runtime aiming now owns +05.
     spawned.enemies[1].raw[0x05] = 0;

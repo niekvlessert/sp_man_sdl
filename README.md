@@ -11,11 +11,23 @@ cmake --build build -j4
 Arrows move the ship. Z or Space fires once per press, matching the basic
 weapon's input edge. Key 0 starts fresh with the original base speed and weapons. Keys 1–9 jump to 10–90% of the stage-0 route and equip the maximum test loadout.
 M changes option positions, F10 mutes audio, P pauses, R restarts, Escape exits.
+Cmd-2 on macOS / Ctrl-2 on Windows or Linux starts stage 2; Cmd/Ctrl-1
+returns to stage 1. Keys 0–9 then jump within the selected stage.
+W toggles between maximum reusable upgrades (including speed) and no upgrades.
+These changes are retained by rewind/replay. Stage 2's scenery route is
+accessible, but its own enemy families and boss remain incomplete.
 Cmd-T on macOS / Ctrl-T on Windows or Linux toggles 500% turbo, including audio.
 Page Up pauses and rewinds 100 simulation frames (clamped at the start).
 Page Down pauses and advances 100 frames, replaying recorded input where available;
 beyond recorded play it advances without input. P resumes; new play branches the history. Losing window focus
 pauses the game. The simulation advances at 60 Hz independently of rendering.
+
+The Konami and Space Manbow introductions play original ROM animation captured
+at 60 Hz from VDP memory, registers and palettes. Regenerate the title pack with
+`python3 tools/export_title_animation.py`. See
+`notes/sdl_logo_treads_cannon_fixes_2026-10-03.md` for the title, tread and cannon fixes.
+Space skips the Konami introduction to the complete title screen. On the title
+screen, including during its animation, Space starts the game immediately.
 
 ROM movement tables, ship animation, basic forward shots and resident sprite
 graphics run with the stage-0 background/scenery reconstruction. The upper
@@ -92,6 +104,7 @@ Validation:
 ./build/space-manbow-late-combat-test space_manbow.rom
 ./build/space-manbow-feedback-test space_manbow.rom
 ./build/space-manbow-continuous-scroll-test space_manbow.rom
+./build/space-manbow-title-test assets/title/title.anim
 SDL_AUDIODRIVER=dummy ./build/space-manbow-audio-test assets/audio
 python3 tools/run_player_native_validation.py
 python3 tools/run_flyers_native_validation.py

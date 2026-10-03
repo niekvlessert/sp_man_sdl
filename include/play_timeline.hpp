@@ -10,7 +10,8 @@ class PlayTimeline {
 public:
     explicit PlayTimeline(const Rom& rom);
     PlaySession& session() noexcept { return *session_; }
-    void reset();
+    void reset(unsigned stage=0);
+    void toggle_upgrades();
     void jump(unsigned decile);
     void step(PlayerInput input);
     void scrub(int frames);
@@ -21,6 +22,6 @@ private:
     std::unique_ptr<PlaySession> session_;
     std::vector<PlayerInput> inputs_;
     std::map<unsigned,std::unique_ptr<PlaySession>> checkpoints_;
-    unsigned loadout_frame_=~0u;
+    std::map<unsigned,bool> loadout_events_;
 };
 }

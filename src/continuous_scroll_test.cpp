@@ -55,6 +55,70 @@ int main(int argc,char** argv) {
     }
     assert(shifted*100u>=total*99u);
 
+    // The stationary ship must retain its screen-space Y through A13F.
+    // Compare its visible pixel mask to a scene with the ship removed.
+    s.reset();while(s.frame()<2572u)s.step_60hz({});
+    int ship_top=-1;
+    for(unsigned f=0;f<14u;++f) {
+        s.step_60hz({});s.game_.enemies={};const auto player=s.game_.player;
+        const auto visible=s.render_continuous();s.game_.player.clear();
+        const auto empty=s.render_continuous();s.game_.player=player;
+        int top=int(height);
+        for(unsigned y=112;y<650;++y)for(unsigned x=0;x<width;++x)
+            if(visible[y*width+x]!=empty[y*width+x])top=std::min(top,int(y));
+        assert(top<int(height));if(ship_top<0)ship_top=top;assert(top==ship_top);
+    }
+    // Opening flyer rockets inherit their launcher's origin, including when
+    // their launcher has already gone away before the raster handoff.
+    s.reset();while(s.frame()<2572u)s.step_60hz({});s.game_.enemies={};s.game_.player.clear();
+    sm::Entity64 launcher;launcher.type()=0x15;launcher.set_x_fixed(0x1000);launcher.set_y_fixed(0x0800);
+    assert(s.combat_.fire_type15_pair(launcher));
+    for(auto& bullet:s.combat_.bullets_) {bullet.raw[11]=bullet.raw[12]=0;}
+    int rocket_top=-1;
+    for(unsigned f=0;f<14u;++f) {
+        s.step_60hz({});const auto combat=s.combat_;const auto visible=s.render_continuous();
+        s.combat_.reset();const auto empty=s.render_continuous();s.combat_=combat;
+        int top=int(height);
+        for(unsigned y=112;y<650;++y)for(unsigned x=0;x<width;++x)
+            if(visible[y*width+x]!=empty[y*width+x])top=std::min(top,int(y));
+        assert(top<int(height));if(rocket_top<0)rocket_top=top;assert(top==rocket_top);
+    }
+    // These composed actors must survive until the last visible ROM pixel
+    // has scrolled off the left edge, then release their pool slot.
+    for(unsigned type:{0x55u,0x22u,0x26u}) {
+        s.reset();while(s.frame()<3300u)s.step_60hz({});clear_actors(s,false);
+        auto& actor=s.game_.enemies[0];actor.type()=std::uint8_t(type);
+        const auto metadata=sm::decode_spawn_type_metadata(rom,std::uint8_t(type));
+        std::copy(metadata.bytes.begin(),metadata.bytes.end(),actor.raw.begin()+0x13);
+        actor.state()=type==0x55u?3:1;actor.raw[6]=type==0x55u?5:0;
+        actor.raw[0x22]=16;actor.set_x_fixed(0);actor.set_y_fixed(0x0800);
+        bool saw_clipped=false,retired=false;
+        for(unsigned tick=0;tick<100u;++tick) {
+            const auto actors=s.game_.enemies;const auto visible=s.render_continuous();
+            s.game_.enemies={};const auto empty=s.render_continuous();s.game_.enemies=actors;
+            const bool on_screen=visible!=empty;
+            if(std::int16_t(actor.x_fixed())< -0x200 && on_screen)saw_clipped=true;
+            sm::step_stage0_object_scroll_15hz(s.game_,0x200,0,&rom);
+            if(!actor.active()) {assert(!on_screen);retired=true;break;}
+        }
+        assert(saw_clipped && retired);
+    }
+
+    // The $12 renderer handoff retains the same 0.5px/frame direction.
+    s.reset();while(s.frame()<5647u)s.step_60hz({});
+    auto before=s.render_continuous();s.step_60hz({});auto after=s.render_continuous();
+    unsigned equal_handoff=0;
+    for(unsigned y=660;y<760;++y)for(unsigned x=50;x<950;++x)
+        equal_handoff+=before[y*width+x]==after[y*width+x-2];
+    assert(equal_handoff*100u>90000u*97u);
+    // A child allocated behind the hatch pool waits for its ROM initializer.
+    // That state must be invisible, rather than flashing below the deck.
+    s.reset();while(s.frame()<3300u)s.step_60hz({});clear_actors(s,false);
+    const auto hidden_scene=s.render_continuous();auto& child=s.game_.enemies[0];
+    child.type()=0x11;child.state()=0;child.flags15()=5;
+    child.set_x_fixed(0x1500);child.set_y_fixed(0x0f00);
+    assert(s.render_continuous()==hidden_scene);
+
     // M/type-$07 owns one independent CD20 slot.  A vertical wall is a hit,
     // not a surface-following stop: retire it immediately so another M can fire.
     s.reset();
@@ -103,6 +167,38 @@ int main(int argc,char** argv) {
             }
         }
         assert(checked_cc);
+    }
+
+    // Large type-$1F cannons mix a tile body with a SAT barrel.  The world
+    // presentation already interpolates their camera-relative object anchor;
+    // applying the synthetic R18/CA1C background fine phase a second time
+    // produces an 8-pixel sawtooth.  Follow one late cannon across two carries
+    // and require its isolated tile body to advance by exactly half a pixel on
+    // every 60-Hz frame.
+    {
+        sm::PlaySession cannon(rom);while(cannon.frame_<7055u) cannon.step_60hz({});
+        int previous_left=-1,previous_top=-1;unsigned cannon_frames=0;
+        for(unsigned n=0;n<20u;++n) {
+            cannon.step_60hz({});const auto saved=cannon.game_.enemies;int target=-1;
+            for(unsigned i=0;i<cannon.game_.enemies.size();++i) {
+                const auto& e=cannon.game_.enemies[i];
+                if(e.type()==0x1fu && std::int16_t(e.x_fixed())>0x1000 && std::int16_t(e.x_fixed())<0x2000 &&
+                   std::int16_t(e.y_fixed())>0x0d00 && std::int16_t(e.y_fixed())<0x1000) {target=int(i);break;}
+            }
+            assert(target>=0);auto actor=cannon.game_.enemies[unsigned(target)];
+            for(auto& e:cannon.game_.enemies) e.clear();
+            actor.flags15()&=std::uint8_t(~1u);actor.raw[5]=0u;cannon.game_.enemies[unsigned(target)]=actor;
+            const auto with=cannon.render_continuous();cannon.game_.enemies[unsigned(target)].clear();
+            const auto without=cannon.render_continuous();cannon.game_.enemies=saved;
+            int left=int(width),top=int(height);
+            for(unsigned y=0;y<height;++y) for(unsigned x=0;x<width;++x) if(with[y*width+x]!=without[y*width+x]) {
+                left=std::min(left,int(x));top=std::min(top,int(y));
+            }
+            assert(left<int(width) && top<int(height));
+            if(previous_left>=0) {assert(previous_left-left==2);assert(top==previous_top);}
+            previous_left=left;previous_top=top;++cannon_frames;
+        }
+        assert(cannon_frames==20u);
     }
 
     // Compare actual colored texture pixels on every video frame, including
@@ -173,6 +269,40 @@ int main(int argc,char** argv) {
     const auto with_pickup=s.render_continuous();pickup.clear();
     const auto without_pickup=s.render_continuous();
     assert(with_pickup!=without_pickup);
+    // The ROM chassis matrices include a rock row. Its native replacement
+    // must use the same 60-Hz floor clock everywhere, even under the tread.
+    s.reset();while(s.frame()<3300u) s.step_60hz({});clear_actors(s,true);
+    for(unsigned f=0;f<64u;++f) {
+        const auto actors=s.game_.enemies;const auto chassis=s.render_continuous();
+        s.game_.enemies={};const auto floor=s.render_continuous();s.game_.enemies=actors;
+        for(unsigned y=788u;y<height;++y) for(unsigned x=0;x<width;++x)
+            assert(chassis[y*width+x]==floor[y*width+x]);
+        s.step_60hz({});clear_actors(s,true);
+    }
+    // A destroyed large cannon retains its original frame9 head. Check its
+    // attachment to the actual blue pedestal, not merely head velocity: the
+    // latter passed even while the whole head was one tile left of the mount.
+    s.reset();while(s.frame()<7400u) s.step_60hz({});
+    for(unsigned f=0;f<64u;++f) {
+        s.step_60hz({});const auto actors=s.game_.enemies;sm::Entity64 wreck;
+        for(const auto& actor:actors) if(actor.type()==0x1fu && actor.raw[8]==13u) wreck=actor;
+        assert(wreck.active());s.game_.enemies={};s.game_.player.clear();
+        const auto pedestal=s.render_continuous();
+        wreck.type()=0x6b;wreck.state()=1;wreck.flags15()=0x46;
+        wreck.raw[6]=9;wreck.raw[0x3e]=9;wreck.raw[5]=0;s.game_.enemies[0]=wreck;
+        const auto mounted=s.render_continuous();s.game_.enemies=actors;
+        int left=int(width);
+        for(unsigned y=112;y<760u;++y) for(unsigned x=0;x<width;++x)
+            if(mounted[y*width+x]!=pedestal[y*width+x] && (mounted[y*width+x]&0xffffffu))
+                left=std::min(left,int(x));
+        assert(left<900);
+        const unsigned row=unsigned((int(wreck.y_fixed())/32+29+40)*4);
+        int mount_left=int(width);
+        for(int x=left-8;x<left+128;++x) if(x>=0 && x<int(width) && blue(pedestal[row*width+unsigned(x)])) {
+            mount_left=x;break;
+        }
+        assert(mount_left-left>=0 && mount_left-left<=8); // at most two pixels of head overhang
+    }
     // A fully airborne ROM pose supplies a hull reference. Every colored
     // aircraft pixel above the foreground deck must already be present during
     // entry/rise, regardless of MSX stamp phase. The deck hides the lower hull.

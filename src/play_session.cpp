@@ -25,12 +25,12 @@ bool native_stage0_tile_actor(std::uint8_t type) noexcept {
 void draw_entity(const Rom& rom, const Screen4Snapshot& video,
                  const Entity64& entity, std::vector<std::uint32_t>& pixels,
                  const std::array<std::uint32_t,16>& palette, int sprite_origin_y,
-                 unsigned x_samples=1,unsigned y_samples=1) {
+                 unsigned x_samples=1,unsigned y_samples=1,int clip_bottom=212) {
     if (!entity.active() || entity.type()>0x7c) return;
     // A freshly spawned terminal boss spends one display slice in ROM state 0
     // before its 20-Hz initializer places the real entrance actor at x=$28.
     // Rendering that uninitialized record exposes most of the boss for one frame.
-    if(entity.type()==0x64u && entity.state()==0u) return;
+    if((entity.type()==0x64u || entity.type()==0x11u) && entity.state()==0u) return;
     if(entity.type()==3) return; // pickup icons use the ROM tile matrices
     if (entity.type()>9 && (entity.flags15()&1)==0) return;
     const auto table=rom.bank(7), frames=rom.bank(8), colors=rom.bank(9);
@@ -47,8 +47,12 @@ void draw_entity(const Rom& rom, const Screen4Snapshot& video,
     std::vector<SpriteLine> line;
     line.reserve(count*2u);
     const int ey=(int(std::int16_t(entity.y_fixed()))>>5)+sprite_origin_y+1;
+    // Original SAT captures use the same +7 object X origin for every
+    // stage-0 sprite family, including the mixed tile/SAT type-$1F cannon.
+    // Its aim-frame offsets live in the ROM frame definition; adding a special
+    // type-$1F bias here makes the error grow as the stage changes direction.
     const int ex=(int(std::int16_t(entity.x_fixed()))>>5)+7;
-    for(int sy=0;sy<212;++sy) {
+    for(int sy=0;sy<std::min(212,clip_bottom);++sy) {
         line.clear();
         // Keep ROM component/layer order: this is the SAT order produced by
         // the object renderer. V9938 mode-2 CC is defined across this ordered
@@ -226,7 +230,8 @@ void draw_tile_actor(const Rom& rom,const Screen4Snapshot& video,const Entity64&
                  unsigned pattern_base,unsigned color_base,int screen_y_bias,
                  unsigned start_row,std::uint16_t fine_y,bool pickup_only,
                  unsigned x_samples=1,unsigned y_samples=1,int pattern_quarter=-1,
-                 std::uint16_t fine_x=0,int horizontal_shift=0,int raster_r23=-1) {
+                 std::uint16_t fine_x=0,int horizontal_shift=0,int raster_r23=-1,
+                 int type24_phase=-1) {
     if(!e.active()) return;
     if(pickup_only) { if(e.type()!=3) return; }
     else if(e.type()==0x64u && e.state()==0u) return;
@@ -235,8 +240,15 @@ void draw_tile_actor(const Rom& rom,const Screen4Snapshot& video,const Entity64&
     // Do not cull large cannon tile actors by anchor position. Their matrix can
     // still overlap the left edge after the anchor itself has crossed x=0;
     // per-tile clipping below keeps the visible half on screen, matching the ROM.
-    for(auto v:decode_stage0_tile_visuals(rom,e)) {
+    const auto visuals=(e.type()==0x24u && type24_phase>=0)
+        ? decode_stage0_t24_visuals_phase(rom,e,unsigned(type24_phase))
+        : decode_stage0_tile_visuals(rom,e);
+    for(auto v:visuals) {
         for(unsigned ty=0;ty<v.rows;++ty) for(unsigned tx=0;tx<v.cols;++tx) {
+            // $BDAD's last matrix row stamps rocks as well as the chassis.
+            // The native rock strip owns those pixels at 60 Hz; stamping the
+            // 15-Hz rock row here splits rocks and breaks contact with the tread.
+            if(e.type()==0x24u && v.tile_y_offset+int(ty)>=3) continue;
             const auto tile=v.tiles[ty*unsigned(v.cols)+tx];
             if(!tile) continue;
             // Tile actors are camera-relative, but their original $7A79 stamp
@@ -294,8 +306,9 @@ void draw_pickup(const Rom& rom,const Screen4Snapshot& video,const Entity64& e,
 void draw_vehicle_tile_actor(const Rom& rom,const Screen4Snapshot& video,const Entity64& e,
                  std::vector<std::uint32_t>& pixels,const std::array<std::uint32_t,16>& palette,
                  unsigned pattern_base,unsigned color_base,int screen_y_bias,
-                 unsigned start_row,std::uint16_t fine_y) {
-    draw_tile_actor(rom,video,e,pixels,palette,pattern_base,color_base,screen_y_bias,start_row,fine_y,false);
+                 unsigned start_row,std::uint16_t fine_y,int type24_phase=-1) {
+    draw_tile_actor(rom,video,e,pixels,palette,pattern_base,color_base,screen_y_bias,start_row,fine_y,false,
+        1,1,-1,0,0,-1,type24_phase);
 }
 void composite_carrier(std::vector<std::uint32_t>& pixels,std::vector<std::uint32_t>& layer,
                        const std::array<std::uint32_t,16>& palette,unsigned width,
@@ -432,7 +445,8 @@ PlaySession::PlaySession(const Rom& rom)
     logic_start_frame_=((visual_level_.width_tiles-logic.width_tiles)*8*3+1)/2-2*kInitialCameraPixels;
     reset();
 }
-void PlaySession::reset() {
+void PlaySession::reset(unsigned stage) {
+    if(stage>1) throw std::invalid_argument("available stage index must be 0 or 1");
     bomb_palette_bias_=0;bomb_palette_ticks_=0;
     stage_index_=0;stage_start_frame_=0;previous_gate_actors_={};music_playing_=true;
     sound_events_.clear();
@@ -456,6 +470,12 @@ void PlaySession::reset() {
     game_.player.type()=1; game_.player.flags15()=0x39;
     game_.player.raw[0x13]=3; game_.player.raw[0x14]=0x83; game_.player.raw[0x18]=15;
     player_history_.fill(game_.player);
+    level_frames_=0;
+    if(stage) begin_next_stage();
+}
+void PlaySession::set_test_loadout(bool maximum) noexcept {
+    if(maximum) combat_.set_max_test_loadout();
+    else {combat_.clear_upgrades(); options_={};option_shots_={};missile_shot_.clear();option_mode_=0;}
 }
 void position_option(const Entity64& player,Entity64& option,unsigned mode) noexcept {
     static constexpr int dx[3]={-0x80,0,0x80}; // bank02 $8569 / CB1B
@@ -777,6 +797,12 @@ void PlaySession::step_60hz(PlayerInput input) {
         if(enemy.type()==0x64u && enemy.raw[0x16]<=0x0fu) enemy.raw[0x3c]=1u;
         append_stage0_damage_sounds(rom_,original.type(),damage,sound_events_);
         if(damage==Stage0DamageResult::Destroyed) {
+            // Type-$64 death immediately invalidates its type-$40 attack pool.
+            // Clearing them here (the same frame as sound $4D/TowerExplosion)
+            // prevents player fire from killing those rockets during the eight
+            // $6A explosion selectors and emitting stray Hit/Explosion sounds.
+            if(original.type()==0x64u)
+                for(auto& child:game_.enemies) if(&child!=&enemy && child.type()==0x40u) child.clear();
             const bool bonus=enemies_.destroyed(original);
             combat_.award_destroyed(rom_,original.type());
             // Standard destruction becomes type $62. Bank05:$9A41 drives
@@ -823,7 +849,12 @@ void PlaySession::step_60hz(PlayerInput input) {
     auto collide=[&](Entity64& shot) {
         if(!shot.active() || shot.type()==8u) return;
         for(auto& enemy:game_.enemies) {
-            if(!(enemy.raw[0x14]&128u) || !stage0_sprite_overlap(rom_,shot,enemy)) continue;
+            auto target=enemy;
+            auto visible_shot=shot;
+            if(camera_pixels()>=1536u && shot.type()!=7u &&
+               enemy.type()!=0x10u && enemy.type()!=0x12u && enemy.type()!=0x15u && enemy.type()!=0x18u)
+                visible_shot.set_y_fixed(std::uint16_t(shot.y_fixed()-(background_.mode()==4u?7u:8u)*32u));
+            if(!(enemy.raw[0x14]&128u) || !stage0_sprite_overlap(rom_,visible_shot,target)) continue;
             // $76A9 stores one pending hit; simultaneous W components do not
             // subtract HP independently. Type 4 supplies +06, M/type7 supplies 2.
             const auto amount=std::uint8_t(shot.type()==4u?shot.raw[6]:2u);
@@ -859,7 +890,7 @@ void PlaySession::step_60hz(PlayerInput input) {
         ? int(std::int16_t(background_.y_velocity_fp()))/8 : 0;
     if(stage_index_) {
         if(stage_tick && !background_.gated()) {
-            step_stage0_object_scroll_15hz(game_,background_.x_velocity_fp(),background_.y_velocity_fp());
+            step_stage0_object_scroll_15hz(game_,background_.x_velocity_fp(),background_.y_velocity_fp(),&rom_);
             step_stage0_object_logic_15hz(game_);background_.step_15hz();
             camera_half_pixels_=3072u+background_.world_x()*2u;
         }
@@ -869,7 +900,7 @@ void PlaySession::step_60hz(PlayerInput input) {
         ++camera_half_pixels_;
         if (frame_>=logic_start_frame_) {
             stream_runtime_.step_60hz();
-            if(stage_tick) sm::step_stage0_objects(game_);
+            if(stage_tick) sm::step_stage0_objects(game_,&rom_);
         }
     } else if(camera_pixels()<3072) {
         // Original vehicle section: OpenMSX 60-Hz traces show C0BB, CA1C and
@@ -879,13 +910,13 @@ void PlaySession::step_60hz(PlayerInput input) {
         // its displacement over the four displayed frames.
         if(frame_>=logic_start_frame_) stream_runtime_.step_60hz();
         if(stage_tick) {
-            sm::step_stage0_objects(game_);
+            sm::step_stage0_objects(game_,&rom_);
             background_.step_15hz();
             camera_half_pixels_=background_.world_x()*2;
         }
     } else if(!background_.gated()) {
         if(stage_tick) {
-            step_stage0_object_scroll_15hz(game_,background_.x_velocity_fp(),background_.y_velocity_fp());
+            step_stage0_object_scroll_15hz(game_,background_.x_velocity_fp(),background_.y_velocity_fp(),&rom_);
             step_stage0_object_logic_15hz(game_);
             background_.step_15hz();
             camera_half_pixels_=background_.world_x()*2;
@@ -936,16 +967,17 @@ void PlaySession::begin_next_stage() {
 }
 void PlaySession::seek_decile(unsigned step) {
     if(step>9) throw std::invalid_argument("level shortcut must be 0..9");
-    if(step==0) {reset();return;}
+    const unsigned stage=stage_index_;
+    if(step==0) {reset(stage);return;}
     if(!level_frames_) {
-        PlaySession probe(rom_);
+        PlaySession probe(rom_);probe.reset(stage);
         while(!probe.at_fight_gate() && probe.frame()<60000) probe.step_60hz({});
-        if(!probe.at_fight_gate()) throw std::runtime_error("stage0 route did not reach fight gate");
-        level_frames_=probe.frame();
+        if(!probe.at_fight_gate()) throw std::runtime_error("stage route did not reach fight gate");
+        level_frames_=probe.stage_frame();
     }
     const unsigned target=level_frames_*step/10;
-    reset();
-    while(frame_<target) step_60hz({});
+    reset(stage);
+    while(stage_frame()<target) step_60hz({});
     sound_events_.clear();
     presenter_.reset();
 }
@@ -1041,8 +1073,14 @@ std::vector<std::uint32_t> PlaySession::render() {
         // toward the previous screen position. This avoids a separate old->new
         // page promotion (which was a second visible jerk for the $24 matrix).
         // In screen4, negative source offset moves the current image right.
+        // The native horizontal map uses a different column origin from
+        // the MSX D988 raster window. Resolve that one-cell difference in the
+        // scenery itself, keeping every actor (and its collision/muzzle) in
+        // its original continuous coordinate domain across the $12 handoff.
+        const int native_column_origin=render_native_wide_ && stage_index_==0u && camera_pixels()>=3072u
+            ? 8+int(std::int16_t(background_.x_velocity_fp()))/256 : 0;
         pixels=presenter_.render(background_,video_,current,&current_state,
-                                 -world_remaining_x,-world_remaining_y,&right_edge,
+                                 native_column_origin-world_remaining_x,-world_remaining_y,&right_edge,
                                  int(current_start_row),int(background_.graphics_set()),
                                  int(background_.palette_set()));
         // The A13F ring itself is exact, but its successor/rightmost physical
@@ -1201,8 +1239,20 @@ std::vector<std::uint32_t> PlaySession::render() {
                 e.set_x_fixed(std::uint16_t(e.x_fixed()+world_remaining_x*32));
                 e.set_y_fixed(std::uint16_t(e.y_fixed()+world_remaining_y*32));
             }
+            int t24_phase=-1;
+            if(e.type()==0x24u) {
+                // Bank06:$BDAD-$BDCA: C = (CA3B + object X high + low-byte
+                // CA1C/object-X carry) & 7.  CA3B itself is CA3A+CA1D.
+                const unsigned ca3b=(unsigned(background_.fast_ground_phase())+
+                    unsigned(std::uint8_t(background_.ca1c()>>8u)))&7u;
+                // Matrix selection is a 15-Hz ROM compositor decision. Use
+                // the coarse object record, not the sub-frame presentation copy;
+                // only the actor position is interpolated to 60 Hz.
+                t24_phase=int(stage0_t24_phase(source,std::uint8_t(ca3b),
+                    std::uint8_t(background_.ca1c())));
+            }
             draw_vehicle_tile_actor(rom_,video_,e,pixels,palette,pattern_base,color_base,
-                tile_screen_y_bias,overlay_start_row,overlay_fine_y);
+                tile_screen_y_bias,overlay_start_row,overlay_fine_y,t24_phase);
         }
         for(const auto& source:game_.enemies) {
             auto e=source;
@@ -1253,7 +1303,7 @@ std::vector<std::uint32_t> PlaySession::render() {
         draw_entity(rom_,video_,e,pixels,palette,enemy_sprite_origin(e.type()));
     }
     if(!render_subpixel_) {
-    for(const auto& e:combat_.bullets()) draw_entity(rom_,video_,e,pixels,palette,sprite_origin_y);
+    for(unsigned i=0;i<combat_.bullets().size();++i) draw_entity(rom_,video_,combat_.bullets()[i],pixels,palette,combat_.opening_bullet(i)?20:sprite_origin_y);
     draw_player_shots(rom_,video_,shots_,pixels,palette,sprite_origin_y);
     for(const auto& e:option_shots_) draw_entity(rom_,video_,e,pixels,palette,sprite_origin_y);
     draw_entity(rom_,video_,missile_shot_,pixels,palette,sprite_origin_y);
@@ -1445,9 +1495,9 @@ std::vector<std::uint32_t> PlaySession::render_presentation(unsigned x_samples,u
     const int remaining_y_samples=tick_y_samples-tick_y_samples*int(phase+1u)/4;
 
     const auto ps=background_.presentation_state();
-    // One unwrapped 60-Hz strip clock across the opening, vehicle, diagonal
-    // sections and boss gate. ROM phases are texture/animation data, not a
-    // reason to hold the floor's position for four displayed frames.
+    // Keep the lower rock strip on one continuous 60-Hz clock. The crawler
+    // tread itself now uses the exact $BDAD/CA3B phase below; do not couple this
+    // independent parallax strip back to the coarse 15-Hz object compositor.
     const int present_camera_samples=int(camera_pixels()*x_samples)-remaining_samples;
     const int fg_source_samples=(int(7u*8u+saved_frame*2u)*int(x_samples)+present_camera_samples)
         %int(64u*x_samples);
@@ -1527,7 +1577,8 @@ std::vector<std::uint32_t> PlaySession::render_presentation(unsigned x_samples,u
             : std::array<std::uint8_t,24*48>{};
         auto wrap=[](int n,int modulus) {n%=modulus;return n<0?n+modulus:n;};
         auto occupied=[&](int x,int y) {
-            const int source_x=(x-remaining_samples)/int(x_samples);
+            const int source_x=(x-remaining_samples)/int(x_samples)
+                +(camera_pixels()>=3072u?8+int(std::int16_t(background_.x_velocity_fp()))/256:0);
             const int source_y=(y-remaining_y_samples)/int(y_samples);
             if(horizontal_vehicle) {
                 const int row=(source_y-28)/8;
@@ -1579,16 +1630,6 @@ std::vector<std::uint32_t> PlaySession::render_presentation(unsigned x_samples,u
         const int sprite_y=background_.mode()==4u?27:28;
         auto present=[&](const Entity64& source) {
             auto e=present_carrier(source,saved_frame);
-            // Native tile actors are removed from the coarse world pass and
-            // composed here. Large cannon $1F therefore needs the same 60-Hz
-            // camera interpolation for both its tile body and SAT barrel.
-            // Applying the synthetic R18 fine phase to the body was wrong: the
-            // original late-stage captures hold R18=$70, while our synthesized
-            // low nibble wraps 8..15 and produced the visible left/right shake.
-            if(stage_index_==0u && e.type()==0x1fu && (e.flags15()&4u)) {
-                e.set_x_fixed(std::uint16_t(e.x_fixed()+remaining_samples*32/int(x_samples)));
-                e.set_y_fixed(std::uint16_t(e.y_fixed()+remaining_y_samples*32/int(y_samples)));
-            }
             if(e.type()==0x64u || e.type()==0x3du) {
                 const auto index=std::size_t(&source-game_.enemies.data());
                 const auto& old=previous_gate_actors_[index];
@@ -1637,33 +1678,64 @@ std::vector<std::uint32_t> PlaySession::render_presentation(unsigned x_samples,u
                 // passes above, so vertical/diagonal camera remainder cannot
                 // be applied twice.
                 if(e.type()==0x1fu) {
-                    // $1F is stamped into the name table on an integer cell.
-                    // Native object coordinates already include the compensating
-                    // fractional camera phase seen in the original captures, so
-                    // re-applying CA1C/R18 here caused an 8-pixel sawtooth. Keep
-                    // the original one-pixel vertical raster bias, but present X
-                    // directly from the continuously interpolated object anchor.
+                    // Keep both halves of the large cannon in one native object
+                    // coordinate domain. Frame 0's 4x2 tile body starts at +16px;
+                    // the SAT frame starts at +15px (ROM X offset 8 plus the
+                    // universal +7 SAT origin). No CA1A/R23 or R18 phase is
+                    // re-applied here: the continuously presented object anchor
+                    // already contains the camera motion, so body and barrel
+                    // cannot accumulate a different offset during the climb.
                     draw_tile_actor(rom_,video_,e,out,wpalette,wpattern,wcolor,
-                        background_.mode()==4u?27:28,start_row,0u,
+                        background_.mode()==4u?28:29,start_row,0u,
                         false,x_samples,y_samples);
+                } else if(e.type()==0x24u) {
+                    // Exact bank06:$BDAD phase. Low bits are the MSX pre-shift;
+                    // CA3B supplies the real tread animation state. Selecting all
+                    // eight frames from raw object X alone made the tracks cycle
+                    // too quickly and visibly desynchronize at 60 Hz.
+                    const unsigned ca3b=(unsigned(background_.fast_ground_phase())+
+                        unsigned(std::uint8_t(background_.ca1c()>>8u)))&7u;
+                    const int t24_phase=int(stage0_t24_phase(source,std::uint8_t(ca3b),
+                        std::uint8_t(background_.ca1c())));
+                    draw_tile_actor(rom_,video_,e,out,wpalette,wpattern,wcolor,
+                        background_.mode()==4u?28:29,start_row,background_.ca1a()&255u,
+                        false,x_samples,y_samples,-1,0,0,-1,t24_phase);
                 } else {
                     draw_tile_actor(rom_,video_,e,out,wpalette,wpattern,wcolor,
                         background_.mode()==4u?28:29,start_row,background_.ca1a()&255u,
                         false,x_samples,y_samples);
                 }
             }
-            draw_entity(rom_,video_,e,out,wpalette,sprite_y,x_samples,y_samples);
+            int clip_bottom=212;
+            if(e.type()==0x11u && e.state()==1u) {
+                // The deck and hatch are foreground during launch. The ROM
+                // hides the child under those cells; native sprites need the
+                // same reveal edge until they detach from the launcher.
+                for(const auto& hatch:saved_enemies) if(hatch.type()==0x26u &&
+                    std::abs(int(std::int16_t(source.x_fixed()-hatch.x_fixed()))-0x20)<=32) {
+                    const int hatch_y=int(std::int16_t(hatch.y_fixed()))/32;
+                    const int child_y=int(std::int16_t(source.y_fixed()))/32;
+                    if(child_y>hatch_y || child_y<hatch_y-40) continue;
+                    for(const auto& v:decode_stage0_tile_visuals(rom_,hatch))
+                        clip_bottom=std::min(clip_bottom,v.y+(background_.mode()==4u?28:29)
+                            +remaining_y_samples/int(y_samples));
+                }
+            }
+            const int actor_sprite_y=(e.type()==0x10u || e.type()==0x12u || e.type()==0x15u || e.type()==0x18u)?20:sprite_y;
+            draw_entity(rom_,video_,e,out,wpalette,actor_sprite_y,x_samples,y_samples,clip_bottom);
         };
         for(const auto& e:game_.enemies) present(e);
-        for(const auto& e:combat_.bullets()) draw_entity(rom_,video_,e,out,wpalette,sprite_y,x_samples,y_samples);
-        draw_player_shots(rom_,video_,shots_,out,wpalette,sprite_y,x_samples,y_samples);
-        for(const auto& e:option_shots_) draw_entity(rom_,video_,e,out,wpalette,sprite_y,x_samples,y_samples);
+        for(unsigned i=0;i<combat_.bullets().size();++i) draw_entity(rom_,video_,combat_.bullets()[i],out,wpalette,combat_.opening_bullet(i)?20:sprite_y,x_samples,y_samples);
+        // Ship, options and their forward shots stay in one screen-space
+        // origin even when the VDP scenery raster changes below them.
+        draw_player_shots(rom_,video_,shots_,out,wpalette,20,x_samples,y_samples);
+        for(const auto& e:option_shots_) draw_entity(rom_,video_,e,out,wpalette,20,x_samples,y_samples);
         auto missile=missile_shot_;
         missile.set_x_fixed(std::uint16_t(missile.x_fixed()+remaining_samples*32/int(x_samples)));
         missile.set_y_fixed(std::uint16_t(missile.y_fixed()+remaining_y_samples*32/int(y_samples)));
         draw_entity(rom_,video_,missile,out,wpalette,sprite_y,x_samples,y_samples);
-        for(const auto& e:options_) draw_entity(rom_,video_,e,out,wpalette,sprite_y,x_samples,y_samples);
-        draw_entity(rom_,video_,game_.player,out,wpalette,sprite_y,x_samples,y_samples);
+        for(const auto& e:options_) draw_entity(rom_,video_,e,out,wpalette,20,x_samples,y_samples);
+        draw_entity(rom_,video_,game_.player,out,wpalette,20,x_samples,y_samples);
     }
     return out;
 }

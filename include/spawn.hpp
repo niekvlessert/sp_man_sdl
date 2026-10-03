@@ -67,12 +67,12 @@ struct Stage0TileVisual {
     std::vector<std::uint8_t> tiles;
 };
 
-void step_stage0_objects(GameState& game) noexcept;
+void step_stage0_objects(GameState& game,const Rom* native_visuals=nullptr) noexcept;
 void step_stage0_object_scroll_60hz(GameState& game) noexcept;
 void step_stage0_object_scroll_60hz(GameState& game, std::int32_t x_velocity_fp,
                                     std::int32_t y_velocity_fp) noexcept;
 void step_stage0_object_scroll_15hz(GameState& game, std::int32_t x_velocity_fp,
-                                    std::int32_t y_velocity_fp) noexcept;
+                                    std::int32_t y_velocity_fp,const Rom* native_visuals=nullptr) noexcept;
 void step_stage0_object_logic_15hz(GameState& game) noexcept;
 bool decode_stage0_sprite_visual(const Rom& rom, const Screen4Snapshot& video,
                                  const Entity64& entity, Stage0SpriteVisual& out);
@@ -83,6 +83,10 @@ std::vector<Stage0TileVisual> decode_stage0_tile_visuals(const Rom& rom,
 std::vector<Stage0TileVisual> decode_stage0_t24_visuals_phase(const Rom& rom,
                                                                const Entity64& entity,
                                                                unsigned phase);
+// Bank06:$BDAD-$BDCA exact type-$24 matrix selector. `ca3b` is the
+// ROM CA3B phase and `fine_x` is the low byte of CA1C.
+std::uint8_t stage0_t24_phase(const Entity64& entity,std::uint8_t ca3b,
+                              std::uint8_t fine_x) noexcept;
 void stamp_stage0_tile_objects(const Rom& rom, const Stage0BackgroundStream& stream,
                                const GameState& game,
                                std::array<std::uint8_t, 24u * 32u>& d988,

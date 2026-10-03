@@ -546,6 +546,7 @@ void Stage0BackgroundStream::stream_phase() {
             write_vertical(source_, -9);
             write_vertical(std::uint16_t(source_ - 0x24u), 31);
             advance = 6; break;
+        case 3: // bank09 $7EDE: downward row writer, also used by stage 2
         case 4: {
             static constexpr int kColOffset[4] = {0, -3, -2, -1};
             static constexpr unsigned kRowPhase[4] = {12, 0, 4, 8};

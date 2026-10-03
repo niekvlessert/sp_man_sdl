@@ -32,7 +32,7 @@ target_link_libraries(space-manbow-level-preview PRIVATE smcore PkgConfig::SDL2)
 add_executable(space-manbow-runtime-test src/runtime_test.cpp)
 target_link_libraries(space-manbow-runtime-test PRIVATE smcore)
 
-add_executable(space-manbow-game src/game_main.cpp src/play_audio.cpp)
+add_executable(space-manbow-game src/game_main.cpp src/play_audio.cpp src/title_animation.cpp)
 target_link_libraries(space-manbow-game PRIVATE smcore PkgConfig::SDL2)
 
 add_executable(space-manbow-player-test src/player_test.cpp)
@@ -45,6 +45,9 @@ target_link_libraries(space-manbow-combat-test PRIVATE smcore)
 add_executable(space-manbow-audio-test src/play_audio_test.cpp src/play_audio.cpp)
 target_include_directories(space-manbow-audio-test PRIVATE include)
 target_link_libraries(space-manbow-audio-test PRIVATE PkgConfig::SDL2)
+
+add_executable(space-manbow-title-test src/title_animation_test.cpp src/title_animation.cpp)
+target_include_directories(space-manbow-title-test PRIVATE include)
 
 add_executable(space-manbow-late-combat-test src/late_combat_test.cpp)
 target_link_libraries(space-manbow-late-combat-test PRIVATE smcore)

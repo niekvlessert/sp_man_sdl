@@ -13,7 +13,7 @@ struct PlayerUpgrades {
 // pickup selector $7042. The main stage stream retains ownership of scenery.
 class Stage0Combat {
 public:
-    void reset() { bullets_={};upgrades_={};pickup_cursor_=0;turret_count_=0;score_=0; }
+    void reset() { bullets_={};opening_bullets_={};upgrades_={};pickup_cursor_=0;turret_count_=0;score_=0; }
     void spawned(Entity64& enemy);
     void step(const Rom& rom,GameState& game,unsigned frame,int camera_dx,int camera_dy,
               std::vector<PlaySound>& sounds);
@@ -24,6 +24,7 @@ public:
     void award_destroyed(const Rom& rom,std::uint8_t original_type);
     unsigned score() const noexcept { return score_; }
     const PlayerUpgrades& upgrades() const {return upgrades_;}
+    void clear_upgrades() noexcept { upgrades_={}; }
     void consume_missile() {upgrades_.missile_armed=false;}
     // Native play-test convenience: equivalent to collecting the reusable
     // stage-0 upgrades to their maxima. The one-shot LARGE capsule is kept
@@ -33,10 +34,12 @@ public:
         upgrades_.wave=true;upgrades_.missile=true;upgrades_.missile_armed=false;
     }
     std::span<const Entity64> bullets() const {return bullets_;}
+    bool opening_bullet(std::size_t slot) const noexcept { return opening_bullets_[slot]; }
 private:
     bool fire(const Rom& rom,const Entity64& source,const Entity64& target,unsigned difficulty,int yoff=0,int xoff=0);
     bool fire_type15_pair(const Entity64& source);
     std::array<Entity64,18> bullets_{};
+    std::array<bool,18> opening_bullets_{}; // native origin inherited from launch source
     PlayerUpgrades upgrades_{};
     unsigned pickup_cursor_=0,turret_count_=0,score_=0;
 };

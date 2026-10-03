@@ -180,9 +180,21 @@ int main(int argc,char** argv) {
     session.set_max_test_loadout();
     bool saw_child=false,saw_underbody=false,damaged=false,saw_burst=false,saw_silent_wait=false;
     bool checked_burst_pixels=false,checked_wait_pixels=false;
+    bool saw_tower_explosion_sound=false,stray_rocket_death_sound=false;
     for(unsigned n=0;n<4000 && session.stage_index()==0;++n) {
         sm::PlayerInput input{};input.fire=true;input.fire_pressed=n%5==0;
         session.step_60hz(input);
+        for(const auto sound:session.sound_events()) {
+            if(sound==sm::PlaySound::TowerExplosion) saw_tower_explosion_sound=true;
+            else if(saw_tower_explosion_sound &&
+                    (sound==sm::PlaySound::Hit || sound==sm::PlaySound::Explosion))
+                stray_rocket_death_sound=true;
+        }
+        const bool death_active=std::any_of(session.state().enemies.begin(),session.state().enemies.end(),
+            [](const auto& e){return e.type()==0x6au;});
+        if(death_active)
+            assert(std::none_of(session.state().enemies.begin(),session.state().enemies.end(),
+                [](const auto& e){return e.type()==0x40u;}));
         for(const auto& e:session.state().enemies) {
             saw_child|=e.type()==0x40;saw_underbody|=e.type()==0x3d;
             damaged|=e.type()==0x64 && e.raw[22]<60;
@@ -204,6 +216,7 @@ int main(int argc,char** argv) {
     }
     assert(saw_underbody && damaged && saw_burst && saw_silent_wait);
     assert(checked_burst_pixels && checked_wait_pixels);
+    assert(saw_tower_explosion_sound && !stray_rocket_death_sound);
     assert(session.stage_index()==1); // real projectiles -> $6A -> next stage
     assert(session.music_playing());
     assert(session.upgrades().wave && session.upgrades().missile);

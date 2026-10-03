@@ -28,9 +28,10 @@ std::array<std::uint8_t,24*48> compose_stage0_horizontal_tiles(
 class PlaySession {
 public:
     explicit PlaySession(const Rom& rom);
-    void reset();
-    void seek_decile(unsigned step); // 0=start, 9=90% of stage0's route to its fight gate
+    void reset(unsigned stage=0);
+    void seek_decile(unsigned step); // 0=start, 9=90% of the selected stage route
     void set_max_test_loadout() noexcept { combat_.set_max_test_loadout(); }
+    void set_test_loadout(bool maximum) noexcept;
     void step_60hz(PlayerInput input);
     std::vector<std::uint32_t> render();
     // 512x212 native presentation: two horizontal samples per logical pixel.

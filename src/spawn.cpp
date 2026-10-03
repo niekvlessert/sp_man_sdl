@@ -89,7 +89,7 @@ std::span<const SpawnRecord> StageSpawnStream::step_to_trigger(
 
 
 namespace {
-void scroll_stage0_objects(GameState& game, int dx, int dy) noexcept {
+void scroll_stage0_objects(GameState& game, int dx, int dy,const Rom* native_visuals=nullptr) noexcept {
     for (auto& e : game.enemies) {
         // Interactive pickups follow the camera through Stage0Combat, including
         // the pre-anchor part of the level where this scenery helper is idle.
@@ -104,8 +104,19 @@ void scroll_stage0_objects(GameState& game, int dx, int dy) noexcept {
         // coordinates) and it disappears on the next $40 step to $EEC0.
         // The old generic -$0200 guard therefore removed its visible tracks
         // roughly fifteen tiles too early.
-        const int left_guard = e.type()==0x56u ? -0x3000 :
+        int left_guard = e.type()==0x56u ? -0x3000 :
             (e.type()==0x47u ? -0x2000 : (e.type()==0x24u ? -0x1100 : (e.type()==0x1fu ? -0x0800 : -0x0200)));
+        if(native_visuals) {
+            // SDL exposes the complete ROM artwork immediately, including the
+            // full aircraft hull. Retain its pool record until that artwork,
+            // plus the remaining native interpolation, has left the viewport.
+            auto visual=e;
+            if(e.type()==0x55u) visual.raw[6]=5;
+            int right_extent=0;
+            for(const auto& matrix:decode_stage0_tile_visuals(*native_visuals,visual))
+                right_extent=std::max(right_extent,(matrix.tile_x_offset+int(matrix.cols))*8);
+            if(right_extent) left_guard=std::min(left_guard,-(right_extent+16)*32);
+        }
         if (dx > 0 && nx < left_guard) { e.clear(); continue; }
         e.set_x_fixed(std::uint16_t(std::int16_t(nx)));
         e.set_y_fixed(std::uint16_t(std::int16_t(ny)));
@@ -129,12 +140,12 @@ void step_stage0_object_scroll_60hz(GameState& game, std::int32_t x_velocity_fp,
 }
 
 void step_stage0_object_scroll_15hz(GameState& game, std::int32_t x_velocity_fp,
-                                    std::int32_t y_velocity_fp) noexcept {
+                                    std::int32_t y_velocity_fp,const Rom* native_visuals) noexcept {
     // Original scenery/object tick: camera velocity is pixel 8.8, while object
     // coordinates are tile 8.8, so one complete logic tick contributes /8.
     const int dx = int(std::int16_t(x_velocity_fp)) / 8;
     const int dy = int(std::int16_t(y_velocity_fp)) / 8;
-    scroll_stage0_objects(game, dx, dy);
+    scroll_stage0_objects(game, dx, dy,native_visuals);
 }
 
 namespace {
@@ -177,10 +188,10 @@ void step_stage0_object_logic_15hz(GameState& game) noexcept {
     game.logic_phase = std::uint8_t((game.logic_phase + 1u) & 7u);
 }
 
-void step_stage0_objects(GameState& game) noexcept {
+void step_stage0_objects(GameState& game,const Rom* native_visuals) noexcept {
     // Compatibility helper used by deterministic seek/tests: one complete
     // original scenery tick. Interactive preview uses the split 60/15-Hz APIs.
-    scroll_stage0_objects(game, 0x40, 0);
+    scroll_stage0_objects(game, 0x40, 0,native_visuals);
     step_stage0_object_logic_15hz(game);
 }
 
@@ -227,6 +238,8 @@ bool decode_stage0_sprite_visual(const Rom& rom, const Screen4Snapshot& video,
     // Level-1 SAT assembler keeps HL'=$0738: H' is added to X and L'
     // to Y before the attributes are uploaded to the V9938.
     out.y = int(std::int16_t(entity.y_fixed())) / 32 + int(x_offset) + 0x38;
+    // Live SAT captures confirm that type $1F uses the same +7 origin as
+    // every other stage-0 sprite; its aiming offsets come entirely from ROM.
     out.x = int(std::int16_t(entity.x_fixed())) / 32 + int(y_offset) + 0x07;
     const auto colors = rom.bank(9);
     auto add_layer = [&](std::uint8_t pattern, std::uint8_t color_index) {
@@ -513,6 +526,15 @@ std::vector<Stage0TileVisual> decode_stage0_tile_visuals(const Rom& rom,
     // validated against the live $7AC0 trace (e.g. x=$1F00 -> frames 2/10/18).
     const unsigned phase = (6u - (unsigned(entity.x_fixed()) >> 6)) & 7u;
     return decode_stage0_t24_visuals_phase(rom,entity,phase);
+}
+
+std::uint8_t stage0_t24_phase(const Entity64& entity,std::uint8_t ca3b,
+                              std::uint8_t fine_x) noexcept {
+    // Bank06:$BDB6-$BDCA. D starts as (CA3B + object-X high) & 7;
+    // the carry from CA1C-low + object-X-low advances the pre-shift once.
+    unsigned d=(unsigned(ca3b)+entity.raw[0x0a])&7u;
+    if(unsigned(fine_x)+entity.raw[0x09]>=256u) ++d;
+    return std::uint8_t(d&7u); // RES 3,D in the original
 }
 
 std::vector<Stage0TileVisual> decode_stage0_t24_visuals_phase(const Rom& rom,
