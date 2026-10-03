@@ -24,6 +24,23 @@ int main(int argc,char** argv) {
         {0xa836u,3470u,960u,0u,0xe2ac18a3u},
         {0xa8e9u,4400u,960u,0u,0xf0b08e33u},
     }};
+    // Final-sector palette commands: $A94A blackens the selected indices,
+    // then $A95D installs the green boss palette observed in OpenMSX.
+    const auto stage2_video=sm::Screen4Snapshot::from_stage_rom(rom,1);
+    assert(stage2_video.late_palette[1]==0xff000000u);
+    assert(stage2_video.tower_palette[1]==0xff6d2424u);
+    assert(stage2_video.tower_palette[4]==0xff244900u);
+    assert(stage2_video.tower_palette[9]==0xff6d9200u);
+    sm::Stage0BackgroundStream palette_probe(rom);palette_probe.reset_stage(1);
+    bool saw_black=false,saw_green=false;
+    for(unsigned i=0;i<6000u && !palette_probe.gated();++i) {
+        palette_probe.step_15hz();
+        saw_black|=palette_probe.palette_set()==1u;
+        saw_green|=palette_probe.palette_set()==2u;
+        if(saw_green) break;
+    }
+    assert(saw_black && saw_green);
+
     sm::Stage0BackgroundStream background(rom);background.reset_stage(1);
     unsigned checked=0,ticks=0;
     while(!background.gated() && ticks<15000u) {
@@ -283,7 +300,36 @@ int main(int argc,char** argv) {
         assert(max_phase>=9u);
         const auto& live=control_run.state();
         assert(std::count_if(live.enemies.begin(),live.enemies.end(),[](const auto& e){return e.type()==0x7au;})==1);
-        assert(std::count_if(live.enemies.begin(),live.enemies.end(),[](const auto& e){return e.type()==0x3bu;})==7);
+        assert(std::count_if(live.enemies.begin(),live.enemies.end(),[](const auto& e){return e.type()==0x3bu;})==6);
+        assert(control_run.boss_music_active());
+    }
+
+    // The shared $6A destruction countdown must advance stage 2 as well.
+    // Use the real stage-2 route and real $7A vulnerability bit, then invoke
+    // the already-tested ROM subtraction/death conversion directly so this
+    // check is independent of player aim and weapon timing.
+    {
+        sm::PlaySession completion(rom);completion.reset(1);
+        sm::Entity64* boss=nullptr;
+        while(completion.stage_frame()<20000u && !boss) {
+            completion.step_60hz({});
+            auto& mutable_state=const_cast<sm::GameState&>(completion.state());
+            auto it=std::find_if(mutable_state.enemies.begin(),mutable_state.enemies.end(),
+                [](auto& e){return e.type()==0x7au && (e.raw[0x14]&0x80u);});
+            if(it!=mutable_state.enemies.end()) boss=&*it;
+        }
+        assert(boss && completion.boss_music_active());
+        const unsigned death_frame=completion.frame();
+        assert(sm::apply_stage0_damage(rom,*boss,std::uint8_t(boss->raw[0x16]+1u))==
+               sm::Stage0DamageResult::Destroyed);
+        assert(boss->type()==0x6au);
+        bool saw_music_stop=false;
+        while(completion.stage_index()==1u && completion.frame()-death_frame<300u) {
+            completion.step_60hz({});
+            saw_music_stop|=!completion.music_playing();
+        }
+        assert(saw_music_stop && completion.stage_index()==2u);
+        assert(completion.music_playing() && !completion.boss_music_active());
     }
 
     // Final-sector type $3C: five actual ROM objects, selectors 0..4.
@@ -338,7 +384,39 @@ int main(int argc,char** argv) {
         assert(parent.x_fixed()==std::uint16_t(px-0x20u) && parent.y_fixed()==py);
     }
 
-    // Stage-2 boss $7A and its seven linked $3B body segments.
+    // Live unmodified OpenMSX boss trace at matching X positions. These
+    // values pin the animation timer, attack timer/cursor and vulnerability
+    // phase to the original rather than merely checking that the boss moves.
+    {
+        sm::PlaySession traced(rom);traced.reset(1);
+        struct BossPoint {std::uint16_t x;std::uint8_t f6,t17,t18,p20,p21;};
+        constexpr std::array<BossPoint,5> points{{
+            {0x1fc0u,4u,0x03u,0x18u,0x01u,0x00u},
+            {0x1c80u,1u,0x04u,0x0bu,0x05u,0x00u},
+            {0x1940u,3u,0x01u,0x1eu,0x07u,0x01u},
+            {0x1600u,1u,0x02u,0x11u,0x0au,0x01u},
+            {0x1540u,2u,0x17u,0x0eu,0x0bu,0x01u},
+        }};
+        unsigned next=0;
+        while(next<points.size() && traced.stage_frame()<13000u) {
+            traced.step_60hz({});
+            const auto it=std::find_if(traced.state().enemies.begin(),traced.state().enemies.end(),
+                [](const auto& e){return e.type()==0x7au;});
+            if(it==traced.state().enemies.end() || it->x_fixed()!=points[next].x) continue;
+            const auto& q=points[next++];
+            assert(it->raw[0x06]==q.f6 && it->raw[0x17]==q.t17 &&
+                   it->raw[0x18]==q.t18 && it->raw[0x20]==q.p20 &&
+                   it->raw[0x21]==q.p21);
+            if(it->x_fixed()==0x1940u) {
+                assert(it->raw[0x37]==6u && it->raw[0x3b]==7u);
+                assert(std::count_if(traced.state().enemies.begin(),traced.state().enemies.end(),
+                    [](const auto& c){return c.type()==0x3bu;})==6);
+            }
+        }
+        assert(next==points.size());
+    }
+
+    // Stage-2 boss $7A: seven $3B links are created, six survive the original SAT/resource pass.
     {
         const auto boss_record=std::find_if(stream.records().begin(),stream.records().end(),
             [](const auto& r){return r.type==0x7au;});
@@ -350,7 +428,7 @@ int main(int argc,char** argv) {
         assert(boss.state()==0u && boss.raw[0x0a]==0x20u && boss.raw[0x08]==8u && boss.raw[0x34]==0x80u);
         enemies.step_15hz(rom,game,0,0,false,nullptr);
         assert(boss.state()==1u && boss.raw[0x16]==0x20u && boss.raw[0x06]==4u);
-        assert((boss.raw[0x14]&0x80u)!=0u && boss.raw[0x37]==7u);
+        assert((boss.raw[0x14]&0x80u)!=0u && boss.raw[0x37]==6u && boss.raw[0x3b]==7u);
         assert(!sm::decode_stage0_tile_visuals(rom,boss).empty());
         static constexpr std::array<int,7> ox{-3,-7,-10,-13,-16,-18,-21};
         static constexpr std::array<int,7> oy{-3,-3,-3,-3,-2,-2,-2};
@@ -365,7 +443,9 @@ int main(int argc,char** argv) {
             assert(c.raw[0x20]==(o>=4u?1u:0u));
             assert(!sm::decode_stage0_tile_visuals(rom,c).empty());
         }
-        assert(children==7u);
+        assert(children==6u);
+        assert(std::none_of(game.enemies.begin(),game.enemies.end(),
+            [](const auto& c){return c.type()==0x3bu && c.raw[0x38]==7u;}));
         // The initial frame-4 damage window lasts three object ticks; the next
         // ROM animation entry closes it and selects tile frame zero.
         enemies.step_15hz(rom,game,1,0,false,nullptr);
@@ -384,7 +464,7 @@ int main(int argc,char** argv) {
         // Normal-route attack phases 5/6 feed the combat projectile service.
         game.player.set_x_fixed(0x0800u);game.player.set_y_fixed(0x0a00u);
         bool fired=false;std::vector<sm::PlaySound> sounds;
-        for(unsigned t=128;t<160u;++t) {
+        for(unsigned t=128;t<512u;++t) {
             enemies.step_15hz(rom,game,t,0,false,nullptr);
             boss_combat.step(rom,game,t*4u,0,0,sounds);
             fired|=std::any_of(boss_combat.bullets().begin(),boss_combat.bullets().end(),

@@ -71,19 +71,34 @@ created.
 There are no missing Stage-2 spawn-table families left. The five `$3C`
 final-sector objects instantiate with their ROM selectors and selector zero now
 executes the fixed `$6C75($FB)` raster-anchor calculation. The `$7A` boss also
-instantiates through its extended record, creates seven linked `$3B` body
-segments with the original offsets/timers, follows the 14-entry vulnerability
-animation, and emits the normal-route `$7306` upper/lower four-shot fans using
-its HP-derived speed field. The natural no-input route reaches the fight gate
-with exactly one `$7A` and seven `$3B` objects alive.
+instantiates through its extended record and creates seven linked `$3B` body
+records with the original offsets/timers. Live tracing shows ordinal 7 reaching
+its initialized X=$0AC0/Y=$0600 state and then being removed by the original
+`$7821/$7857` renderer-resource path before a second handler call; `$7A.+37`
+therefore falls from 7 to 6 while the peak count at `+3B` remains 7. Native now
+mirrors that result, follows the 14-entry vulnerability animation, and emits the
+normal-route `$7306` upper/lower four-shot fans using its HP-derived speed field.
+The normal `$20`-HP route reloads attack timer `+18` to `$20` exactly as `$A10F`
+does, so the attack cursor advances only on real timer expiry. Five live-trace
+boss checkpoints from X=$1FC0 through X=$1540 now match `+06/+17/+18/+20/+21`
+exactly. The no-input route reaches the fight gate with one `$7A` and six live
+`$3B` objects.
+
+Stage 2's final-sector palette scripts are `$A94A` (black transition target) and
+`$A95D` (green boss palette). They are now tracked as palette sets 1 and 2;
+the boss therefore uses the original green artwork rather than the earlier blue
+stage palette. Boss music is selected while `$7A` is alive. Fatal damage still
+uses the ROM `$7A -> $6A` replacement, stops music during the destruction
+countdown, and now advances from stage index 1 to stage index 2 when that shared
+countdown finishes.
 
 There are still fidelity details inside otherwise restored families to validate
 visually. In particular `$2F`'s ROM obstacle-avoidance candidate search can be
 tightened beyond the direct eight-way pursuit fallback, `$31`'s background-cell
 mutation after its exact vertical terrain bounce is not yet mirrored, and the
-boss's less-common CA04 attack branch plus complete death-transition audio/
-palette timing still need live A/B validation. Those are behavior/render
-refinements rather than missing spawn families.
+boss's less-common CA04 attack branch plus the intermediate palette-fade
+interpolation can still be tightened. Those are behavior/render refinements
+rather than missing spawn families.
 
 ## Checks
 

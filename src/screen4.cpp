@@ -155,7 +155,8 @@ std::vector<std::uint32_t> render_stage0_page(
     const unsigned pattern_base=stream.pattern_base(graphics_set_override);
     const unsigned color_base=stream.color_base(graphics_set_override);
     const unsigned palette_set = palette_set_override >= 0 ? unsigned(palette_set_override) : stream.palette_set();
-    const auto& palette = palette_set >= 2u ? video.tower_palette : video.late_palette;
+    const auto& palette = palette_set >= 2u ? video.tower_palette :
+                          (palette_set == 1u ? video.late_palette : video.palette);
     const int r23 = int(presentation.r23) + extra_y_pixels;
     // V99x8 R#18 low nibble is NOT a linear 0..7 source offset. The hardware
     // decodes it around neutral 7: displayShift=((R18&15)^7)-7. This renderer

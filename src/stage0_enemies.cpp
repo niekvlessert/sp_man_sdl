@@ -656,7 +656,8 @@ void Stage0Enemies::step_15hz(const Rom& rom,GameState& game,unsigned tick,std::
         } else if(e.type()==0x7au) {
             // Bank06 $A000-$A17A: stage-2 boss. Its visible body is the tile
             // actor selected by +06; seven linked type-$3B segments are
-            // created at state zero. Damage bit +14.7 is only enabled while
+            // created at state zero, after which the original renderer drops
+            // ordinal 7 on its resource-overflow path. Damage bit +14.7 is only enabled while
             // the animation selector is frame 4.
             static constexpr std::array<std::uint8_t,14> anim_timer{
                 3,2,4,4,4,8,2,8,2,4,24,4,2,2};
@@ -672,8 +673,11 @@ void Stage0Enemies::step_15hz(const Rom& rom,GameState& game,unsigned tick,std::
                 if(e.raw[0x06]==4u) e.raw[0x14]|=0x80u;
             };
             auto update_attack_heading=[&] {
+                // $A10F-$A12A.  +18 is reloaded to max(HP,$18), not merely
+                // clamped upward when HP is below $18.  At the normal $20 HP
+                // this means a fresh $20-tick attack interval.
                 const unsigned hp=e.raw[0x16];
-                if(hp<0x18u) e.raw[0x18]=0x18u;
+                e.raw[0x18]=std::uint8_t(std::max(0x18u,hp));
                 auto a=std::uint8_t(0u-std::uint8_t(hp?hp:1u));
                 for(unsigned n=0;n<3u;++n) a=std::uint8_t((a>>1u)|(a<<7u));
                 e.raw[0x22]=a&0x1fu;
@@ -685,20 +689,30 @@ void Stage0Enemies::step_15hz(const Rom& rom,GameState& game,unsigned tick,std::
                     c->raw[0x34]=e.raw[0x2d];c->raw[0x38]=std::uint8_t(ordinal);
                     ++e.raw[0x37];
                 }
+                // $694D snapshots the peak linked-child count in +3B.  The
+                // seventh child is created normally, then the original sprite
+                // renderer drops it on SAT/resource overflow; +37 falls to 6
+                // while +3B remains 7.
+                e.raw[0x3b]=e.raw[0x37];
                 next_animation();update_attack_heading();
                 e.raw[0x16]=0x20u; // $A031 with CA04=0 on the normal route
                 e.state()=1u;
             } else if(e.state()==1u) {
                 if(expired(e,0x17)) next_animation();
-                if(expired(e,0x18)) update_attack_heading();
-                unsigned phase=e.raw[0x21];if(phase>=8u) phase=0u;
-                e.raw[0x21]=std::uint8_t(phase+1u);
-                const auto command=attack_phase[phase];
-                // CA04 is zero on the normal Stage-2 route. High-bit entries
-                // are therefore skipped by $A071-$A075. Low commands 2/3
-                // both issue one $7306 attack; combat consumes this marker.
-                if((command&0x80u)==0u && (command&3u)!=0u)
-                    e.raw[0x26]=command&3u;
+                // $A052-$A0A1 advances the attack-script cursor only when the
+                // +18 timer expires.  Advancing it every object tick made the
+                // native boss fire roughly 32x too often after its first shot.
+                if(expired(e,0x18)) {
+                    update_attack_heading();
+                    unsigned phase=e.raw[0x21];if(phase>=8u) phase=0u;
+                    e.raw[0x21]=std::uint8_t(phase+1u);
+                    const auto command=attack_phase[phase];
+                    // CA04 is zero on the normal Stage-2 route. High-bit
+                    // entries are skipped by $A071-$A075; low actions 2/3
+                    // queue the upper/lower $7306 four-shot fan.
+                    if((command&0x80u)==0u && (command&3u)!=0u)
+                        e.raw[0x26]=command&3u;
+                }
             }
         } else if(e.type()==0x3bu) {
             // Bank06 $A17B-$A2A8: linked boss-body segment. +38 is the
@@ -715,11 +729,25 @@ void Stage0Enemies::step_15hz(const Rom& rom,GameState& game,unsigned tick,std::
                 e.raw[0x17]=wait[o];e.raw[0x18]=8u;
             };
             if(e.state()==0u) {
-                const unsigned o=std::clamp<unsigned>(e.raw[0x38],1u,7u)-1u;
+                const unsigned ordinal=std::clamp<unsigned>(e.raw[0x38],1u,7u);
+                const unsigned o=ordinal-1u;
                 e.raw[0x08]=std::uint8_t(e.raw[0x08]+oy[o]);
                 e.raw[0x0a]=std::uint8_t(e.raw[0x0a]+ox[o]);
                 e.raw[0x20]=variant[o];e.raw[0x05]=variant[o]?4u:0u;
                 reload();e.state()=1u;
+                if(ordinal==7u) {
+                    // Live original: slot D180 reaches this exact initialized
+                    // state (X=$0AC0,Y=$0600) and is then removed by the
+                    // renderer's $7821/$7857 resource-overflow path before its
+                    // next handler call. Mirror the resulting linked-pool
+                    // state without imposing the MSX sprite limit globally.
+                    for(auto& parent:game.enemies)
+                        if(parent.type()==0x7au && parent.raw[0x2d]==e.raw[0x34]) {
+                            if(parent.raw[0x37]) --parent.raw[0x37];
+                            break;
+                        }
+                    e.clear();continue;
+                }
             } else if(e.state()==1u) {
                 if(expired(e,0x17)) {
                     const unsigned count=e.raw[0x20]?8u:4u;

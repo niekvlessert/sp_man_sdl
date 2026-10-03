@@ -250,6 +250,14 @@ Stage0VideoAssets decode_stage_video(const Rom& rom,unsigned stage) {
     if(stage>0u) result.palette_grb=apply_palette_script(rom,result.palette_grb,root,10u,0x8000u);
     result.late_palette_grb = apply_palette_script(rom, result.palette_grb, 0xA43Au);
     result.tower_palette_grb = apply_palette_script(rom, result.late_palette_grb, 0xA44Du);
+    // Stage 2 (stage index 1) has its own final-sector palette scripts in
+    // bank 27. $A94A fades the selected machinery colours to black, then
+    // $A95D installs the green boss palette. Keep those as palette sets 1/2
+    // so the live stream's FF13 commands can select them.
+    if(stage==1u) {
+        result.late_palette_grb=apply_palette_script(rom,result.palette_grb,0xA94Au);
+        result.tower_palette_grb=apply_palette_script(rom,result.late_palette_grb,0xA95Du);
+    }
     // AA22 selects the stage-0 red boss table through bank07:$86D2 -> $8764.
     // This is the palette held once HP <= HP/4; hits additionally flash $666.
     result.tower_red_palette_grb = apply_boss_palette_entries(rom, result.tower_palette_grb, 0x8764u);
@@ -258,7 +266,7 @@ Stage0VideoAssets decode_stage_video(const Rom& rom,unsigned stage) {
     // complete VDP palette, hence the whole surrounding platform reddens.
     result.vehicle_tower_palette_grb = apply_boss_palette_entries(rom, result.late_palette_grb, 0x8754u);
     result.vehicle_tower_red_palette_grb = apply_boss_palette_entries(rom, result.vehicle_tower_palette_grb, 0x87d4u);
-    if(stage>0u) {
+    if(stage>1u) {
         result.late_palette_grb=result.palette_grb;
         result.tower_palette_grb=result.palette_grb;
     }

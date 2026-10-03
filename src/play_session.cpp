@@ -1018,7 +1018,11 @@ void PlaySession::step_60hz(PlayerInput input) {
     // state too. Effects continue throughout the boss destruction/countdown.
     if(std::any_of(game_.enemies.begin(),game_.enemies.end(),
         [](const auto& e){return e.type()==0x6au;})) music_playing_=false;
-    if(stage_index_==0u && enemies_.stage_complete()) begin_next_stage();
+    // The shared $6A boss-death countdown advances the stage after its
+    // final tick. Stage 2's $7A boss uses the same replacement/death path as
+    // the stage-1 gate boss, so do not artificially restrict completion to
+    // stage index 0.
+    if(stage_index_<=1u && enemies_.stage_complete()) begin_next_stage();
 
 }
 void PlaySession::begin_next_stage() {
@@ -1192,7 +1196,7 @@ std::vector<std::uint32_t> PlaySession::render() {
             }
             const unsigned epb=background_.pattern_base();
             const unsigned ecb=background_.color_base();
-            const auto& epal=background_.palette_set()>=2u?video_.tower_palette:video_.late_palette;
+            const auto& epal=background_.palette_set()>=2u?video_.tower_palette:(background_.palette_set()==1u?video_.late_palette:video_.palette);
             const unsigned reveal=std::min(8u,camera-1536u);
             const unsigned fallback_end=256u-reveal;
             for(unsigned sy=28;sy<212;++sy) for(unsigned sx=248;sx<fallback_end;++sx) {
@@ -1257,7 +1261,7 @@ std::vector<std::uint32_t> PlaySession::render() {
         if(camera>=1538 || (render_native_wide_ && camera>=1536)) {
             early_pattern_base=background_.pattern_base();
             early_color_base=background_.color_base();
-            early_palette=background_.palette_set()>=2u?&video_.tower_palette:&video_.late_palette;
+            early_palette=background_.palette_set()>=2u?&video_.tower_palette:(background_.palette_set()==1u?&video_.late_palette:&video_.palette);
         }
         for(unsigned sy=28;sy<212;++sy) for(unsigned sx=0;sx<256;++sx) {
             const unsigned y=(sy-28)/8,py=(sy-28)&7,xq=sx+(camera&7);
@@ -1269,8 +1273,8 @@ std::vector<std::uint32_t> PlaySession::render() {
         }
     }
     const unsigned presented_palette_set=unsigned(background_.palette_set());
-    const auto& palette=(camera_pixels()>=1538 && presented_palette_set>=2u)
-        ? video_.tower_palette : (camera_pixels()>=1538?video_.late_palette:video_.palette);
+    const auto& palette=presented_palette_set>=2u ? video_.tower_palette :
+        (presented_palette_set==1u ? video_.late_palette : video_.palette);
     {
         unsigned pattern_base=0,color_base=0x2000;
         unsigned overlay_set=unsigned(background_.graphics_set());
@@ -1580,7 +1584,7 @@ std::vector<std::uint32_t> PlaySession::render_presentation(unsigned x_samples,u
     const unsigned fg_row_offset=std::uint8_t(0u-std::uint8_t(background_.ca1a()>>8u));
     const unsigned wpattern=background_.pattern_base();
     const unsigned wcolor=background_.color_base();
-    const auto& wpalette=background_.palette_set()>=2u?video_.tower_palette:video_.late_palette;
+    const auto& wpalette=background_.palette_set()>=2u?video_.tower_palette:(background_.palette_set()==1u?video_.late_palette:video_.palette);
     const auto fixed=rom_.bank(0);
     const unsigned fg_table=background_.fast_ground_alternate()?0x1e6bu:0x1e4bu;
 

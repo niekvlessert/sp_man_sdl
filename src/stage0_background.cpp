@@ -130,7 +130,9 @@ void Stage0BackgroundStream::reset_stage(unsigned stage) {
     source_=std::uint16_t(word(cp));trigger_cursor_=std::uint16_t(word(cp+2u));
     metatile_base_=word(0x1d76+stage*2u)-0x8000u;
     x_fp_=y_fp_=0;macro_phase_=0;phase_accum_=0;
-    graphics_set_=0;palette_set_=1;c0d2_=0;c0b5_=0;
+    // Non-stage-0 initial traces keep the stage palette selected as set 0;
+    // later FF13/FF1C commands explicitly switch to scene palettes.
+    graphics_set_=0;palette_set_=0;c0d2_=0;c0b5_=0;
     ca3a_=0;c0e6_=c0e8_=0;
     prepare_data();
     // The original stage initializer preloads 31 columns before releasing
@@ -473,6 +475,8 @@ bool Stage0BackgroundStream::prepare_data() {
                                       (std::uint16_t(stream[po + 1u]) << 8);
             if (ptr == 0xA43Au) palette_set_ = 1;
             else if (ptr == 0xA44Du) palette_set_ = 2;
+            else if(stage_index_==1u && ptr==0xA94Au) palette_set_=1;
+            else if(stage_index_==1u && ptr==0xA95Du) palette_set_=2;
         }
 
         // $12 is the real transition into the two-source mode-2 streamer.
