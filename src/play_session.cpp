@@ -202,7 +202,8 @@ void draw_tile_actor(const Rom& rom,const Screen4Snapshot& video,const Entity64&
                  std::vector<std::uint32_t>& pixels,const std::array<std::uint32_t,16>& palette,
                  unsigned pattern_base,unsigned color_base,int screen_y_bias,
                  unsigned start_row,std::uint16_t fine_y,bool pickup_only,
-                 unsigned x_samples=1,unsigned y_samples=1,int pattern_quarter=-1) {
+                 unsigned x_samples=1,unsigned y_samples=1,int pattern_quarter=-1,
+                 std::uint16_t fine_x=0,int horizontal_shift=0,int raster_r23=-1) {
     if(!e.active()) return;
     if(pickup_only) { if(e.type()!=3) return; }
     else if(e.type()==0x64u && e.state()==0u) return;
@@ -215,27 +216,33 @@ void draw_tile_actor(const Rom& rom,const Screen4Snapshot& video,const Entity64&
         for(unsigned ty=0;ty<v.rows;++ty) for(unsigned tx=0;tx<v.cols;++tx) {
             const auto tile=v.tiles[ty*unsigned(v.cols)+tx];
             if(!tile) continue;
-            const int lx=v.x+int(tx*8u), ly=v.y+int(ty*8u);
-            // Native overlay coordinates are already camera-relative. Do not
-            // run them through the V9938 name-table row/R23 transform again:
-            // that double-applied vertical camera motion and made the turrets
-            // bounce relative to the tank body. The bias is the screen-space
-            // origin corresponding to the current raster mode.
-            // Geometry is native screen-space, but SCREEN4 pattern selection
-            // still depends on the physical name-table row that the original
-            // D988 stamper would have used. Keeping these domains separate
-            // prevents lower vehicle tiles from reading the wrong pattern third.
+            // Tile actors are camera-relative, but their original $7A79 stamp
+            // adds the low CA1C/CA1A bytes before the name-table cell is chosen.
+            // R18/R23 then place that cell on screen.  Ignoring this last raster
+            // phase left the composed cannon bodies 1..10 pixels away from the
+            // exact ROM position even though their object coordinates were exact.
+            const auto ax=std::uint16_t(e.x_fixed()+fine_x);
             const auto ay=std::uint16_t(e.y_fixed()+fine_y);
             const int object_row=int(std::int8_t(ay>>8u));
             const int logical_row=object_row+v.tile_y_offset+int(ty);
             if(logical_row<0 || logical_row>=24) continue;
             const unsigned physical_row=(start_row+unsigned(logical_row))&31u;
+            int lx=v.x+int(tx*8u),ly=v.y+int(ty*8u)+screen_y_bias;
+            unsigned fx=unsigned(e.x_fixed()&31u)*x_samples/32u;
+            unsigned fy=unsigned(e.y_fixed()&31u)*y_samples/32u;
+            if(raster_r23>=0) {
+                lx=(int(std::int16_t(ax))>>5)+v.tile_x_offset*8+int(tx*8u)+horizontal_shift;
+                const int raster_top=(int(physical_row*8u)-raster_r23)&255;
+                ly=raster_top+int((ay&0xffu)>>5u);
+                fx=unsigned(ax&31u)*x_samples/32u;
+                fy=unsigned(ay&31u)*y_samples/32u;
+            }
             const unsigned quarter=unsigned(pattern_quarter>=0?pattern_quarter:int(physical_row/8u))*0x800u;
             for(unsigned py=0;py<8u;++py) {
                 const unsigned index=quarter+unsigned(tile)*8u+py;
                 if(pattern_base+index>=video.vram.size() || color_base+index>=video.vram.size()) continue;
                 const auto bits=video.vram[pattern_base+index], color=video.vram[color_base+index];
-                const int sy=ly+screen_y_bias+int(py);
+                const int sy=ly+int(py);
                 if(sy<0 || sy>=212) continue;
                 for(unsigned px=0;px<8u;++px) {
                     const int sx=lx+int(px);
@@ -244,8 +251,6 @@ void draw_tile_actor(const Rom& rom,const Screen4Snapshot& video,const Entity64&
                     // A nonzero tile ID replaces the complete name-table cell.
                     // Palette index 0 is a real black/background pixel here,
                     // not alpha transparency. Only tile ID 0 is transparent.
-                    const unsigned fx=unsigned(e.x_fixed()&31u)*x_samples/32u;
-                    const unsigned fy=unsigned(e.y_fixed()&31u)*y_samples/32u;
                     for(unsigned yy=0;yy<y_samples;++yy) for(unsigned xx=0;xx<x_samples;++xx) {
                         const unsigned ox=unsigned(sx)*x_samples+fx+xx,oy=unsigned(sy)*y_samples+fy+yy;
                         if(ox<256u*x_samples && oy<212u*y_samples)
@@ -682,7 +687,13 @@ void PlaySession::step_60hz(PlayerInput input) {
         enemies_.step_gate_20hz(rom_,game_,frame_/3u,&sound_events_,
             std::uint8_t((background_.fast_ground_phase()+(background_.ca1c()>>8u))&7u),
             std::uint8_t(background_.ca1c()));
-        if(death_wrap) combat_.clear_vulnerable(rom_,game_);
+        if(death_wrap) {
+            // $9AD7/$7058 is followed by the secondary-pool clear.  The boss's
+            // type-$40 attack rockets disappear as part of that cleanup; they
+            // do not each enter the ordinary damage/death audio path.
+            for(auto& child:game_.enemies) if(child.type()==0x40u) child.clear();
+            combat_.clear_vulnerable(rom_,game_);
+        }
         for(auto& e:game_.enemies) if(e.type()==0x40u && e.state()==3u) {
             const auto property=terrain_property(e,0x0100,0x0100);
             if(property!=0 && property!=0xff) e.raw[4]=0xff; // original $A62D
@@ -1157,7 +1168,7 @@ std::vector<std::uint32_t> PlaySession::render() {
             if(render_native_wide_ && (e.type()==0x64u || e.type()==0x3du)) {
                 const auto index=std::size_t(&source-game_.enemies.data());
                 const auto& old=previous_gate_actors_[index];
-                if(old.type()==e.type()) {
+                if(old.type()==e.type() && old.state()!=0u && e.state()!=0u) {
                     const int remaining=2-int(presentation_frame_%3u);
                     e.set_x_fixed(std::uint16_t(e.x_fixed()+std::int16_t(old.x_fixed()-e.x_fixed())*remaining/3));
                     e.set_y_fixed(std::uint16_t(e.y_fixed()+std::int16_t(old.y_fixed()-e.y_fixed())*remaining/3));
@@ -1175,7 +1186,7 @@ std::vector<std::uint32_t> PlaySession::render() {
             if(render_native_wide_ && (e.type()==0x64u || e.type()==0x3du)) {
                 const auto index=std::size_t(&source-game_.enemies.data());
                 const auto& old=previous_gate_actors_[index];
-                if(old.type()==e.type()) {
+                if(old.type()==e.type() && old.state()!=0u && e.state()!=0u) {
                     const int remaining=2-int(presentation_frame_%3u);
                     e.set_x_fixed(std::uint16_t(e.x_fixed()+std::int16_t(old.x_fixed()-e.x_fixed())*remaining/3));
                     e.set_y_fixed(std::uint16_t(e.y_fixed()+std::int16_t(old.y_fixed()-e.y_fixed())*remaining/3));
@@ -1548,7 +1559,7 @@ std::vector<std::uint32_t> PlaySession::render_presentation(unsigned x_samples,u
             if(e.type()==0x64u || e.type()==0x3du) {
                 const auto index=std::size_t(&source-game_.enemies.data());
                 const auto& old=previous_gate_actors_[index];
-                if(old.type()==e.type()) {
+                if(old.type()==e.type() && old.state()!=0u && e.state()!=0u) {
                     const int remaining=2-int(saved_frame%3u);
                     e.set_x_fixed(std::uint16_t(e.x_fixed()+std::int16_t(old.x_fixed()-e.x_fixed())*remaining/3));
                     e.set_y_fixed(std::uint16_t(e.y_fixed()+std::int16_t(old.y_fixed()-e.y_fixed())*remaining/3));
@@ -1592,9 +1603,19 @@ std::vector<std::uint32_t> PlaySession::render_presentation(unsigned x_samples,u
                 // deliberately removed from the world/full classification
                 // passes above, so vertical/diagonal camera remainder cannot
                 // be applied twice.
-                draw_tile_actor(rom_,video_,e,out,wpalette,wpattern,wcolor,
-                    background_.mode()==4u?28:29,start_row,background_.ca1a()&255u,
-                    false,x_samples,y_samples);
+                if(e.type()==0x1fu) {
+                    // Large cannons combine a tile body with a SAT barrel.  The
+                    // body must retain the exact CA1C/R18 + CA1A/R23 raster
+                    // phase or the two halves sit several pixels apart.
+                    const int tile_shift=int((ps.r18&15u)^7u)-7;
+                    draw_tile_actor(rom_,video_,e,out,wpalette,wpattern,wcolor,
+                        background_.mode()==4u?28:29,start_row,background_.ca1a()&255u,
+                        false,x_samples,y_samples,-1,background_.ca1c()&255u,tile_shift,int(ps.r23));
+                } else {
+                    draw_tile_actor(rom_,video_,e,out,wpalette,wpattern,wcolor,
+                        background_.mode()==4u?28:29,start_row,background_.ca1a()&255u,
+                        false,x_samples,y_samples);
+                }
             }
             draw_entity(rom_,video_,e,out,wpalette,sprite_y,x_samples,y_samples);
         };

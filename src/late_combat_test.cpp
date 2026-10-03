@@ -1,4 +1,6 @@
+#define private public
 #include "play_session.hpp"
+#undef private
 #ifdef NDEBUG
 #undef NDEBUG
 #endif
@@ -141,6 +143,38 @@ int main(int argc,char** argv) {
         }
         assert(best==0 && best_y==1);previous=next;
     }
+    // The type-$64 spawn record exists for one 20-Hz slice before its
+    // initializer moves it to X=$28.  Native presentation must never interpolate
+    // from that uninitialized state-0 coordinate, or the boss flashes on-screen
+    // once before its real entrance.
+    sm::PlaySession entrance(rom);bool checked_hidden_entrance=false;
+    for(unsigned n=0;n<10000u && !checked_hidden_entrance;++n) {
+        entrance.step_60hz({});
+        for(std::size_t i=0;i<entrance.game_.enemies.size();++i) {
+            auto& e=entrance.game_.enemies[i];
+            if(e.type()!=0x64u || e.state()!=1u || entrance.previous_gate_actors_[i].state()!=0u) continue;
+            const auto with=entrance.render_smooth();const auto saved=e;e.clear();
+            const auto without=entrance.render_smooth();e=saved;
+            assert(with==without);checked_hidden_entrance=true;break;
+        }
+    }
+    assert(checked_hidden_entrance);
+
+    // At the final $6A selector wrap the original cleanup removes the boss's
+    // type-$40 rockets as a pool clear, not as individually destroyed enemies.
+    // They therefore disappear silently.
+    sm::PlaySession cleanup(rom);cleanup.game_.enemies={};cleanup.enemies_.reset();
+    cleanup.spawns_.skip_before_trigger(0xffffu);
+    while((cleanup.frame_+1u)%3u) cleanup.step_60hz({});
+    auto& death=cleanup.game_.enemies[0];death.type()=0x6au;death.state()=0u;death.raw[6]=7u;
+    auto& rocket=cleanup.game_.enemies[1];rocket.type()=0x40u;rocket.state()=3u;rocket.flags15()=1u;
+    rocket.set_x_fixed(0x1000u);rocket.set_y_fixed(0x0800u);
+    cleanup.step_60hz({});assert(!rocket.active());
+    for(auto sound:cleanup.sound_events())
+        assert(sound!=sm::PlaySound::Hit && sound!=sm::PlaySound::Explosion &&
+               sound!=sm::PlaySound::TurretExplosion && sound!=sm::PlaySound::HeavyVehicleExplosion &&
+               sound!=sm::PlaySound::LargeCannonExplosion);
+
     sm::PlaySession session(rom);
     session.seek_decile(9);
     session.set_max_test_loadout();
