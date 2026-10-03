@@ -36,6 +36,47 @@ int main(int argc,char** argv) {
     const std::filesystem::path out=argc==3?argv[2]:"";
     if(!out.empty()) std::filesystem::create_directories(out);
     unsigned checked=0;
+    // Opening presentation has a three-half-pixel latency buffer.  It may hold
+    // the first three frames, but it must never wrap the fine phase backwards
+    // by 7.5 pixels while the decoded tile-window base is still clamped.
+    s.reset();clear_actors(s,false);auto opening=s.render_continuous();
+    for(unsigned f=1;f<=3u;++f) {
+        s.step_60hz({});clear_actors(s,false);const auto next=s.render_continuous();
+        unsigned equal=0,total=0;
+        for(unsigned y=120;y<650;++y) for(unsigned x=40;x<980;++x) {
+            ++total;equal+=opening[y*width+x]==next[y*width+x];
+        }
+        assert(equal*100u>=total*99u);opening=next;
+    }
+    s.step_60hz({});clear_actors(s,false);const auto opening_move=s.render_continuous();
+    unsigned shifted=0,total=0;
+    for(unsigned y=120;y<650;++y) for(unsigned x=40;x<978;++x) {
+        ++total;shifted+=opening[y*width+x+2u]==opening_move[y*width+x];
+    }
+    assert(shifted*100u>=total*99u);
+
+    // M/type-$07 owns one independent CD20 slot.  A vertical wall is a hit,
+    // not a surface-following stop: retire it immediately so another M can fire.
+    s.reset();
+    auto& m=s.missile_shot_;m.clear();m.type()=7;m.flags15()=5;
+    m.raw[0x13]=3;m.raw[0x14]=3;m.raw[0x17]=1;
+    m.set_x_fixed(0x0200);m.set_y_fixed(0x1500);m.raw[11]=0;m.raw[12]=1;
+    s.frame_=3;s.step_60hz({});assert(!m.active());
+
+    // The blue LARGE missile is two type-$08 SAT records.  The second record
+    // contains CC colour lines and must visibly combine with the first record;
+    // rendering the records independently used to drop that half entirely.
+    s.reset();while(s.frame()<100u) s.step_60hz({});clear_actors(s,false);
+    for(unsigned i=0;i<2u;++i) {
+        auto& q=s.shots_[i];q.clear();q.type()=8;q.state()=0;q.raw[3]=i?1:5;q.raw[5]=i?0:4;
+        q.raw[0x13]=3;q.raw[0x14]=3;q.flags15()=5;q.raw[0x17]=5;
+        q.set_x_fixed(0x1000);q.set_y_fixed(0x0800);
+    }
+    const auto large_pair=s.render_continuous();const auto second=s.shots_[1];
+    s.shots_[1].clear();const auto large_single=s.render_continuous();s.shots_[1]=second;
+    unsigned cc_pixels=0;for(unsigned i=0;i<large_pair.size();++i) cc_pixels+=large_pair[i]!=large_single[i];
+    assert(cc_pixels>500u);
+
     // Compare actual colored texture pixels on every video frame, including
     // coarse-tick and tile carries. Empty black patches cannot pass this test.
     for(unsigned anchor:{100u,3300u,6897u,7500u}) {
