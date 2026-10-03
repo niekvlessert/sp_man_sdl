@@ -14,6 +14,7 @@ public:
     PlayAudio& operator=(const PlayAudio&)=delete;
     void seek(double seconds);
     void set_stage(unsigned stage);
+    void set_boss_music(bool active);
     void play(PlaySound sound);
     void pause(bool paused);
     void mute(bool muted);
@@ -27,6 +28,9 @@ private:
     SDL_AudioSpec format_{};
     std::vector<Sint16> music_;
     std::array<std::vector<Sint16>,2> stage_music_;
+    std::vector<Sint16> boss_music_;
+    unsigned current_stage_=0;
+    bool boss_music_active_=false;
     std::array<std::vector<Sint16>,static_cast<std::size_t>(PlaySound::Count)> effects_;
     std::array<Voice,16> voices_{};
     std::size_t music_position_=0;

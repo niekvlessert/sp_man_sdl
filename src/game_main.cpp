@@ -37,6 +37,9 @@ int main(int argc,char** argv) try {
     auto* renderer=SDL_CreateRenderer(window,-1,SDL_RENDERER_ACCELERATED|SDL_RENDERER_PRESENTVSYNC);
     if(!renderer) renderer=SDL_CreateRenderer(window,-1,SDL_RENDERER_SOFTWARE);
     if(!renderer) throw std::runtime_error(SDL_GetError());
+    SDL_RendererInfo renderer_info{};
+    SDL_GetRendererInfo(renderer,&renderer_info);
+    const bool renderer_vsync=(renderer_info.flags&SDL_RENDERER_PRESENTVSYNC)!=0;
     auto* texture=SDL_CreateTexture(renderer,SDL_PIXELFORMAT_ARGB8888,
         SDL_TEXTUREACCESS_STREAMING,1024,848);
     if(!texture) throw std::runtime_error(SDL_GetError());
@@ -84,7 +87,7 @@ int main(int argc,char** argv) try {
                 }
             }
         }
-        if(audio) {audio->set_music_playing(session_ptr().music_playing());audio->pause(paused);}
+        if(audio) {audio->set_boss_music(session_ptr().boss_music_active());audio->set_music_playing(session_ptr().music_playing());audio->pause(paused);}
         const auto now=SDL_GetPerformanceCounter();
         const double elapsed=std::min(0.25,double(now-previous)/frequency);previous=now;
         if(reset_clock || paused) accumulator=0;
@@ -101,6 +104,7 @@ int main(int argc,char** argv) try {
                 audio_stage=session_ptr().stage_index();audio->set_stage(audio_stage);
             }
             if(audio) {
+                audio->set_boss_music(session_ptr().boss_music_active());
                 audio->set_music_playing(session_ptr().music_playing());
                 for(const auto sound:session_ptr().sound_events()) audio->play(sound);
             }
@@ -114,7 +118,12 @@ int main(int argc,char** argv) try {
         char title[160];std::snprintf(title,sizeof(title),
             "Space Manbow - native play - frame %u%s%s%s",session_ptr().frame(),paused?" PAUSED":"",turbo?" | TURBO 500%":"",
             session_ptr().at_fight_gate()?" | boss":(session_ptr().stage_index()?" | stage 2":""));
-        SDL_SetWindowTitle(window,title);SDL_Delay(1);
+        SDL_SetWindowTitle(window,title);
+        // Present already blocks on the display when VSYNC is active. Sleeping
+        // another millisecond afterwards occasionally pushes a frame over the
+        // next refresh boundary and shows up as a small hitch. Only yield on
+        // the non-vsync software fallback.
+        if(!renderer_vsync) SDL_Delay(1);
     }
     audio.reset();SDL_DestroyTexture(texture);SDL_DestroyRenderer(renderer);SDL_DestroyWindow(window);SDL_Quit();
     return 0;

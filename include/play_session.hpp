@@ -45,6 +45,7 @@ public:
     unsigned frame() const noexcept { return frame_; }
     unsigned stage_frame() const noexcept { return frame_-stage_start_frame_; }
     bool music_playing() const noexcept { return music_playing_; }
+    bool boss_music_active() const noexcept { return stage_index_==0u && camera_pixels()>=4224u && music_playing_; }
     unsigned camera_pixels() const noexcept { return camera_half_pixels_ / 2; }
     bool at_fight_gate() const noexcept { return background_.gated(); }
     std::span<const PlaySound> sound_events() const noexcept { return sound_events_; }

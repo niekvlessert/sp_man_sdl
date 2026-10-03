@@ -1,7 +1,7 @@
 set throttle off
 set renderer none
 namespace eval smpcm {
- variable clips {{stage0 59 180} {stage1 60 180} {shot 2 1} {wave_shot 3 1} {power_shot 4 1} {explosion 16 2} {hit 22 1} {enemy_shot 21 1} {pickup 9 1} {powerup 10 1} {option_mode 8 1} {missile_launch 12 1} {tower_explosion 77 3} {turret_explosion 17 2} {heavy_vehicle_explosion 19 2} {large_cannon_explosion 20 2} {boss_hit 37 1} {platform_explosion 51 2} {platform_burst 52 2} {platform_rumble 53 2} {cannon_shot 25 1} {claw_close 38 2} {claw_open 39 2} {terrain_hit 30 1} {terrain_break 31 1} {bomb_expand 13 2} {bomb_blast 14 2} {carrier_launch 26 3} {hatch_shot 23 2}}
+ variable clips {{stage0 59 180} {stage1 60 180} {boss 57 180} {shot 2 1} {wave_shot 3 1} {power_shot 4 1} {explosion 16 2} {hit 22 1} {enemy_shot 21 1} {pickup 9 1} {powerup 10 1} {option_mode 8 1} {missile_launch 12 1} {tower_explosion 77 3} {turret_explosion 17 2} {heavy_vehicle_explosion 19 2} {large_cannon_explosion 20 2} {boss_hit 37 1} {platform_explosion 51 2} {platform_burst 52 2} {platform_rumble 53 2} {cannon_shot 25 1} {claw_close 38 2} {claw_open 39 2} {terrain_hit 30 1} {terrain_break 31 1} {bomb_expand 13 2} {bomb_blast 14 2} {carrier_launch 26 3} {hatch_shot 23 2}}
  variable current {}
  variable phase init
  variable ticks 0
@@ -45,5 +45,5 @@ namespace eval smpcm {
   next
  }
  after time 20 {smpcm::start}
- after time 430 {exit}
+ after time 700 {exit}
 }

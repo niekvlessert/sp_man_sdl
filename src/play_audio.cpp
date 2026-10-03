@@ -12,6 +12,7 @@ PlayAudio::PlayAudio(const std::filesystem::path& directory) {
     try {
         stage_music_[0]=load(directory/"stage0.wav");
         stage_music_[1]=load(directory/"stage1.wav");
+        boss_music_=load(directory/"boss.wav");
         music_=stage_music_[0];
         unsigned index=0;
         for(const auto name:{"shot","wave_shot","power_shot","explosion","hit","enemy_shot","pickup","powerup","option_mode","missile_launch","tower_explosion","turret_explosion","heavy_vehicle_explosion","large_cannon_explosion","boss_hit","platform_explosion","platform_burst","platform_rumble","cannon_shot","claw_close","claw_open","terrain_hit","terrain_break","bomb_expand","bomb_blast","carrier_launch","hatch_shot"})
@@ -41,7 +42,17 @@ std::vector<Sint16> PlayAudio::load(const std::filesystem::path& path) {
 void PlayAudio::set_stage(unsigned stage) {
     if(stage>=stage_music_.size()) return;
     SDL_LockAudioDevice(device_);
+    current_stage_=stage;boss_music_active_=false;
     music_=stage_music_[stage];music_position_=0;voices_={};music_playing_=true;
+    SDL_UnlockAudioDevice(device_);
+}
+void PlayAudio::set_boss_music(bool active) {
+    SDL_LockAudioDevice(device_);
+    if(active!=boss_music_active_) {
+        boss_music_active_=active;
+        music_=active?boss_music_:stage_music_[std::min<unsigned>(current_stage_,stage_music_.size()-1u)];
+        music_position_=0;
+    }
     SDL_UnlockAudioDevice(device_);
 }
 void PlayAudio::seek(double seconds) {

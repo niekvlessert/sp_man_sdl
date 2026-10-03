@@ -20,7 +20,7 @@ def main():
         if result.returncode or not (out/'complete.txt').exists():
             raise RuntimeError('PCM export incomplete: '+result.stdout+result.stderr)
     clips=[]
-    for name in ('stage0','stage1','shot','wave_shot','power_shot','explosion','hit','enemy_shot','pickup','powerup','option_mode','missile_launch','tower_explosion','turret_explosion','heavy_vehicle_explosion','large_cannon_explosion','boss_hit','platform_explosion','platform_burst','platform_rumble','cannon_shot','claw_close','claw_open','terrain_hit','terrain_break','bomb_expand','bomb_blast','carrier_launch','hatch_shot'):
+    for name in ('stage0','stage1','boss','shot','wave_shot','power_shot','explosion','hit','enemy_shot','pickup','powerup','option_mode','missile_launch','tower_explosion','turret_explosion','heavy_vehicle_explosion','large_cannon_explosion','boss_hit','platform_explosion','platform_burst','platform_rumble','cannon_shot','claw_close','claw_open','terrain_hit','terrain_break','bomb_expand','bomb_blast','carrier_launch','hatch_shot'):
         path=out/f'{name}.wav'
         with wave.open(str(path)) as w:
             frames=w.readframes(w.getnframes())

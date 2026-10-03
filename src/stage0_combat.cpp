@@ -204,11 +204,16 @@ void Stage0Combat::step(const Rom& rom,GameState& game,unsigned frame,int dx,int
             // Our entity coordinates already include the 60-Hz camera fraction,
             // so no separate CA1A/CA1C low-byte correction is needed here.
             auto pickup_axis_hit=[](std::uint16_t player,std::uint16_t item,std::uint8_t extent) {
-                const auto n=std::uint8_t(extent&0x1fu);
-                if(n<=1u) return false;
-                const auto p=std::uint8_t((player>>8u)+1u);
-                const auto q=std::uint8_t(item>>8u);
-                return std::uint8_t(p-q)<std::uint8_t(n-1u);
+                // Native presentation carries fractional camera/player motion, so
+                // the byte-only ROM comparison becomes unnecessarily picky near
+                // cell boundaries. Preserve the metadata extent but compare in
+                // 1/32-pixel space with one pixel of forgiveness on each side.
+                const int cells=std::max(2,int(extent&0x1fu)-1);
+                // The ROM's high-byte test spans three adjacent 8-pixel cells
+                // for the normal 4-wide pickup.  A symmetric continuous form
+                // is ~12 px from centre; add 2 px for fractional presentation.
+                const int radius=(cells*4+2)*32;
+                return std::abs(int(std::int16_t(player-item))) <= radius;
             };
             if(pickup_axis_hit(game.player.x_fixed(),e.x_fixed(),e.raw[0x14]) &&
                pickup_axis_hit(game.player.y_fixed(),e.y_fixed(),e.raw[0x13])) {

@@ -19,6 +19,10 @@ void draw_entity(const Rom& rom, const Screen4Snapshot& video,
                  const std::array<std::uint32_t,16>& palette, int sprite_origin_y,
                  unsigned x_samples=1,unsigned y_samples=1) {
     if (!entity.active() || entity.type()>0x7c) return;
+    // A freshly spawned terminal boss spends one display slice in ROM state 0
+    // before its 20-Hz initializer places the real entrance actor at x=$28.
+    // Rendering that uninitialized record exposes most of the boss for one frame.
+    if(entity.type()==0x64u && entity.state()==0u) return;
     if(entity.type()==3) return; // pickup icons use the ROM tile matrices
     if (entity.type()>9 && (entity.flags15()&1)==0) return;
     const auto table=rom.bank(7), frames=rom.bank(8), colors=rom.bank(9);
@@ -49,7 +53,13 @@ void draw_entity(const Rom& rom, const Screen4Snapshot& video,
             const int base_x=ex+int(std::int8_t(frames[c+2]));
             const unsigned pattern=std::uint8_t(video.object_pattern_base[entity.type()]+frames[c]);
             for(unsigned layer=0;layer<2;++layer) {
-                if(layer && !(entity.flags15()&8) && entity.type()>9) continue;
+                // +15 bit3 enables the second sprite-pattern plane.  The old
+                // native renderer accidentally enabled that plane for every
+                // low-numbered type, which added a spurious blue/white blob to
+                // player bullets, W, M and the LARGE missile.  Type 1 is the
+                // ship's special CC-composed sprite and legitimately consumes
+                // both planes regardless of this object flag.
+                if(layer && entity.type()!=1u && !(entity.flags15()&8u)) continue;
                 const auto attr=colors[unsigned(frames[c+3+layer])*16u+unsigned(row)];
                 const unsigned p=std::uint8_t(pattern+layer*4u);
                 // Loader masks place the boss and its $40 mines only in the
@@ -110,12 +120,12 @@ void draw_tile_actor(const Rom& rom,const Screen4Snapshot& video,const Entity64&
                  unsigned x_samples=1,unsigned y_samples=1,int pattern_quarter=-1) {
     if(!e.active()) return;
     if(pickup_only) { if(e.type()!=3) return; }
+    else if(e.type()==0x64u && e.state()==0u) return;
     else if(e.type()!=0x1eu && e.type()!=0x1fu && e.type()!=0x20u && e.type()!=0x22u && e.type()!=0x24u && e.type()!=0x26u &&
             e.type()!=0x55u && e.type()!=0x47u && e.type()!=0x56u && e.type()!=0x64u && e.type()!=0x6au && e.type()!=0x6bu && e.type()!=0x3du) return;
-    // Tile matrices may extend left of their object anchor. Once a large $1F
-    // cannon anchor itself has left the viewport, the original handler no
-    // longer leaves its body stamped back into view; cull that stale matrix.
-    if(e.type()==0x1fu && int(std::int16_t(e.x_fixed()))/32<0) return;
+    // Do not cull large cannon tile actors by anchor position. Their matrix can
+    // still overlap the left edge after the anchor itself has crossed x=0;
+    // per-tile clipping below keeps the visible half on screen, matching the ROM.
     for(auto v:decode_stage0_tile_visuals(rom,e)) {
         for(unsigned ty=0;ty<v.rows;++ty) for(unsigned tx=0;tx<v.cols;++tx) {
             const auto tile=v.tiles[ty*unsigned(v.cols)+tx];
@@ -545,8 +555,16 @@ void PlaySession::step_60hz(PlayerInput input) {
         // missile falls to the surface and follows flat/downward terrain.
         if((frame_&3u)==0u) {
             auto solid=[&](int xo,int yo) {return terrain_property(missile_shot_,xo,yo)==0x03u;};
-            select_ground_missile_velocity(missile_shot_,solid(0x0100,0x0200),
-                solid(0x0100,0x0300),solid(0x0300,0x0200));
+            const bool below=solid(0x0100,0x0200);
+            const bool lower=solid(0x0100,0x0300);
+            const bool ahead=solid(0x0300,0x0200);
+            select_ground_missile_velocity(missile_shot_,below,lower,ahead);
+            // The original projectile is gravity-bound, but it must not tunnel
+            // through a vertical step that is taller than its climb allowance.
+            // Probe the forward face at missile height and one cell above the
+            // running surface; on contact retain vertical gravity and stop X.
+            const bool wall=solid(0x0200,0x0000) || solid(0x0200,0x0100);
+            if(wall) set_word(missile_shot_,13,0);
         }
         missile_shot_.set_y_fixed(std::uint16_t(missile_shot_.y_fixed()+
             std::int16_t(word(missile_shot_.raw,11))/4));
@@ -1083,6 +1101,15 @@ std::vector<std::uint32_t> PlaySession::render() {
     // Bank09 adds C0D2 to SAT Y; sprite mode2 subtracts R23. Previously
     // adding $38 without that subtraction placed the ship 36px too low.
     const int sprite_origin_y=camera_pixels()<1538?20:(background_.mode()==4?27:28);
+    auto enemy_sprite_origin=[&](std::uint8_t type) {
+        // Opening-flight actors can still be alive when A13F switches the VDP
+        // raster context for the carrier. Their SAT coordinates are already
+        // screen-relative; applying the new +8px late-stage origin made the
+        // survivors visibly jump downward at the hand-off. Vehicle/later
+        // actors use the streamed origin as before.
+        if(type==0x10u || type==0x12u || type==0x15u || type==0x18u) return 20;
+        return sprite_origin_y;
+    };
     for(const auto& source:game_.enemies) {
         if(render_subpixel_) continue;
         auto e=source;
@@ -1099,7 +1126,7 @@ std::vector<std::uint32_t> PlaySession::render() {
             e.set_x_fixed(std::uint16_t(e.x_fixed()+world_remaining_x*32));
             e.set_y_fixed(std::uint16_t(e.y_fixed()+world_remaining_y*32));
         }
-        draw_entity(rom_,video_,e,pixels,palette,sprite_origin_y);
+        draw_entity(rom_,video_,e,pixels,palette,enemy_sprite_origin(e.type()));
     }
     if(!render_subpixel_) {
     for(const auto& e:combat_.bullets()) draw_entity(rom_,video_,e,pixels,palette,sprite_origin_y);

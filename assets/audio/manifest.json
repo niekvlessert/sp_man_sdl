@@ -17,6 +17,13 @@
       "sha256": "62ce50b90a144192a3730ad465a772290e375de4f047691673366857a560401d"
     },
     {
+      "name": "boss",
+      "rate": 44100,
+      "channels": 1,
+      "seconds": 180.00671201814058,
+      "sha256": "19db520fd8b57c97f30c5e8799a8b385e1933445b3c7a8ffb541a5739758f815"
+    },
+    {
       "name": "shot",
       "rate": 44100,
       "channels": 1,

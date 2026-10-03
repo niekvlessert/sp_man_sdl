@@ -32,7 +32,11 @@ int main(int argc,char** argv) try {
         sm::PlayAudio::callback(&audio,reinterpret_cast<Uint8*>(output.data()),int(output.size()*sizeof(Sint16)));
         assert(std::any_of(output.begin(),output.end(),[](auto s){return s!=0;}));
         audio.set_stage(1);assert(audio.music_playing_);
-        audio.set_stage(0);audio.pause(false);
+        audio.set_stage(0);
+        const auto stage0_head=audio.music_.front();
+        audio.set_boss_music(true);assert(audio.boss_music_active_);assert(audio.music_.front()==audio.boss_music_.front());
+        audio.set_boss_music(false);assert(!audio.boss_music_active_);assert(audio.music_.front()==stage0_head);
+        audio.pause(false);
         for(unsigned i=0;i<unsigned(sm::PlaySound::Count);++i) {
             audio.play(sm::PlaySound(i));
             SDL_Delay(30); // allow the callback to consume each effect before stage reset
