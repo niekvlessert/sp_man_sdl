@@ -100,7 +100,13 @@ int main(int argc,char** argv) {
         assert(sm::instantiate_stage0_spawn(rom,record,game,1));
         assert(game.enemies[0].type()==record.type);
         if(record.type==0x27u) { ++movers27; assert(game.enemies[0].raw[0x17]==0x0au); }
-        else { ++runners2d; assert(game.enemies[0].raw[0x17]==0x28u); }
+        else {
+            ++runners2d;const auto& e=game.enemies[0];const auto pos=record.payload[0];
+            assert(e.raw[0x17]==0x1eu && e.raw[0x18]==0u && e.raw[0x3d]==1u);
+            assert(e.y_fixed()==std::uint16_t(pos&0x7fu)<<8u);
+            assert(e.raw[0x20]==((pos>>7u)&1u) && e.raw[5]==e.raw[0x20]);
+            assert(std::int16_t(unsigned(e.raw[13])|(unsigned(e.raw[14])<<8u))==-0x30);
+        }
     }
     assert(movers27==5u && runners2d==8u);
 
@@ -295,11 +301,54 @@ int main(int argc,char** argv) {
     }
     {
         sm::GameState game;
-        sm::SpawnRecord r;r.type=r.raw_type=0x2du;r.payload={12u,0u};
+        sm::SpawnRecord r;r.type=r.raw_type=0x2du;r.payload={0x83u};
         assert(sm::instantiate_stage0_spawn(rom,r,game,1));
         sm::Stage0Enemies enemies;
-        for(unsigned i=0;i<40u;++i) enemies.step_15hz(rom,game,i,0,false,nullptr);
-        assert(game.enemies[0].state()==1u && game.enemies[0].raw[0x17]==8u);
+        for(unsigned i=0;i<30u;++i) enemies.step_15hz(rom,game,i,0,false,nullptr);
+        auto& e=game.enemies[0];
+        assert(e.state()==1u && e.raw[0x17]==8u && e.raw[0x18]==2u);
+        assert(e.y_fixed()==0x0300u && e.raw[5]==1u && e.raw[0x20]==1u);
+        assert(std::int16_t(unsigned(e.raw[13])|(unsigned(e.raw[14])<<8u))==0);
+        assert(std::int16_t(unsigned(e.raw[11])|(unsigned(e.raw[12])<<8u))==-0x30);
+    }
+    // Full-route type-$2D regression. These are the two surface runners from
+    // the reported scene: the ceiling record must use frame/orientation 1 and
+    // remain at Y=$0300, while the floor record remains at Y=$1400. Each
+    // firing event is a three-round $60 fan; the first simultaneous event
+    // therefore creates one three-round fan from each surface.
+    {
+        sm::PlaySession runners(rom);runners.reset(1);
+        while(runners.camera_pixels()<1536u+0x084eu && runners.stage_frame()<7000u)
+            runners.step_60hz({});
+        unsigned top=0,bottom=0;
+        for(const auto& e:runners.state().enemies) if(e.type()==0x2du) {
+            if(e.y_fixed()==0x0300u) {++top;assert(e.raw[5]==1u && e.raw[0x20]==1u);}
+            if(e.y_fixed()==0x1400u) {++bottom;assert(e.raw[5]==0u && e.raw[0x20]==0u);}
+        }
+        assert(top==1u && bottom==1u);
+        bool saw_two_fans=false;
+        for(unsigned f=0;f<360u && !saw_two_fans;++f) {
+            runners.step_60hz({});
+            for(const auto& e:runners.state().enemies) if(e.type()==0x2du) {
+                assert(e.y_fixed()==0x0300u || e.y_fixed()==0x1400u);
+                assert(e.raw[5]==e.raw[0x20]);
+            }
+            unsigned top_rounds=0,bottom_rounds=0,top_left=0,top_right=0,top_mid=0,
+                     bottom_left=0,bottom_right=0,bottom_mid=0;
+            for(const auto& b:runners.enemy_bullets()) if(b.active() && b.type()==0x60u) {
+                const auto vy=std::int16_t(unsigned(b.raw[11])|(unsigned(b.raw[12])<<8u));
+                const auto vx=std::int16_t(unsigned(b.raw[13])|(unsigned(b.raw[14])<<8u));
+                if(b.y_fixed()==0x0300u && vy>0) {
+                    ++top_rounds;vx<0?++top_left:(vx>0?++top_right:++top_mid);
+                } else if(b.y_fixed()==0x1400u && vy<0) {
+                    ++bottom_rounds;vx<0?++bottom_left:(vx>0?++bottom_right:++bottom_mid);
+                }
+            }
+            saw_two_fans=top_rounds==3u && bottom_rounds==3u &&
+                top_left==1u && top_right==1u && top_mid==1u &&
+                bottom_left==1u && bottom_right==1u && bottom_mid==1u;
+        }
+        assert(saw_two_fans);
     }
 
     // Type $5F is a parser command, not an entity. The ROM has four pulse-on

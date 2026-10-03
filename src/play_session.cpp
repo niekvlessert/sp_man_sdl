@@ -816,7 +816,7 @@ void PlaySession::step_60hz(PlayerInput input) {
         const auto sound_mark=sound_events_.size();
         const bool tower_was_destroyed=game_.tower_destroyed;
         enemies_.step_15hz(rom_,game_,frame_/4,trigger,false,&sound_events_,
-            [&](const Entity64& e,int xo,int yo){return terrain_property(e,xo,yo)!=0u;},
+            [&](const Entity64& e,int xo,int yo){return terrain_property(e,xo,yo);},
             [&](const Entity64& e,int xo,int yo){return terrain_tile(e,xo,yo);});
         bool have56=false,red56=false,white56=false;
         for(const auto& e:game_.enemies) if(e.active() && e.type()==0x56u) {

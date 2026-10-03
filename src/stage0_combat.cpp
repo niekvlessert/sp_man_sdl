@@ -284,6 +284,21 @@ void Stage0Combat::step(const Rom& rom,GameState& game,unsigned frame,int dx,int
             e.raw[0x24]=0u;
             shot=fire(rom,e,game.player,game.difficulty) || shot;
         }
+        if(e.type()==0x2du && e.raw[0x26]) {
+            // Bank05 $84DC -> fixed $7306. The floor runner uses
+            // $84F1={2,4,6,FF}; the ceiling variant uses
+            // $84F5={A,C,E,FF}. BC=$0200 places the muzzle two coarse cells
+            // to the right, while $7186 loads projectile speed from CA19.
+            static constexpr std::array<std::uint8_t,3> floor_headings{2u,4u,6u};
+            static constexpr std::array<std::uint8_t,3> ceiling_headings{10u,12u,14u};
+            e.raw[0x26]=0u;
+            auto muzzle=e;
+            muzzle.set_x_fixed(std::uint16_t((e.x_fixed()&0xff00u)+0x0200u));
+            muzzle.set_y_fixed(e.y_fixed()&0xff00u);
+            const auto speed=rom.bank(4)[0x11a8u+std::min<unsigned>(game.difficulty,15u)];
+            const auto& headings=e.raw[0x20]?ceiling_headings:floor_headings;
+            shot=fire_fixed_pattern(rom,muzzle,speed,headings,0) || shot;
+        }
         if(e.type()==0x1eu && step_stage0_blue_enemy(game,e)) {
                 for(auto offset:std::array<std::pair<int,int>,3>{{{-8,8},{16,0},{40,8}}})
                     shot=fire(rom,e,game.player,game.difficulty,offset.first,offset.second)||shot;

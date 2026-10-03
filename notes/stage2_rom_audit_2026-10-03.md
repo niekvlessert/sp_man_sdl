@@ -68,6 +68,19 @@ an extra initial bounce and later let modules drift away before their fire
 window. At world X=$047C the two children now reproduce the original Y=$0AA0/
 $0B60 directions, and by X=$04AC the first module has emitted the complete
 three-round type-$67 burst.
+
+Type `$2D` was a separate bug hidden by the earlier generic movement model.
+Bank05 `$8426-$844C` shows that payload `$83` is the ceiling variant at Y=$03
+(frame/+20=1), while `$14` is the floor variant at Y=$14 (frame/+20=0). Its
+`+0B/+0C` word is not vertical velocity: `$8488/$849D` temporarily saves and
+restores horizontal velocity there while the runner pauses. Applying that word
+to Y made the native enemy leave its surface and made the ceiling sprite appear
+with the floor orientation. `$84DC` also does not steer the enemy: it selects
+`{02,04,06}` or `{0A,0C,0E}` and calls fixed `$7306`, creating three type-$60`
+rounds per burst. The restored route keeps Y fixed at `$0300/$1400` and emits
+the original three-way fans; an original trace gives magnitudes
+`(vy,vx)=(+60,+5E),(+87,0),(+60,-5E)` for the ceiling runner and the vertically
+mirrored set for the floor runner at the observed difficulty.
 The $53 extended record also runs as the original type-$2A wave generator.
 Type $5F was reclassified from "scene objects" to what the fixed-bank parser
 actually does: $62BB intercepts these records before allocation. Four `01 01`

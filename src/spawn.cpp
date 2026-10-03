@@ -882,12 +882,19 @@ bool instantiate_stage0_spawn(const Rom& rom, const SpawnRecord& r, GameState& g
         e->raw[0x18]=r.payload[2];
         e->raw[0x3e]=4u;
     } else if(r.type==0x2du) {
-        // Bank05 $844D: surface runner. It alternates a long cruise phase
-        // with two short direction-change phases. +20 selects which of the
-        // two ROM direction scripts ($84F1/$84F5) is used.
-        e->raw[0x17]=0x28u;
-        e->raw[0x18]=0x02u;
-        e->raw[0x20]=r.payload.size()>1u ? (r.payload[1]&1u) : 0u;
+        // Bank05 $8426-$844C initializer. The sole inline byte is the
+        // surface/orientation coordinate: bit 7 selects the ceiling variant
+        // and the low seven bits are its fixed Y cell. $843C mirrors that
+        // bit into +20 and sprite frame +05, then $8442 installs the initial
+        // leftward $FFD0 velocity and $8431 starts the 30-tick cruise timer.
+        const auto position=r.payload[0];
+        e->set_y_fixed(std::uint16_t(position&0x7fu)<<8u);
+        e->raw[0x20]=(position>>7u)&1u;
+        e->raw[0x05]=e->raw[0x20];
+        e->raw[0x0d]=0xd0u;e->raw[0x0e]=0xffu;
+        e->raw[0x17]=0x1eu;
+        e->raw[0x18]=0u;
+        e->raw[0x3d]=1u;
     } else if(r.type==0x2eu) {
         // Bank05 $84F9/$8512. The second inline byte packs a low-nibble
         // compositor selector and a high-nibble "double child" flag.
@@ -979,7 +986,7 @@ bool instantiate_stage0_spawn(const Rom& rom, const SpawnRecord& r, GameState& g
     }
     // Type $64 must enter bank06:$A300 (state 0). Starting it at state 1
     // skips the ROM initializer that positions the tower at X=$2800/Y=$0C00.
-    e->state() = (r.type == 0x64u || r.type==0x47u || r.type==0x2eu || r.type==0x31u || r.type==0x53u || r.type==0x7au) ? 0u : 1u;
+    e->state() = (r.type == 0x64u || r.type==0x47u || r.type==0x2du || r.type==0x2eu || r.type==0x31u || r.type==0x53u || r.type==0x7au) ? 0u : 1u;
     return true;
 }
 }

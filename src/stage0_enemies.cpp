@@ -303,7 +303,12 @@ void Stage0Enemies::move_60hz(GameState& game,unsigned frame) {
         const int divisor=e.type()==0x40u?3:4,phase=int(frame%unsigned(divisor));
         auto delta=[&](int v){return v*(phase+1)/divisor-v*phase/divisor;};
         e.set_x_fixed(std::uint16_t(e.x_fixed()+delta(signed_word(e,13))));
-        e.set_y_fixed(std::uint16_t(e.y_fixed()+delta(signed_word(e,11))));
+        // Type $2D is the exception to the normal +0B/+0C position service:
+        // $8488 uses that word only as saved horizontal velocity while the
+        // runner pauses to fire. Applying it as Y velocity made the native
+        // ceiling/floor enemies visibly fly away from their surfaces.
+        if(e.type()!=0x2du)
+            e.set_y_fixed(std::uint16_t(e.y_fixed()+delta(signed_word(e,11))));
         const int x=std::int16_t(e.x_fixed())/32,y=std::int16_t(e.y_fixed())/32;
         if(x < -80 || x>=352 || y < -80 || y>=256) {
             const unsigned id=e.raw[0x34];
@@ -580,8 +585,8 @@ void Stage0Enemies::step_15hz(const Rom& rom,GameState& game,unsigned tick,std::
             // pivot/fire, and a terrain-driven jump arc. The original helper
             // probes use 8.8 tile offsets; native receives the same collision
             // map through TerrainProbe.
-            auto solid=[&](int xo,int yo) {
-                return terrain_probe ? terrain_probe(e,xo,yo) : false;
+            auto solid=[&](int xo,int yo)->bool {
+                return terrain_probe ? terrain_probe(e,xo,yo)!=0u : false;
             };
             auto set_patrol_velocity=[&] {
                 put(e,13,e.raw[0x22]?0x0060:-0x0040);
@@ -954,28 +959,42 @@ void Stage0Enemies::step_15hz(const Rom& rom,GameState& game,unsigned tick,std::
             // quickly; the damage service clears +04 after applying the hit.
             if(e.raw[0x04]) e.raw[0x17]=2u;
         } else if(e.type()==0x2du) {
-            // Bank05 $844D-$84F8. Preserve the ROM's 40-tick cruise and two
-            // 8-tick manoeuvre phases. The four-byte direction scripts are
-            // $84F1={2,4,6,FF} and $84F5={A,C,E,FF}; mapped here to the same
-            // three coarse headings at native 8.8 speed $0200.
+            // Bank05 $844D-$84F8. These are surface runners, not free-flying
+            // enemies. +0B/+0C is a saved copy of the horizontal velocity
+            // during the firing pause; it is deliberately NOT Y velocity for
+            // this object family. $84DC feeds one of two three-entry heading
+            // lists to $7306, so each expiry emits THREE type-$60 rounds.
+            //
+            // $84AA/$6B53 reverses the live horizontal velocity when the
+            // surface probe hits an end/obstacle. Use the composed terrain
+            // probe at the ROM's forward coarse offsets (-1 or +5 cells).
+            const int vx=signed_word(e,13);
+            if(terrain_probe && vx) {
+                const int front=vx<0 ? -0x0100 : 0x0500;
+                // $753C tests bit 0 of the DE00 property byte. Out-of-range
+                // probes return $FF in the native map and reverse as well.
+                if(terrain_probe(e,front,0)&1u) put(e,13,-vx);
+            }
             if(e.state()==0u) {
                 if(expired(e,0x17)) {
-                    put(e,0x11,signed_word(e,13));
+                    // $8488 + $6BFA: save X velocity in +0B, stop X, then
+                    // enter the two eight-tick firing phases.
+                    put(e,11,signed_word(e,13));
                     put(e,13,0);
                     e.raw[0x17]=8u;e.raw[0x18]=2u;e.state()=1u;
                 }
-            } else {
-                if(expired(e,0x17)) {
-                    static constexpr std::array<int,3> vy{-0x0200,0,0x0200};
-                    const unsigned phase=2u-e.raw[0x18];
-                    put(e,11,vy[std::min(phase,2u)]);
-                    put(e,13,e.raw[0x20] ? -0x0200 : 0x0200);
-                    e.raw[0x17]=8u;
-                    if(e.raw[0x18]>1u) --e.raw[0x18];
-                    else {
-                        put(e,13,signed_word(e,0x11));
-                        e.state()=0u;e.raw[0x17]=0x28u;e.raw[0x18]=2u;
-                    }
+            } else if(e.state()==1u && expired(e,0x17)) {
+                // $84DC -> $7306. Combat owns the secondary projectile pool;
+                // +26 is a native one-tick handoff requesting this burst.
+                e.raw[0x26]=1u;
+                e.raw[0x17]=8u;
+                if(e.raw[0x18]>1u) {
+                    --e.raw[0x18];
+                    // $849D restores the pre-pause horizontal velocity after
+                    // the first burst, so the runner moves between bursts.
+                    put(e,13,signed_word(e,11));
+                } else {
+                    e.raw[0x18]=0u;e.state()=0u;e.raw[0x17]=0x28u;
                 }
             }
         } else if(e.type()==0x2fu) {
@@ -1005,8 +1024,8 @@ void Stage0Enemies::step_15hz(const Rom& rom,GameState& game,unsigned tick,std::
             // +05. State 0 rises at -$00A0 until the probe one cell right and
             // one cell above touches solid terrain; state 1 descends at
             // +$0100 until the probe one cell right/five below touches it.
-            auto solid=[&](int xo,int yo) {
-                if(terrain_probe) return terrain_probe(e,xo,yo);
+            auto solid=[&](int xo,int yo)->bool {
+                if(terrain_probe) return terrain_probe(e,xo,yo)!=0u;
                 const int y=int(std::int16_t(e.y_fixed()));
                 return e.state()==0u ? y<=0x0500 : y>=0x1300;
             };
