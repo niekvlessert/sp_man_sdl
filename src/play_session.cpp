@@ -135,9 +135,24 @@ void draw_type8_pair(const Rom& rom,const Screen4Snapshot& video,
         draw_entity(rom,video,combiner,pixels,palette,sprite_origin_y,x_samples,y_samples);
         return;
     }
-    const auto table=rom.bank(7),frames=rom.bank(8),colors=rom.bank(9);
+    const auto table=rom.bank(7),frames=rom.bank(8),colors=rom.bank(9),bank2=rom.bank(2);
+    // $8950 uploads 64 bytes from bank02:$8B30/$8B70/$8BB0 into VRAM
+    // $CA20 and $D220 whenever the base record changes frame.  These are the
+    // live LARGE-missile patterns; the stage-start VRAM snapshot is stale here.
+    const unsigned phase=std::min<unsigned>(primary.raw[5]&3u,2u);
+    const unsigned dyn=0x0b30u+phase*0x40u;
     struct SpriteLine {int x=0;std::uint16_t bits=0;std::uint8_t attr=0;};
     std::vector<SpriteLine> line;line.reserve(16);
+    auto dynamic_bits=[&](unsigned pattern,unsigned row)->std::uint16_t {
+        const unsigned local=std::uint8_t(pattern-video.object_pattern_base[8]);
+        if(local==0x44u || local==0x48u) {
+            const unsigned off=dyn+(local==0x48u?32u:0u);
+            return std::uint16_t((unsigned(bank2[off+row])<<8u)|bank2[off+16u+row]);
+        }
+        const unsigned sprite_base=0xc800u+unsigned(video.object_pattern_page[8])*0x800u;
+        return std::uint16_t((unsigned(video.vram[sprite_base+pattern*8u+row])<<8u)|
+                             video.vram[sprite_base+pattern*8u+row+16u]);
+    };
     auto append=[&](const Entity64& entity,int sy) {
         const auto list=word(table,0x496+(entity.type()-1)*2);
         if(list<0xa000 || list>=0xc000) return;
@@ -154,9 +169,7 @@ void draw_type8_pair(const Rom& rom,const Screen4Snapshot& video,
             if(row<0 || row>=16) continue;
             const auto attr=colors[unsigned(frames[c+3])*16u+unsigned(row)];
             const unsigned pattern=std::uint8_t(video.object_pattern_base[8]+frames[c]);
-            const unsigned sprite_base=0xc800u+unsigned(video.object_pattern_page[8])*0x800u;
-            const auto bits=std::uint16_t((unsigned(video.vram[sprite_base+pattern*8u+unsigned(row)])<<8u)|
-                video.vram[sprite_base+pattern*8u+unsigned(row)+16u]);
+            const auto bits=dynamic_bits(pattern,unsigned(row));
             if(bits) line.push_back({ex+int(std::int8_t(frames[c+2]))-((attr&0x80u)?32:0),bits,attr});
         }
     };
@@ -164,15 +177,19 @@ void draw_type8_pair(const Rom& rom,const Screen4Snapshot& video,
     const int fy=int(primary.y_fixed()&31u)*int(y_samples)/32;
     for(int sy=0;sy<212;++sy) {
         line.clear();append(primary,sy);append(combiner,sy);
-        for(unsigned i=0;i<line.size();++i) {
-            const auto& a=line[i];
-            if(a.attr&0x40u) continue; // CC entries only colour a preceding primary SAT entry.
+        unsigned first=0;while(first<line.size() && (line[first].attr&0x40u)) ++first;
+        if(first==line.size()) continue;
+        // Match openMSX/V9938 sprite-mode-2 ordering. CC sprites after the
+        // first normal sprite remain visible in their own right; additionally
+        // their colour bits OR into preceding overlapping normal pixels.
+        for(int ii=int(line.size())-1;ii>=int(first);--ii) {
+            const auto& a=line[unsigned(ii)];
             const unsigned base=a.attr&15u;if(!base) continue;
             for(unsigned b=0;b<16u;++b) {
                 if(!(a.bits&(0x8000u>>b))) continue;
                 const int sx=a.x+int(b);if(sx<0 || sx>=256) continue;
                 unsigned color=base;
-                for(unsigned j=i+1u;j<line.size();++j) {
+                for(unsigned j=unsigned(ii)+1u;j<line.size();++j) {
                     const auto& q=line[j];if(!(q.attr&0x40u)) break;
                     const int qb=sx-q.x;
                     if(qb>=0 && qb<16 && (q.bits&(0x8000u>>unsigned(qb)))) color|=q.attr&15u;
@@ -192,7 +209,13 @@ void draw_player_shots(const Rom& rom,const Screen4Snapshot& video,
                        unsigned x_samples=1,unsigned y_samples=1) {
     unsigned first=0;
     if(shots[0].type()==8u && shots[1].type()==8u && shots[0].active() && shots[1].active()) {
-        draw_type8_pair(rom,video,shots[0],shots[1],pixels,palette,sprite_origin_y,x_samples,y_samples);
+        // $8816 creates slot 0 with frame 4..7 (CC-only colour sprite) and
+        // slot 1 with frame 0..3 (the visible base sprite). V9938 CC entries
+        // require a preceding non-CC SAT entry and combine into that sprite, so
+        // the base record must be emitted first and the colour-combiner second.
+        // The previous order silently
+        // discarded slot 0 and made the LARGE missile look transparent.
+        draw_type8_pair(rom,video,shots[1],shots[0],pixels,palette,sprite_origin_y,x_samples,y_samples);
         first=2;
     }
     for(unsigned i=first;i<shots.size();++i)
@@ -1556,6 +1579,16 @@ std::vector<std::uint32_t> PlaySession::render_presentation(unsigned x_samples,u
         const int sprite_y=background_.mode()==4u?27:28;
         auto present=[&](const Entity64& source) {
             auto e=present_carrier(source,saved_frame);
+            // Native tile actors are removed from the coarse world pass and
+            // composed here. Large cannon $1F therefore needs the same 60-Hz
+            // camera interpolation for both its tile body and SAT barrel.
+            // Applying the synthetic R18 fine phase to the body was wrong: the
+            // original late-stage captures hold R18=$70, while our synthesized
+            // low nibble wraps 8..15 and produced the visible left/right shake.
+            if(stage_index_==0u && e.type()==0x1fu && (e.flags15()&4u)) {
+                e.set_x_fixed(std::uint16_t(e.x_fixed()+remaining_samples*32/int(x_samples)));
+                e.set_y_fixed(std::uint16_t(e.y_fixed()+remaining_y_samples*32/int(y_samples)));
+            }
             if(e.type()==0x64u || e.type()==0x3du) {
                 const auto index=std::size_t(&source-game_.enemies.data());
                 const auto& old=previous_gate_actors_[index];
@@ -1604,13 +1637,15 @@ std::vector<std::uint32_t> PlaySession::render_presentation(unsigned x_samples,u
                 // passes above, so vertical/diagonal camera remainder cannot
                 // be applied twice.
                 if(e.type()==0x1fu) {
-                    // Large cannons combine a tile body with a SAT barrel.  The
-                    // body must retain the exact CA1C/R18 + CA1A/R23 raster
-                    // phase or the two halves sit several pixels apart.
-                    const int tile_shift=int((ps.r18&15u)^7u)-7;
+                    // $1F is stamped into the name table on an integer cell.
+                    // Native object coordinates already include the compensating
+                    // fractional camera phase seen in the original captures, so
+                    // re-applying CA1C/R18 here caused an 8-pixel sawtooth. Keep
+                    // the original one-pixel vertical raster bias, but present X
+                    // directly from the continuously interpolated object anchor.
                     draw_tile_actor(rom_,video_,e,out,wpalette,wpattern,wcolor,
-                        background_.mode()==4u?28:29,start_row,background_.ca1a()&255u,
-                        false,x_samples,y_samples,-1,background_.ca1c()&255u,tile_shift,int(ps.r23));
+                        background_.mode()==4u?27:28,start_row,0u,
+                        false,x_samples,y_samples);
                 } else {
                     draw_tile_actor(rom_,video_,e,out,wpalette,wpattern,wcolor,
                         background_.mode()==4u?28:29,start_row,background_.ca1a()&255u,

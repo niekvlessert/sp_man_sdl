@@ -76,6 +76,34 @@ int main(int argc,char** argv) {
     s.shots_[1].clear();const auto large_single=s.render_continuous();s.shots_[1]=second;
     unsigned cc_pixels=0;for(unsigned i=0;i<large_pair.size();++i) cc_pixels+=large_pair[i]!=large_single[i];
     assert(cc_pixels>500u);
+    // $8950 dynamically replaces the two 16x16 sprite patterns from
+    // bank02:$8B30.  The CC record is complementary to the base pattern: its
+    // own pixels must remain visible after the first normal SAT entry.  Check
+    // one such base-hole/CC-pixel explicitly; rendering CC only as an OR mask
+    // makes the LARGE missile look transparent.
+    {
+        const auto b2=rom.bank(2),b8=rom.bank(8),b9=rom.bank(9);
+        const auto video=sm::Screen4Snapshot::from_stage0_rom(rom);
+        auto le16=[](auto b,unsigned p){return std::uint16_t(b[p])|(std::uint16_t(b[p+1])<<8u);};
+        const auto b7=rom.bank(7);const unsigned list=le16(b7,0x496u+14u)-0xa000u;
+        const unsigned cc_def=le16(b8,list+8u)-0xa000u;
+        bool checked_cc=false;
+        for(unsigned row=0;row<16u && !checked_cc;++row) {
+            const auto base_bits=std::uint16_t((unsigned(b2[0x0b30u+row])<<8u)|b2[0x0b40u+row]);
+            const auto cc_bits=std::uint16_t((unsigned(b2[0x0b50u+row])<<8u)|b2[0x0b60u+row]);
+            const unsigned cc_color=b9[unsigned(b8[cc_def+4u])*16u+row]&15u;
+            // A CC sprite is suppressed on scanlines where no preceding base
+            // sprite has pattern bits at all (SpriteChecker does not emit the
+            // empty base entry). Pick a line where the base sprite is present.
+            if(!base_bits || !cc_color) continue;
+            for(unsigned bit=0;bit<16u;++bit) if(!(base_bits&(0x8000u>>bit))&&(cc_bits&(0x8000u>>bit))) {
+                const unsigned sx=(135u+bit)*4u,sy=(85u+row)*4u;
+                assert(large_pair[sy*1024u+sx]==video.palette[cc_color]);
+                checked_cc=true;break;
+            }
+        }
+        assert(checked_cc);
+    }
 
     // Compare actual colored texture pixels on every video frame, including
     // coarse-tick and tile carries. Empty black patches cannot pass this test.
