@@ -363,7 +363,7 @@ void Stage0Enemies::step_gate_20hz(const Rom& rom,GameState& game,unsigned tick,
 }
 void Stage0Enemies::step_15hz(const Rom& rom,GameState& game,unsigned tick,std::uint16_t trigger,
                               bool include_gate,std::vector<PlaySound>* sounds,
-                              const TerrainProbe& terrain_probe) {
+                              const TerrainProbe& terrain_probe,const TileProbe& tile_probe) {
     // Bank05:$9A41 calls $6AB8 with B=4 on the object-logic cadence. Live
     // OpenMSX traces show frames 0->1->2->3 over roughly 0.2 s, not four
     // consecutive video frames. Keep frame 0 for one logic interval, then
@@ -831,26 +831,40 @@ void Stage0Enemies::step_15hz(const Rom& rom,GameState& game,unsigned tick,std::
                 }
             }
         } else if(e.type()==0x2cu) {
-            // Bank05 $83BF-$8401. $8402 runs before the state dispatch:
-            // probe (+2,+2) in the composed name table and reverse Y whenever
-            // that cell is not $CC.  For the linked $2E launcher we can test
-            // the exact parent compositor directly; this keeps the two child
-            // modules trapped between the laser caps just like the original.
+            // $69BF creates these children during the parent $2E handler, but
+            // the original object scheduler does not execute the new record in
+            // that same 15-Hz pass. The native range loop otherwise reaches the
+            // freshly allocated later slot immediately, causing one spurious
+            // $8402 bounce before the child has moved once. +3E is unused by
+            // type $2C, so use it as a one-pass native scheduling latch.
+            if(e.raw[0x3e]) {e.raw[0x3e]=0u;continue;}
+            // Bank05 $8402 runs before the state dispatch. $76D0/$7B18 map
+            // (+2,+2) through the active composed name table, then the handler
+            // reverses Y unless the actual tile byte is exactly $CC. The old
+            // native approximation inspected only the linked $2E matrices and
+            // ignored raster/fine-scroll placement; later modules consequently
+            // escaped vertically before reaching their three-shot window.
             bool on_cc=false;
-            const int probe_y=int(std::int8_t(std::uint16_t(e.y_fixed()+0x0200u)>>8u));
-            const int probe_x=int(std::int8_t(std::uint16_t(e.x_fixed()+0x0200u)>>8u));
-            for(const auto& parent:game.enemies) if(parent.active() && parent.type()==0x2eu &&
-                    e.raw[0x34] && parent.raw[0x2d]==e.raw[0x34]) {
-                const int py=int(std::int8_t(parent.y_fixed()>>8u));
-                const int px=int(std::int8_t(parent.x_fixed()>>8u));
-                for(const auto& v:decode_stage0_tile_visuals(rom,parent)) {
-                    const int top=py+v.tile_y_offset,left=px+v.tile_x_offset;
-                    for(unsigned yy=0;yy<v.rows && !on_cc;++yy)
-                        for(unsigned xx=0;xx<v.cols;++xx)
-                            if(top+int(yy)==probe_y && left+int(xx)==probe_x &&
-                               v.tiles[yy*unsigned(v.cols)+xx]==0xccu) {on_cc=true;break;}
+            if(tile_probe) {
+                on_cc=tile_probe(e,0x0200,0x0200)==0xccu;
+            } else {
+                // Standalone-test fallback: reconstruct the linked parent at
+                // integer cells when no live composed-name-table probe exists.
+                const int probe_y=int(std::int8_t(std::uint16_t(e.y_fixed()+0x0200u)>>8u));
+                const int probe_x=int(std::int8_t(std::uint16_t(e.x_fixed()+0x0200u)>>8u));
+                for(const auto& parent:game.enemies) if(parent.active() && parent.type()==0x2eu &&
+                        e.raw[0x34] && parent.raw[0x2d]==e.raw[0x34]) {
+                    const int py=int(std::int8_t(parent.y_fixed()>>8u));
+                    const int px=int(std::int8_t(parent.x_fixed()>>8u));
+                    for(const auto& v:decode_stage0_tile_visuals(rom,parent)) {
+                        const int top=py+v.tile_y_offset,left=px+v.tile_x_offset;
+                        for(unsigned yy=0;yy<v.rows && !on_cc;++yy)
+                            for(unsigned xx=0;xx<v.cols;++xx)
+                                if(top+int(yy)==probe_y && left+int(xx)==probe_x &&
+                                   v.tiles[yy*unsigned(v.cols)+xx]==0xccu) {on_cc=true;break;}
+                    }
+                    break;
                 }
-                break;
             }
             if(!on_cc) put(e,11,-signed_word(e,11));
             // The child sleeps until the player is left of it and 0..7 coarse
@@ -889,6 +903,7 @@ void Stage0Enemies::step_15hz(const Rom& rom,GameState& game,unsigned tick,std::
                     // $8650/$865C: first child -$0060, second +$0060.
                     put(*c,11,n==0u?-0x0060:0x0060);
                     c->raw[0x34]=e.raw[0x2d];c->raw[0x38]=std::uint8_t(n+1u);
+                    c->raw[0x3e]=1u; // defer first $83BF handler to the next object pass
                 }
                 e.raw[0x37]=std::uint8_t(linked_children());
                 e.state()=1u;

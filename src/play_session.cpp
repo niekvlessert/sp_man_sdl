@@ -638,7 +638,7 @@ void PlaySession::step_60hz(PlayerInput input) {
     // still see their tile properties so M follows the vehicle surface.
     auto collision_tiles=background_.compose_d988_base();
     stamp_stage0_tile_objects(rom_,background_,game_,collision_tiles,true);
-    auto terrain_property=[&](const Entity64& e,int xo,int yo)->std::uint8_t {
+    auto terrain_tile=[&](const Entity64& e,int xo,int yo)->std::uint8_t {
         const bool late=camera_pixels()>=1538;
         const unsigned fx=late?(background_.ca1c()&0xffu):0u;
         const unsigned fy=late?(background_.ca1a()&0xffu):0u;
@@ -646,9 +646,13 @@ void PlaySession::step_60hz(PlayerInput input) {
         const auto y=std::uint16_t(e.y_fixed()+yo+fy);
         const int col=int(std::int8_t(x>>8u)),row=int(std::int8_t(y>>8u));
         if(col<0||col>=32||row<0||row>=24) return 0xff;
-        if(late) return stage_property(collision_tiles[unsigned(row)*32u+unsigned(col)]);
+        if(late) return collision_tiles[unsigned(row)*32u+unsigned(col)];
         const auto early=compose_stage0_horizontal_tiles(visual_level_,camera_pixels());
-        return stage_property(early[unsigned(row)*48u+unsigned(col)]);
+        return early[unsigned(row)*48u+unsigned(col)];
+    };
+    auto terrain_property=[&](const Entity64& e,int xo,int yo)->std::uint8_t {
+        const auto tile=terrain_tile(e,xo,yo);
+        return tile==0xffu ? 0xffu : stage_property(tile);
     };
     auto advance=[&](Entity64& shot) {
         if(shot.type()!=8) {advance_shot(shot);return;}
@@ -812,7 +816,8 @@ void PlaySession::step_60hz(PlayerInput input) {
         const auto sound_mark=sound_events_.size();
         const bool tower_was_destroyed=game_.tower_destroyed;
         enemies_.step_15hz(rom_,game_,frame_/4,trigger,false,&sound_events_,
-            [&](const Entity64& e,int xo,int yo){return terrain_property(e,xo,yo)!=0u;});
+            [&](const Entity64& e,int xo,int yo){return terrain_property(e,xo,yo)!=0u;},
+            [&](const Entity64& e,int xo,int yo){return terrain_tile(e,xo,yo);});
         bool have56=false,red56=false,white56=false;
         for(const auto& e:game_.enemies) if(e.active() && e.type()==0x56u) {
             have56=true;red56|=e.raw[0x3c]!=0u || e.state()>=2u;

@@ -13,6 +13,7 @@ bool step_stage0_blue_enemy(GameState& game,Entity64& enemy);
 class Stage0Enemies {
 public:
     using TerrainProbe=std::function<bool(const Entity64&,int,int)>;
+    using TileProbe=std::function<std::uint8_t(const Entity64&,int,int)>;
     void reset() noexcept { waves_={};stage_complete_=false; }
     void clear_waves() noexcept { waves_={}; }
     bool spawn(const Rom& rom, const SpawnRecord& record, GameState& game,
@@ -24,7 +25,7 @@ public:
     bool stage_complete() const noexcept { return stage_complete_; }
     void step_15hz(const Rom& rom, GameState& game, unsigned tick, std::uint16_t trigger,
                    bool include_gate=true, std::vector<PlaySound>* sounds=nullptr,
-                   const TerrainProbe& terrain_probe={});
+                   const TerrainProbe& terrain_probe={},const TileProbe& tile_probe={});
     bool destroyed(const Entity64& enemy);
 private:
     bool stage_complete_=false;

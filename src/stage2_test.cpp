@@ -171,6 +171,32 @@ int main(int argc,char** argv) {
         enemies.step_15hz(rom,game,8,0,false,nullptr);
         assert(game.enemies[0].state()==2u && game.enemies[0].raw[0x06]==3u);
     }
+    // Full-route $2E/$2C scheduling and fire regression. The original stage-2
+    // audit at world X=$047C has ordinal 1 at Y=$0AA0 moving down and ordinal
+    // 2 at Y=$0B60 moving up. This catches the native bug where a freshly
+    // allocated later pool slot executed $8402 in its parent's same object
+    // pass, adding one extra bounce. By X=$04AC the first visible burst has
+    // produced all three fixed-heading type-$67 rounds.
+    {
+        sm::PlaySession route(rom);route.reset(1);
+        while(route.camera_pixels()<1536u+0x047cu && route.stage_frame()<4000u)
+            route.step_60hz({});
+        assert(route.camera_pixels()==1536u+0x047cu);
+        const auto& live=route.state();
+        std::array<const sm::Entity64*,2> child{{nullptr,nullptr}};
+        for(const auto& e:live.enemies) if(e.type()==0x2cu && e.raw[0x38]>=1u && e.raw[0x38]<=2u)
+            child[e.raw[0x38]-1u]=&e;
+        assert(child[0] && child[1]);
+        assert(child[0]->y_fixed()==0x0aa0u && child[1]->y_fixed()==0x0b60u);
+        const auto vy0=std::int16_t(unsigned(child[0]->raw[11])|(unsigned(child[0]->raw[12])<<8u));
+        const auto vy1=std::int16_t(unsigned(child[1]->raw[11])|(unsigned(child[1]->raw[12])<<8u));
+        assert(vy0==0x0060 && vy1==-0x0060);
+        while(route.camera_pixels()<1536u+0x04acu && route.stage_frame()<4000u)
+            route.step_60hz({});
+        const auto rounds=std::count_if(route.enemy_bullets().begin(),route.enemy_bullets().end(),
+            [](const auto& b){return b.active() && b.type()==0x67u;});
+        assert(rounds==3u);
+    }
     // Final regular family: six type-$19 terrain walkers. Five start on the
     // ordinary leftward path; the $94 record uses bit 7 to enter from the
     // opposite side with the exact +$0060 horizontal velocity.

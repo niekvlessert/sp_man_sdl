@@ -60,6 +60,14 @@ one-damage hits, rather than killing at zero.
 
 All 56 regular stage-2 spawn records now instantiate through their native
 families: $19/$27/$2B/$2D/$2E/$2F/$31, including the $16/$2C launcher children.
+The `$2C` children need two details that the isolated fixture did not expose:
+new linked records must not run `$83BF` in their parent's creation pass, and
+`$8402` must test the actual composed name-table byte at `(+2,+2)` rather than
+an integer-cell approximation of the `$2E` artwork. The old native path added
+an extra initial bounce and later let modules drift away before their fire
+window. At world X=$047C the two children now reproduce the original Y=$0AA0/
+$0B60 directions, and by X=$04AC the first module has emitted the complete
+three-round type-$67 burst.
 The $53 extended record also runs as the original type-$2A wave generator.
 Type $5F was reclassified from "scene objects" to what the fixed-bank parser
 actually does: $62BB intercepts these records before allocation. Four `01 01`
