@@ -73,6 +73,40 @@ int main(int argc,char** argv) {
         assert(sm::apply_stage0_damage(rom,turret,1u)==sm::Stage0DamageResult::Destroyed);
     }
     assert(turrets==63u && floor && ceiling);
+
+    // First restored regular stage-2 batch: all five $27 aimed movers and all
+    // eight $2D surface runners must instantiate from the real ROM stream.
+    unsigned movers27=0,runners2d=0;
+    for(const auto& record:stream.records()) {
+        if(record.type!=0x27u && record.type!=0x2du) continue;
+        sm::GameState game;
+        assert(sm::instantiate_stage0_spawn(rom,record,game,1));
+        assert(game.enemies[0].type()==record.type);
+        if(record.type==0x27u) { ++movers27; assert(game.enemies[0].raw[0x17]==0x0au); }
+        else { ++runners2d; assert(game.enemies[0].raw[0x17]==0x28u); }
+    }
+    assert(movers27==5u && runners2d==8u);
+    {
+        sm::GameState game;game.difficulty=10u;
+        sm::SpawnRecord r;r.type=r.raw_type=0x27u;r.payload={10u,2u};
+        assert(sm::instantiate_stage0_spawn(rom,r,game,1));
+        auto& e=game.enemies[0];e.set_x_fixed(0x1800u);e.set_y_fixed(0x0800u);
+        game.player.set_x_fixed(0x0800u);game.player.set_y_fixed(0x1000u);
+        sm::Stage0Enemies enemies;
+        for(unsigned i=0;i<10u;++i) enemies.step_15hz(rom,game,i,0,false,nullptr);
+        const auto vx=std::int16_t(unsigned(e.raw[13])|(unsigned(e.raw[14])<<8));
+        const auto vy=std::int16_t(unsigned(e.raw[11])|(unsigned(e.raw[12])<<8));
+        assert(vx<0 && vy>0 && e.raw[5]==1u);
+    }
+    {
+        sm::GameState game;
+        sm::SpawnRecord r;r.type=r.raw_type=0x2du;r.payload={12u,0u};
+        assert(sm::instantiate_stage0_spawn(rom,r,game,1));
+        sm::Stage0Enemies enemies;
+        for(unsigned i=0;i<40u;++i) enemies.step_15hz(rom,game,i,0,false,nullptr);
+        assert(game.enemies[0].state()==1u && game.enemies[0].raw[0x17]==8u);
+    }
+
     // Exercise the restored attack through the real combat service, on both
     // sides of the ceiling/floor mounting, rather than calling a shot helper.
     for(unsigned upside_down=0;upside_down<2u;++upside_down) {
@@ -93,5 +127,5 @@ int main(int argc,char** argv) {
         assert(fired);
         assert(std::find(sounds.begin(),sounds.end(),sm::PlaySound::EnemyShot)!=sounds.end());
     }
-    std::cout<<"Stage 2: nine original ROM tile rings, route boundary, shot lifetime and turrets PASS\n";
+    std::cout<<"Stage 2: ROM tile rings, route boundary, shot lifetime, turrets, $27 and $2D PASS\n";
 }

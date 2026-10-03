@@ -206,7 +206,8 @@ bool decode_stage0_sprite_visual(const Rom& rom, const Screen4Snapshot& video,
     const auto type = entity.type();
     const bool global_base = type == 0x20u || type == 0x29u || type == 0x22u ||
                              type == 0x24u || type == 0x26u;
-    if (type != 0x1fu && !global_base) return false;
+    const bool supported_sprite = type == 0x1fu || type == 0x27u || type == 0x2du || global_base;
+    if (!supported_sprite) return false;
 
     const auto type_table = rom.bank(7);
     const unsigned type_entry = (0x8496u - 0x8000u) + (unsigned(entity.type()) - 1u) * 2u;
@@ -733,14 +734,13 @@ SpawnTypeMetadata decode_spawn_type_metadata(const Rom& rom, std::uint8_t type) 
 
 bool instantiate_stage0_spawn(const Rom& rom, const SpawnRecord& r, GameState& game,
                               std::uint8_t spawn_direction) {
-    if (r.trigger_flag() || r.type_flag()) return false;
     const bool special26 = r.type == 0x26u && r.control_flag();
     // The final stage-0 tower is also an extended record: trigger $5000,
     // control $88. Rejecting every flagged record except $26 silently dropped
     // type $64 from real gameplay, leaving only the scenery copy visible.
     const bool special64 = r.type == 0x64u && r.control_flag();
     if (r.control_flag() && !special26 && !special64) return false;
-    if (r.type != 0x1eu && r.type != 0x1fu && r.type != 0x20u && r.type != 0x29u && r.type != 0x22u &&
+    if (r.type != 0x1eu && r.type != 0x1fu && r.type != 0x20u && r.type != 0x27u && r.type != 0x29u && r.type != 0x2du && r.type != 0x22u &&
         r.type != 0x24u && r.type != 0x26u && r.type != 0x55u &&
         r.type != 0x56u && r.type != 0x47u && r.type != 0x64u) return false;
     if (r.payload.empty() || (r.type == 0x24u && r.payload.size() < 2u)) return false;
@@ -781,6 +781,19 @@ bool instantiate_stage0_spawn(const Rom& rom, const SpawnRecord& r, GameState& g
         e->raw[0x24] = 0x00;
         e->raw[0x17] = 0x20;
         e->raw[0x18] = 0x01;
+    } else if(r.type==0x27u) {
+        // Bank05 $8170/$817D: stage-2 aimed mover. The continuation has
+        // already run the common spawn initializer; +17 is the ten-tick
+        // retarget cadence and +03 is an optional speed bias.
+        e->raw[0x17]=0x0au;
+        e->raw[0x03]=r.payload.size()>1u ? r.payload[1] : 0u;
+    } else if(r.type==0x2du) {
+        // Bank05 $844D: surface runner. It alternates a long cruise phase
+        // with two short direction-change phases. +20 selects which of the
+        // two ROM direction scripts ($84F1/$84F5) is used.
+        e->raw[0x17]=0x28u;
+        e->raw[0x18]=0x02u;
+        e->raw[0x20]=r.payload.size()>1u ? (r.payload[1]&1u) : 0u;
     } else if(r.type==0x29u) {
         // Bank05 $82CA: stage-2 small turret, upside-down payload bit 7.
         e->raw[0x20]=(r.payload[0]>>7u)&1u;

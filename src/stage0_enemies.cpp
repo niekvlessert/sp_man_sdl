@@ -297,7 +297,7 @@ void Stage0Enemies::move_60hz(GameState& game,unsigned frame) {
             if(--e.raw[0x3e]==0) e.clear();
             continue;
         }
-        if(e.active() && (flight(e.type()) || e.type()==0x1eu || e.type()==0x11u || e.type()==0x68u || e.type()==0x70u || e.type()==0x40u)) {
+        if(e.active() && (flight(e.type()) || e.type()==0x1eu || e.type()==0x11u || e.type()==0x27u || e.type()==0x2du || e.type()==0x68u || e.type()==0x70u || e.type()==0x40u)) {
         const int divisor=e.type()==0x40u?3:4,phase=int(frame%unsigned(divisor));
         auto delta=[&](int v){return v*(phase+1)/divisor-v*phase/divisor;};
         e.set_x_fixed(std::uint16_t(e.x_fixed()+delta(signed_word(e,13))));
@@ -571,6 +571,44 @@ void Stage0Enemies::step_15hz(const Rom& rom,GameState& game,unsigned tick,std::
                 put(e,11,0);
                 put(e,13,game.difficulty<4u?-0x00c0:-0x0120); // fixed $5135
                 e.state()=3;
+            }
+        } else if(e.type()==0x27u) {
+            // Bank05 $8170-$81A9. Every ten object ticks the enemy recomputes
+            // an aimed velocity. CA19 contributes half the difficulty and
+            // +03 is the per-record speed bias. Frame 0/1 follows X direction.
+            if(e.raw[0x0a]>=2u && expired(e,0x17)) {
+                e.raw[0x17]=0x0au;
+                const unsigned speed=(unsigned(game.difficulty)>>1u)+0x0au+e.raw[0x03];
+                aimed_velocity(rom,e,game.player,speed);
+                e.raw[0x05]=signed_word(e,13)<0 ? 1u : 0u;
+            }
+            // $8173 observes pending damage and forces the next retarget very
+            // quickly; the damage service clears +04 after applying the hit.
+            if(e.raw[0x04]) e.raw[0x17]=2u;
+        } else if(e.type()==0x2du) {
+            // Bank05 $844D-$84F8. Preserve the ROM's 40-tick cruise and two
+            // 8-tick manoeuvre phases. The four-byte direction scripts are
+            // $84F1={2,4,6,FF} and $84F5={A,C,E,FF}; mapped here to the same
+            // three coarse headings at native 8.8 speed $0200.
+            if(e.state()==0u) {
+                if(expired(e,0x17)) {
+                    put(e,0x11,signed_word(e,13));
+                    put(e,13,0);
+                    e.raw[0x17]=8u;e.raw[0x18]=2u;e.state()=1u;
+                }
+            } else {
+                if(expired(e,0x17)) {
+                    static constexpr std::array<int,3> vy{-0x0200,0,0x0200};
+                    const unsigned phase=2u-e.raw[0x18];
+                    put(e,11,vy[std::min(phase,2u)]);
+                    put(e,13,e.raw[0x20] ? -0x0200 : 0x0200);
+                    e.raw[0x17]=8u;
+                    if(e.raw[0x18]>1u) --e.raw[0x18];
+                    else {
+                        put(e,13,signed_word(e,0x11));
+                        e.state()=0u;e.raw[0x17]=0x28u;e.raw[0x18]=2u;
+                    }
+                }
             }
         } else if(e.type()==0x22u) {
             if(e.state()==1u) {
