@@ -10,13 +10,12 @@ upgrades between maximum and zero, including S speed. Clearing upgrades also
 clears the existing options and M missile. Timeline events/checkpoints preserve
 multiple upgrade toggles through rewind, forward replay and branching.
 
-Stage 2 formerly stalled at its first mode-3 section because that writer had
-not been implemented. Disassembly of bank09 $7EDE–$7EFB shows a 15-metatile
-row write with column offset -((-(Y&$18)/8)&3), row offset -1 and the row phase
-used by $7EFC. The existing mode-4 row writer supplies the same placement, so
-mode 3 now shares that implementation. The no-input route reaches the gate at
-frame 22128; 50% is frame 11064. This exposes scenery, not a complete stage-2
-enemy/boss implementation.
+The later stage-2 ROM audit corrected the initial mode-3 interpretation:
+mode 3 uses bank09 $7E1C's eight-metatile row writer, rather than mode 4's
+$7EDE handler. It also restores the initial preload phase and stops at FF14,
+before the next stage's data. The no-input route reaches the gate at frame
+12176; 50% is frame 6088. See [stage2_rom_audit_2026-10-03.md](stage2_rom_audit_2026-10-03.md)
+for independent reference hashes, restored turrets and remaining enemy/boss work.
 
 ## Player and hatch
 

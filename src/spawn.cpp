@@ -177,7 +177,7 @@ void step_stage0_object_logic_15hz(GameState& game) noexcept {
         if (!e.active()) continue;
         if (e.type() == 0x56u && e.state() == 1u)
             e.raw[0x06] = std::uint8_t((e.raw[0x06] + 1u) & 3u); // $BF3F/$6AC2, B=4
-        if (e.type() == 0x20u && e.state() == 1u &&
+        if ((e.type() == 0x20u || e.type()==0x29u) && e.state() == 1u &&
             ((unsigned(game.logic_phase) + i + 1u) & 7u) == 0u) {
             // Bank-05 $8304-$8326: CA02+slot-id staggers this relatively
             // expensive player-vector update over eight object-logic ticks.
@@ -204,7 +204,7 @@ bool decode_stage0_sprite_visual(const Rom& rom, const Screen4Snapshot& video,
     // format as type $1F. Types $20/$22/$24/$26 use the global pattern block
     // at base 0, so base==0 is valid for them rather than meaning "no sprite".
     const auto type = entity.type();
-    const bool global_base = type == 0x20u || type == 0x22u ||
+    const bool global_base = type == 0x20u || type == 0x29u || type == 0x22u ||
                              type == 0x24u || type == 0x26u;
     if (type != 0x1fu && !global_base) return false;
 
@@ -564,7 +564,7 @@ void stamp_stage0_tile_objects(const Rom& rom, const Stage0BackgroundStream& str
         // tile+sprite actors (cannon body/barrel and type $64 core) jump at
         // R18/tile carries. Keep scenery in D988, but render these actors once
         // as native overlays in every stage-0 raster mode.
-        if(!include_native_overlays && (entity.type()==0x1eu || entity.type()==0x1fu || entity.type()==0x20u || entity.type()==0x22u ||
+        if(!include_native_overlays && (entity.type()==0x1eu || entity.type()==0x1fu || entity.type()==0x20u || entity.type()==0x29u || entity.type()==0x22u ||
            entity.type()==0x24u || entity.type()==0x26u || entity.type()==0x55u ||
            entity.type()==0x47u || entity.type()==0x56u || entity.type()==0x64u || entity.type()==0x6au ||
            entity.type()==0x6bu || entity.type()==0x3du)) continue;
@@ -608,7 +608,7 @@ void stamp_stage0_tile_objects_right_edge(const Rom& rom, const Stage0Background
         if(!entity.active() || entity.type()==3u) continue;
         // Same ownership rule as the main D988 stamper: native overlays own
         // these complete actors, including the successor edge.
-        if(entity.type()==0x1eu || entity.type()==0x1fu || entity.type()==0x20u || entity.type()==0x22u ||
+        if(entity.type()==0x1eu || entity.type()==0x1fu || entity.type()==0x20u || entity.type()==0x29u || entity.type()==0x22u ||
            entity.type()==0x24u || entity.type()==0x26u || entity.type()==0x55u ||
            entity.type()==0x47u || entity.type()==0x56u || entity.type()==0x64u || entity.type()==0x6au ||
            entity.type()==0x6bu || entity.type()==0x3du) continue;
@@ -740,7 +740,7 @@ bool instantiate_stage0_spawn(const Rom& rom, const SpawnRecord& r, GameState& g
     // type $64 from real gameplay, leaving only the scenery copy visible.
     const bool special64 = r.type == 0x64u && r.control_flag();
     if (r.control_flag() && !special26 && !special64) return false;
-    if (r.type != 0x1eu && r.type != 0x1fu && r.type != 0x20u && r.type != 0x22u &&
+    if (r.type != 0x1eu && r.type != 0x1fu && r.type != 0x20u && r.type != 0x29u && r.type != 0x22u &&
         r.type != 0x24u && r.type != 0x26u && r.type != 0x55u &&
         r.type != 0x56u && r.type != 0x47u && r.type != 0x64u) return false;
     if (r.payload.empty() || (r.type == 0x24u && r.payload.size() < 2u)) return false;
@@ -781,6 +781,11 @@ bool instantiate_stage0_spawn(const Rom& rom, const SpawnRecord& r, GameState& g
         e->raw[0x24] = 0x00;
         e->raw[0x17] = 0x20;
         e->raw[0x18] = 0x01;
+    } else if(r.type==0x29u) {
+        // Bank05 $82CA: stage-2 small turret, upside-down payload bit 7.
+        e->raw[0x20]=(r.payload[0]>>7u)&1u;
+        e->raw[0x06]=e->raw[0x20]?4u:0u;
+        e->raw[0x17]=0x20u;
     } else if(r.type==0x22u) {
         // Bank06 $BD0F init: threshold cursor starts at zero and +3E=$0B.
         e->raw[0x20]=0;e->raw[0x3e]=0x0b;

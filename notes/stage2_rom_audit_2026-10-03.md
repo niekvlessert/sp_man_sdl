@@ -1,0 +1,93 @@
+# Stage 2: ROM audit and first native corrections
+
+User stage 2 is ROM stage index 1. Reference ROM SHA-256:
+`bca5696ebbf4a3493bb226baa03ba8f8c5cc4876a4ad0eaa9722f583a42192b0`.
+
+## Reference and corrected background
+
+176 original OpenMSX snapshots were taken at emulator times 15–190 seconds,
+one second apart. Stage selection used F0FC=1 before starting; CA53/CA54 were
+kept at 3 to survive the route. No enemies were shot. Each snapshot saved
+C000–FFFF, physical VRAM and the VDP palette. Local captures are in ignored
+`tools/probe_out/stage2_audit`. Comparisons use stream source plus original
+C0BB/C0C1 world position, rather than elapsed time: the native scenery clock
+and the original workload do not advance at identical wall-clock rates.
+
+The native opening already had the correct artwork. Three stream errors caused
+the later divergence:
+
+- Bank09 $783E writes an initial phase at X=0 **before** the 31-column preload.
+  $7841–$7845 then undo that phase's spawn-trigger increment. The port omitted
+  this phase, putting the background a whole 8-pixel stream event behind.
+- Mode 3 dispatches to $7E1C: eight metatiles, row +24, column offset zero,
+  row phase `(Y & $18) / 2`. It does not share mode 4's $7EDE upward writer.
+- FF14 calls $79FD/$7BD6 and stops scrolling. Stage 2 stops at source A94A,
+  trigger 6000. Continuing past that point decoded the next stage as scenery.
+
+Preset loading now resets C0DA as $78E7 does. FF12 retains the existing phase
+in stage 2; stage 1's captured anchor compensation remains stage-specific.
+
+Nine independent complete E000–E7FF ring hashes are regression fixtures in
+`src/stage2_test.cpp`. They cover horizontal, two-source, diagonal, vertical
+and resumed horizontal scenery. An expanded comparison found 163 exact rings
+among 164 snapshots with matching native source and world coordinates; one
+snapshot differs in 24 cells during a row upload. The final 12 snapshots do
+not match native coordinates because the boss-sector controllers are still
+missing. This comparison validates tile streaming, not the complete rendered
+frame, all moving objects, or the final boss fight.
+
+The native no-input route reaches the stream gate at frame 12176; the 50%
+shortcut is frame 6088. This replaces the previously documented 22128/11064,
+which included data beyond the stage boundary.
+
+## Weapons and restored turret
+
+Stage 2 previously reused stage 1's DE00 collision-property ranges, so normal
+shots collided with empty-looking scenery. The stage-2 opening and boss-context
+maps now match the original DE00 captures. A real opening shot survives about
+51 native frames and reaches the right viewport edge.
+
+Type $29 uses bank05 $82CA–$8337: payload bit 7 selects the ceiling variant,
+the ROM metadata supplies size/flags/HP, $8304 selects one of eight aim frames,
+and $72D4 supplies aimed firing. Every fourth turret can award a pickup. These
+records were rejected by the native spawn whitelist; they now instantiate,
+render, aim, shoot and use the existing ROM death/reward/sound path. The table
+contains 77 records: 63 are unconditional, 14 depend on the original gates.
+Stored HP is 1; the original subtraction-carry death condition requires two
+one-damage hits, rather than killing at zero.
+
+## Remaining work, explicitly not complete
+
+The stage's other native handlers still need translation and live validation.
+Counts below are spawn-table records, not simultaneous visible enemies:
+
+| ROM type | Records | Current gap |
+| --- | ---: | --- |
+| $19 | 6 | Stage-specific moving objects |
+| $27 | 5 | Aimed movement handler |
+| $2B | 7 | Scripted launcher and child attacks |
+| $2D | 8 | Surface movement and attack phases |
+| $2E | 3 | Composed launcher and $2C children |
+| $2F | 17 | Flying enemy state machine |
+| $31 | 10 | Stage-specific motion/attack handler |
+| $53 | 1 | Wave generator, including $2A children |
+| $5F | 9 | Scene controllers; not nine ordinary enemies |
+| $3C | 5 | Final sector objects/controllers |
+| $7A | 1 | Stage-2 boss |
+
+Type $51 opening waves were already supported. Restoring $29 is a substantial
+population correction, but does not restore these other families. Prioritize
+$2B/$2E launchers and children, then $27/$2D/$2F/$31 and their actual attacks,
+then $53/$5F/$3C and the $7A boss. Verify scenery layering and projectile
+collision against original captures at each family, including scrolling exits.
+
+## Checks
+
+`space-manbow-stage2-test space_manbow.rom` checks all nine reference rings,
+the actual stream boundary, normal-shot lifetime, both turret orientations,
+ROM artwork/HP, the four-turret reward cycle, and firing/projectile audio for
+both mount orientations. Timeline seeking now uses the correct stage length.
+Runtime, player, combat, late combat, feedback, scroll feedback, continuous
+scroll and timeline checks pass. The late-image comparison at line 110 in
+`play_features_test.cpp` fails both here and in a separate build of unchanged
+commit `a52a013`; that existing failure remains unresolved.

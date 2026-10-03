@@ -136,6 +136,10 @@ void Stage0BackgroundStream::reset_stage(unsigned stage) {
     // The original stage initializer preloads 31 columns before releasing
     // the player. Keep native overscan disabled until that ring is complete.
     suppress_prefetch_=true;
+    // $783E writes phase zero at X=0 before the 31-column preload loop.
+    // Omitting this leaves every later segment one stream event behind.
+    stream_phase();
+    --trigger_cursor_; // $7841-$7845: preload phase does not consume a spawn trigger.
     for(unsigned column=1;column<=31u;++column) {
         x_fp_=int(column*8u)<<8;
         stream_phase();
@@ -367,6 +371,8 @@ void Stage0BackgroundStream::apply_preset(unsigned preset) {
     phase_accum_ = std::uint16_t(bank[o+6]) | (std::uint16_t(bank[o+7]) << 8);
     mode_ = bank[o+8];
     c0d5_ = bank[o+10];
+    // $78E7 resets C0DA whenever a ROM scroll preset is loaded.
+    if(stage_index_) macro_phase_=0;
 
     // $A2C3 live trace: changing preset/velocity does not itself advance
     // C0E8.  The old $3E40 value survives the mode switch and becomes
@@ -403,6 +409,11 @@ bool Stage0BackgroundStream::prepare_data() {
         if (cmd == 0x14u || cmd == 0x1bu || cmd == 0x1eu)
             advance_trigger_segment();
         if(cmd==0x1eu && stage_index_==0u) x_fp_=4352<<8;
+        if(cmd==0x14u && stage_index_) {
+            // $79FD/$7BD6 clears the scroll velocity and arms the next
+            // encounter. The bytes after A94A belong to the following stage.
+            x_vel_fp_=y_vel_fp_=0;gated_=true;return false;
+        }
         // $18 calls $6E2D/$6E0B on the original Z80: clear the complete
         // E000-E7FF 32x64 tile ring and its D988 composition buffer.
         // Without this, stale machinery from the previous scene leaks into
@@ -451,14 +462,16 @@ bool Stage0BackgroundStream::prepare_data() {
         if (cmd == 0x12u) {
             source_ = std::uint16_t(source_ + n);
             mode_ = 2u;
-            phase_accum_ = 0x0000u;
-            phase_step_ = 0x0200u;
-            // $12 is parsed inside the stream event that immediately writes
-            // phase 0 of $A288. C0DA is zero before that write and becomes 1
-            // afterwards (the captured $A288 state). Starting at 1 here made
-            // every mode-2 record advance one 8-pixel phase too early.
-            macro_phase_ = 0u;
-            c0d5_ = 0x01u;
+            if(stage_index_==0u) {
+                phase_accum_ = 0x0000u;
+                phase_step_ = 0x0200u;
+                // $12 is parsed inside the stream event that immediately writes
+                // phase 0 of $A288. C0DA is zero before that write and becomes 1
+                // afterwards (the captured $A288 state). Starting at 1 here made
+                // every mode-2 record advance one 8-pixel phase too early.
+                macro_phase_ = 0u;
+                c0d5_ = 0x01u;
+            }
             continue;
         }
         source_ = std::uint16_t(source_ + n);
@@ -481,13 +494,13 @@ void Stage0BackgroundStream::write_vertical(std::uint16_t source, int col_offset
     }
 }
 void Stage0BackgroundStream::write_horizontal(std::uint16_t source, int col_offset,
-                                              int row_offset, unsigned row_phase) {
+                                              int row_offset, unsigned row_phase,unsigned blocks) {
     const auto stream = rom_.bank(27);
-    if (source < 0xA000u || source + 15u > 0xC000u) return;
+    if (source < 0xA000u || source + blocks > 0xC000u) return;
     unsigned p = source - 0xA000u;
     int col = floor_div8(int(world_x())) + col_offset;
     const int row = int(ring_row()) + row_offset;
-    for (unsigned block = 0; block < 15u; ++block) {
+    for (unsigned block = 0; block < blocks; ++block) {
         const auto macro = stream[p++];
         const unsigned base = unsigned(macro) * 16u + row_phase;
         for (unsigned c = 0; c < 4u; ++c)
@@ -546,7 +559,8 @@ void Stage0BackgroundStream::stream_phase() {
             write_vertical(source_, -9);
             write_vertical(std::uint16_t(source_ - 0x24u), 31);
             advance = 6; break;
-        case 3: // bank09 $7EDE: downward row writer, also used by stage 2
+        case 3: // bank09 $7E1C, eight metatiles at row +24
+            write_horizontal(source_,0,24,yphase*4u,8);advance=8;break;
         case 4: {
             static constexpr int kColOffset[4] = {0, -3, -2, -1};
             static constexpr unsigned kRowPhase[4] = {12, 0, 4, 8};

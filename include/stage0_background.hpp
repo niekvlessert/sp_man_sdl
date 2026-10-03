@@ -114,7 +114,7 @@ private:
     void stream_phase();
     void write_vertical(std::uint16_t source, int col_offset);
     void write_horizontal(std::uint16_t source, int col_offset, int row_offset,
-                          unsigned row_phase);
+                          unsigned row_phase,unsigned blocks=15);
     void put(int col, int row, std::uint8_t tile) noexcept;
     void step_parallax();
     void prefetch_successor_column();

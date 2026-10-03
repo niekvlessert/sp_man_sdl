@@ -14,8 +14,10 @@ M changes option positions, F10 mutes audio, P pauses, R restarts, Escape exits.
 Cmd-2 on macOS / Ctrl-2 on Windows or Linux starts stage 2; Cmd/Ctrl-1
 returns to stage 1. Keys 0–9 then jump within the selected stage.
 W toggles between maximum reusable upgrades (including speed) and no upgrades.
-These changes are retained by rewind/replay. Stage 2's scenery route is
-accessible, but its own enemy families and boss remain incomplete.
+These changes are retained by rewind/replay. Stage 2's scenery stream now matches
+original tile-buffer references through its main route. Normal shots use its
+own collision map, and its small floor/ceiling turrets are restored. Other enemy
+families and the boss remain incomplete; see `notes/stage2_rom_audit_2026-10-03.md`.
 Cmd-T on macOS / Ctrl-T on Windows or Linux toggles 500% turbo, including audio.
 Page Up pauses and rewinds 100 simulation frames (clamped at the start).
 Page Down pauses and advances 100 frames, replaying recorded input where available;
@@ -104,6 +106,7 @@ Validation:
 ./build/space-manbow-late-combat-test space_manbow.rom
 ./build/space-manbow-feedback-test space_manbow.rom
 ./build/space-manbow-continuous-scroll-test space_manbow.rom
+./build/space-manbow-stage2-test space_manbow.rom
 ./build/space-manbow-title-test assets/title/title.anim
 SDL_AUDIODRIVER=dummy ./build/space-manbow-audio-test assets/audio
 python3 tools/run_player_native_validation.py

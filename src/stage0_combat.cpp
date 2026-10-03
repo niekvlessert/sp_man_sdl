@@ -37,7 +37,7 @@ unsigned PlayerUpgrades::difficulty(const Rom& rom) const {
 }
 void Stage0Combat::spawned(Entity64& e) {
     // Bank05 $82CA/$82E4, every fourth small turret awards a pickup.
-    if(e.type()==0x20 && (++turret_count_&3)==0) e.raw[0x3d]=1;
+    if((e.type()==0x20 || e.type()==0x29) && (++turret_count_&3)==0) e.raw[0x3d]=1;
 }
 bool Stage0Combat::fire(const Rom& rom,const Entity64& source,const Entity64& target,unsigned difficulty,int yo,int xo) {
     auto it=std::find_if(bullets_.begin(),bullets_.end(),[](auto& b){return !b.active();});
@@ -244,7 +244,7 @@ void Stage0Combat::step(const Rom& rom,GameState& game,unsigned frame,int dx,int
                 if((rom_random(rom,game)&15u)<game.difficulty) shot=fire(rom,e,game.player,game.difficulty);
             }
         }
-        if(e.type()==0x20 && e.raw[10]<28 && e.raw[8]<22 &&
+        if((e.type()==0x20 || e.type()==0x29) && e.raw[10]<28 && e.raw[8]<22 &&
            (((frame/4)^e.raw[0x2d])&31)==0) {
             const bool below=game.player.y_fixed()>=e.y_fixed();
             if((rom_random(rom,game)&15u)<game.difficulty && below==bool(e.raw[0x20])) shot=fire(rom,e,game.player,game.difficulty) || shot;

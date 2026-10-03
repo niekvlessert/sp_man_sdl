@@ -36,7 +36,8 @@ int main(int argc,char** argv) {
     t.scrub(200);assert(t.session().stage_index()==1 && t.session().music_playing());
     t.reset();assert(t.session().music_playing());
     t.reset(1);assert(t.session().stage_index()==1 && t.session().frame()==0);
-    t.jump(5);assert(t.session().stage_index()==1 && t.session().frame()==11064);
+    // Stage 2 ends at A94A, not the following stage's stream terminator.
+    t.jump(5);assert(t.session().stage_index()==1 && t.session().frame()==6088);
     assert(t.session().upgrades().speed==4);
     t.toggle_upgrades();assert(t.session().upgrades().speed==0 && !t.session().upgrades().missile);
     for(unsigned i=0;i<101;++i)t.step({});

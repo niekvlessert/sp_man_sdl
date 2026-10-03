@@ -235,7 +235,7 @@ void draw_tile_actor(const Rom& rom,const Screen4Snapshot& video,const Entity64&
     if(!e.active()) return;
     if(pickup_only) { if(e.type()!=3) return; }
     else if(e.type()==0x64u && e.state()==0u) return;
-    else if(e.type()!=0x1eu && e.type()!=0x1fu && e.type()!=0x20u && e.type()!=0x22u && e.type()!=0x24u && e.type()!=0x26u &&
+    else if(e.type()!=0x1eu && e.type()!=0x1fu && e.type()!=0x20u && e.type()!=0x29u && e.type()!=0x22u && e.type()!=0x24u && e.type()!=0x26u &&
             e.type()!=0x55u && e.type()!=0x47u && e.type()!=0x56u && e.type()!=0x64u && e.type()!=0x6au && e.type()!=0x6bu && e.type()!=0x3du) return;
     // Do not cull large cannon tile actors by anchor position. Their matrix can
     // still overlap the left edge after the anchor itself has crossed x=0;
@@ -591,6 +591,20 @@ void PlaySession::step_60hz(PlayerInput input) {
         // Original DE00 stage-0 tile-property table. It is replaced once, at
         // the A13F vehicle context; these two maps were captured from the
         // unmodified game.
+        if(stage_index_==1u) {
+            // Live original DE00: scenery IDs differ from stage 0. The boss
+            // context switches to bank10 $8709's property ranges.
+            if(background_.graphics_set()==1u) {
+                if(tile>=0x50u && tile<=0xbdu) return 3;
+                if(tile>=0xc4u && tile<=0xcau) return 2;
+                if(tile>=0xcbu && tile<=0xcdu) return 0x47;
+            } else {
+                if((tile>=1u && tile<=0x10u) || (tile>=0xacu && tile<=0xbfu)) return 0x47;
+                if((tile>=0x11u && tile<=0x4au) || (tile>=0xc0u && tile<=0xcdu)) return 3;
+            }
+            if(tile>=0xceu && tile<=0xe9u) return 0x24;
+            return 0;
+        }
         if(camera_pixels()>=1538) {
             if((tile>=0x01&&tile<=0x10) || (tile>=0x16&&tile<=0x17) ||
                (tile>=0x19&&tile<=0x30)) return 0x47;
@@ -716,7 +730,7 @@ void PlaySession::step_60hz(PlayerInput input) {
     for(auto spawn:spawns_.step_to_trigger(trigger,false,game_.difficulty)) {
         spawn.raw_type&=0x7fu;
         enemies_.spawn(rom_,spawn,game_,(stage_index_==0 && camera_pixels()<3072)?1:background_.spawn_direction());
-        for(auto& e:game_.enemies) if(e.type()==0x20 && !e.raw[0x3a]) {
+        for(auto& e:game_.enemies) if((e.type()==0x20 || e.type()==0x29) && !e.raw[0x3a]) {
             e.raw[0x3a]=1;combat_.spawned(e);
         }
     }

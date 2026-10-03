@@ -63,3 +63,6 @@ target_link_libraries(space-manbow-scroll-feedback-test PRIVATE smcore)
 
 add_executable(space-manbow-continuous-scroll-test src/continuous_scroll_test.cpp)
 target_link_libraries(space-manbow-continuous-scroll-test PRIVATE smcore)
+
+add_executable(space-manbow-stage2-test src/stage2_test.cpp)
+target_link_libraries(space-manbow-stage2-test PRIVATE smcore)
