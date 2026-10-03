@@ -50,6 +50,14 @@ StageSpawnStream StageSpawnStream::decode_stage(const Rom& rom,unsigned stage) {
     }
     return out;
 }
+StageSceneCommand decode_stage_scene_command(const SpawnRecord& r) noexcept {
+    if(r.type!=0x5fu || r.payload.empty()) return {};
+    if(r.payload[0]==1u && r.payload.size()>=2u)
+        return {StageSceneCommandKind::PalettePulse,r.payload[1]!=0u};
+    if(r.payload[0]==3u) return {StageSceneCommandKind::ClearObjects,false};
+    return {};
+}
+
 void StageSpawnStream::reset() noexcept {
     next_ = 0;
     fired_.clear();

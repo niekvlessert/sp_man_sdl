@@ -27,6 +27,16 @@ struct SpawnRecord {
 struct SpawnTypeMetadata {
     std::array<std::uint8_t, 4> bytes{};
 };
+
+enum class StageSceneCommandKind { None, PalettePulse, ClearObjects };
+struct StageSceneCommand {
+    StageSceneCommandKind kind=StageSceneCommandKind::None;
+    bool enabled=false;
+};
+// Fixed bank $62BB/$60D6: type $5F is intercepted by the stage parser and is
+// never instantiated as an object. Selector 1 controls the palette service;
+// selector 3 clears the active object pool.
+StageSceneCommand decode_stage_scene_command(const SpawnRecord& record) noexcept;
 class StageSpawnStream {
 public:
     static StageSpawnStream decode_stage(const Rom& rom,unsigned stage);

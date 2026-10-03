@@ -55,6 +55,8 @@ public:
     std::span<const Entity64> options() const noexcept {return options_;}
     std::span<const Entity64> option_shots() const noexcept {return option_shots_;}
     const Entity64& missile_shot() const noexcept { return missile_shot_; }
+    bool scene_palette_active() const noexcept { return scene_palette_active_; }
+    std::uint8_t scene_palette_phase() const noexcept { return scene_palette_phase_; }
 private:
     Entity64 present_carrier(const Entity64& source,unsigned frame) const;
     void begin_next_stage();
@@ -76,6 +78,10 @@ private:
     std::uint8_t boss_hit_timer_=0;   // original CE47
     std::uint8_t boss_palette_flags_=0; // original CE48: bit0 red, bit1 hit flash
     std::uint8_t boss_palette_kind_=0;  // 0, $56 vertical tower, or $64 terminal gate
+    bool scene_palette_active_=false;   // original CE60=1 / CE61=1
+    std::uint8_t scene_palette_phase_=0; // original CE68, 0..9
+    std::uint32_t scene_palette_color_=0xff000000u;
+    std::uint32_t scene_base_palette9_=0xff000000u;
     StageSpawnStream spawns_;
     Stage0BackgroundStream background_;
     Stage0Enemies enemies_;

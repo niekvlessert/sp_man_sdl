@@ -56,30 +56,31 @@ contains 77 records: 63 are unconditional, 14 depend on the original gates.
 Stored HP is 1; the original subtraction-carry death condition requires two
 one-damage hits, rather than killing at zero.
 
-## Remaining work, explicitly not complete
+## Remaining work after the enemy/controller restoration
 
-The stage's other native handlers still need translation and live validation.
-Counts below are spawn-table records, not simultaneous visible enemies:
+All 56 regular stage-2 spawn records now instantiate through their native
+families: $19/$27/$2B/$2D/$2E/$2F/$31, including the $16/$2C launcher children.
+The $53 extended record also runs as the original type-$2A wave generator.
+Type $5F was reclassified from "scene objects" to what the fixed-bank parser
+actually does: $62BB intercepts these records before allocation. Four `01 01`
+commands enable the palette-index-9 pulse, four `01 00` commands disable it,
+and the final selector `03` clears the object pool before the end sector.
+The native runtime now models those commands directly; no fake $5F entity is
+created.
+
+The still-missing spawn-table families are therefore:
 
 | ROM type | Records | Current gap |
 | --- | ---: | --- |
-| $19 | 6 | Stage-specific moving objects |
-| $27 | 5 | Aimed movement handler |
-| $2B | 7 | Scripted launcher and child attacks |
-| $2D | 8 | Surface movement and attack phases |
-| $2E | 3 | Composed launcher and $2C children |
-| $2F | 17 | Flying enemy state machine |
-| $31 | 10 | Stage-specific motion/attack handler |
-| $53 | 1 | Wave generator, including $2A children |
-| $5F | 9 | Scene controllers; not nine ordinary enemies |
-| $3C | 5 | Final sector objects/controllers |
+| $3C | 5 | Final-sector objects/controllers |
 | $7A | 1 | Stage-2 boss |
 
-Type $51 opening waves were already supported. Restoring $29 is a substantial
-population correction, but does not restore these other families. Prioritize
-$2B/$2E launchers and children, then $27/$2D/$2F/$31 and their actual attacks,
-then $53/$5F/$3C and the $7A boss. Verify scenery layering and projectile
-collision against original captures at each family, including scrolling exits.
+There are still fidelity details inside otherwise restored regular families to
+validate visually. In particular $2F's ROM obstacle-avoidance candidate search
+can be tightened beyond the direct eight-way pursuit fallback, and $31's
+background-cell mutation after its exact vertical terrain bounce is not yet
+mirrored. Those are behavior/render refinements rather than missing spawn
+families.
 
 ## Checks
 

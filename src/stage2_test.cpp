@@ -242,6 +242,30 @@ int main(int argc,char** argv) {
         assert(game.enemies[0].state()==1u && game.enemies[0].raw[0x17]==8u);
     }
 
+    // Type $5F is a parser command, not an entity. The ROM has four pulse-on
+    // commands, four pulse-off commands, then one selector-3 object-pool clear.
+    {
+        unsigned on=0,off=0,clear=0,total=0;
+        for(const auto& record:stream.records()) if(record.type==0x5fu) {
+            ++total;const auto c=sm::decode_stage_scene_command(record);
+            if(c.kind==sm::StageSceneCommandKind::PalettePulse) c.enabled?++on:++off;
+            else if(c.kind==sm::StageSceneCommandKind::ClearObjects) ++clear;
+            else assert(false);
+            sm::GameState game;assert(!sm::instantiate_stage0_spawn(rom,record,game,1));
+        }
+        assert(total==9u && on==4u && off==4u && clear==1u);
+        sm::PlaySession control_run(rom);control_run.reset(1);
+        bool previous=control_run.scene_palette_active();unsigned transitions=0,max_phase=0;
+        while(!control_run.at_fight_gate() && control_run.stage_frame()<20000u) {
+            control_run.step_60hz({});
+            const bool active=control_run.scene_palette_active();
+            if(active!=previous) {++transitions;previous=active;}
+            max_phase=std::max<unsigned>(max_phase,control_run.scene_palette_phase());
+        }
+        assert(control_run.at_fight_gate() && transitions==8u && !control_run.scene_palette_active());
+        assert(max_phase>=9u);
+    }
+
     // Stage-2 wave generator: one $53 controller creates two initial $2A
     // lanes, then repeats a top-entry child on the original $40-tick cadence.
     {
@@ -291,5 +315,5 @@ int main(int argc,char** argv) {
         assert(fired);
         assert(std::find(sounds.begin(),sounds.end(),sm::PlaySound::EnemyShot)!=sounds.end());
     }
-    std::cout<<"Stage 2: all 56 regular ROM spawns, launchers and $53 generator PASS\n";
+    std::cout<<"Stage 2: 56 regular spawns, launchers, $53 generator and 9 $5F scene commands PASS\n";
 }

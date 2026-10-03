@@ -14,6 +14,7 @@ class Stage0Enemies {
 public:
     using TerrainProbe=std::function<bool(const Entity64&,int,int)>;
     void reset() noexcept { waves_={};stage_complete_=false; }
+    void clear_waves() noexcept { waves_={}; }
     bool spawn(const Rom& rom, const SpawnRecord& record, GameState& game,
                std::uint8_t direction=1);
     void move_60hz(GameState& game,unsigned frame=0);

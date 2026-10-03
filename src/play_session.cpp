@@ -6,6 +6,13 @@ namespace sm {
 namespace {
 constexpr unsigned kInitialCameraPixels=31*8; // ROM preloads 31 tile columns.
 constexpr std::uint32_t kCarrierBackdrop=0xff000001u; // distinct from every 3-bit ROM palette color
+std::uint32_t stage_scene_palette9(unsigned phase) noexcept {
+    // Fixed $6188 table selected by CE61=1: VDP palette index 9 receives
+    // red levels 0,1,2,3,4,5,4,3,2,1, with green/blue zero.
+    static constexpr std::array<unsigned,10> level{0,1,2,3,4,5,4,3,2,1};
+    const unsigned r=(level[phase%level.size()]*255u+3u)/7u;
+    return 0xff000000u|(r<<16u);
+}
 std::uint16_t word(std::span<const std::uint8_t> b, unsigned p) {
     return std::uint16_t(b[p]) | (std::uint16_t(b[p+1]) << 8);
 }
@@ -457,6 +464,8 @@ void PlaySession::reset(unsigned stage) {
     combat_.reset();video_=Screen4Snapshot::from_stage0_rom(rom_);
     late_normal_palette_=video_.late_palette;
     tower_normal_palette_=video_.tower_palette;
+    scene_palette_active_=false;scene_palette_phase_=0;
+    scene_base_palette9_=video_.palette[9];scene_palette_color_=scene_base_palette9_;
     tower_flash_palette_=tower_normal_palette_;
     vehicle_tower_normal_palette_=video_.vehicle_tower_palette;
     vehicle_tower_flash_palette_=vehicle_tower_normal_palette_;
@@ -486,6 +495,15 @@ void position_option(const Entity64& player,Entity64& option,unsigned mode) noex
 void PlaySession::step_60hz(PlayerInput input) {
     sound_events_.clear();
     ++frame_;
+    if(scene_palette_active_ && (frame_&1u)==0u) {
+        scene_palette_color_=stage_scene_palette9(scene_palette_phase_);
+        scene_palette_phase_=std::uint8_t((scene_palette_phase_+1u)%10u);
+    }
+    if(scene_palette_active_) {
+        video_.palette[9]=scene_palette_color_;
+        video_.late_palette[9]=scene_palette_color_;
+        video_.tower_palette[9]=scene_palette_color_;
+    }
     if(bomb_palette_ticks_) --bomb_palette_ticks_;
     const auto directions=std::uint8_t((input.up?1:0)|(input.down?2:0)|
                                       (input.left?4:0)|(input.right?8:0));
@@ -728,6 +746,28 @@ void PlaySession::step_60hz(PlayerInput input) {
     enemies_.move_60hz(game_,frame_);
     const auto trigger=std::uint16_t(stage_index_?background_.trigger_cursor():(camera_pixels()<3072?0x1000+camera_pixels()/8:background_.trigger_cursor()));
     for(auto spawn:spawns_.step_to_trigger(trigger,false,game_.difficulty)) {
+        if(const auto command=decode_stage_scene_command(spawn);
+           command.kind!=StageSceneCommandKind::None) {
+            if(command.kind==StageSceneCommandKind::PalettePulse) {
+                scene_palette_active_=command.enabled;scene_palette_phase_=0;
+                if(command.enabled) scene_palette_color_=video_.palette[9];
+                else {
+                    scene_palette_color_=scene_base_palette9_;video_.palette[9]=scene_base_palette9_;
+                    video_.late_palette[9]=late_normal_palette_[9];
+                    video_.tower_palette[9]=tower_normal_palette_[9];
+                }
+            } else if(command.kind==StageSceneCommandKind::ClearObjects) {
+                // Fixed $6105-$6124: retain only type $65 in the 20-slot
+                // object pool. Our $51 wave controllers live outside that
+                // pool, so clear them explicitly at the same boundary.
+                for(auto& e:game_.enemies) if(e.type()!=0x65u) e.clear();
+                enemies_.clear_waves();previous_gate_actors_={};
+                scene_palette_active_=false;scene_palette_phase_=0;
+                scene_palette_color_=scene_base_palette9_;video_.palette[9]=scene_base_palette9_;
+                video_.late_palette[9]=late_normal_palette_[9];video_.tower_palette[9]=tower_normal_palette_[9];
+            }
+            continue;
+        }
         spawn.raw_type&=0x7fu;
         enemies_.spawn(rom_,spawn,game_,(stage_index_==0 && camera_pixels()<3072)?1:background_.spawn_direction());
         for(auto& e:game_.enemies) if((e.type()==0x20 || e.type()==0x29) && !e.raw[0x3a]) {
@@ -975,6 +1015,8 @@ void PlaySession::begin_next_stage() {
     spawns_=StageSpawnStream::decode_stage(rom_,stage_index_);
     video_=Screen4Snapshot::from_stage_rom(rom_,stage_index_);
     late_normal_palette_=video_.late_palette;tower_normal_palette_=video_.tower_palette;
+    scene_palette_active_=false;scene_palette_phase_=0;
+    scene_base_palette9_=video_.palette[9];scene_palette_color_=scene_base_palette9_;
     boss_hit_timer_=boss_palette_flags_=boss_palette_kind_=0;
     game_.enemies={};game_.tower_destroyed=game_.platform_chain_active=false;enemies_.reset();previous_gate_actors_={};
     shots_={};option_shots_={};missile_shot_.clear();presenter_.reset();
@@ -1010,6 +1052,10 @@ std::vector<std::uint32_t> PlaySession::render() {
         video_.late_palette=late_normal_palette_;
         video_.tower_palette=(boss_palette_flags_&0x02u)?tower_flash_palette_:
             ((boss_palette_flags_&0x01u)?video_.tower_red_palette:tower_normal_palette_);
+    }
+    if(scene_palette_active_) {
+        video_.late_palette[9]=scene_palette_color_;
+        video_.tower_palette[9]=scene_palette_color_;
     }
     auto bomb_palette=[&](auto p) {
         if(bomb_palette_ticks_) for(auto& c:p) {
