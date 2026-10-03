@@ -465,6 +465,46 @@ std::vector<Stage0TileVisual> decode_stage0_tile_visuals(const Rom& rom,
         return out;
     }
 
+    if (entity.type() == 0x2eu) {
+        // Bank05 $84F9 -> $7B65. $858F is a six-entry pointer table indexed
+        // by +06; each target uses the standard packed placement grammar.
+        const auto bank5=rom.bank(5);
+        const unsigned frame=std::min<unsigned>(entity.raw[0x06],5u);
+        const unsigned table=0x858fu-0x8000u;
+        if(table+frame*2u+1u>=bank5.size()) return out;
+        const auto list_cpu=le16(bank5,table+frame*2u);
+        if(list_cpu<0x8000u || list_cpu>=0xa000u) return out;
+        unsigned p=unsigned(list_cpu-0x8000u);
+        if(p>=bank5.size()) return out;
+        const unsigned packed_len=bank5[p++];
+        if(packed_len<2u || p+packed_len-1u>bank5.size()) return out;
+        const unsigned end=p+packed_len-1u;
+        int place_y=0,place_x=0; bool need_position=true;
+        while(p<end) {
+            if(need_position) {
+                if(p+2u>end) break;
+                place_y=int(static_cast<std::int8_t>(bank5[p++]));
+                place_x=int(static_cast<std::int8_t>(bank5[p++]));
+                need_position=false;
+            }
+            if(p>=end) break;
+            const auto control=bank5[p++];
+            if(control==0xffu) break;
+            if(control==0xfeu) {need_position=true;continue;}
+            const unsigned count=control;
+            if(p+count>end) break;
+            for(unsigned i=0;i<count;++i) {
+                Stage0TileVisual v;
+                if(decode_stage0_tile_frame(rom,entity,bank5[p++],v)) {
+                    v.x+=place_x*8;v.y+=place_y*8;
+                    v.tile_x_offset+=place_x;v.tile_y_offset+=place_y;
+                    out.push_back(std::move(v));
+                }
+            }
+        }
+        return out;
+    }
+
     if (entity.type() == 0x56u) {
         // Type $56 uses the custom $BF29->$7B65 renderer.  $BFC0 is a
         // five-entry frame-pointer table indexed by object byte +06. Each
@@ -735,12 +775,13 @@ SpawnTypeMetadata decode_spawn_type_metadata(const Rom& rom, std::uint8_t type) 
 bool instantiate_stage0_spawn(const Rom& rom, const SpawnRecord& r, GameState& game,
                               std::uint8_t spawn_direction) {
     const bool special26 = r.type == 0x26u && r.control_flag();
+    const bool special2b = r.type == 0x2bu && r.control_flag();
     // The final stage-0 tower is also an extended record: trigger $5000,
     // control $88. Rejecting every flagged record except $26 silently dropped
     // type $64 from real gameplay, leaving only the scenery copy visible.
     const bool special64 = r.type == 0x64u && r.control_flag();
-    if (r.control_flag() && !special26 && !special64) return false;
-    if (r.type != 0x1eu && r.type != 0x1fu && r.type != 0x20u && r.type != 0x27u && r.type != 0x29u && r.type != 0x2du && r.type != 0x22u &&
+    if (r.control_flag() && !special26 && !special2b && !special64) return false;
+    if (r.type != 0x1eu && r.type != 0x1fu && r.type != 0x20u && r.type != 0x27u && r.type != 0x29u && r.type != 0x2bu && r.type != 0x2du && r.type != 0x2eu && r.type != 0x22u &&
         r.type != 0x24u && r.type != 0x26u && r.type != 0x55u &&
         r.type != 0x56u && r.type != 0x47u && r.type != 0x64u) return false;
     if (r.payload.empty() || (r.type == 0x24u && r.payload.size() < 2u)) return false;
@@ -756,7 +797,7 @@ bool instantiate_stage0_spawn(const Rom& rom, const SpawnRecord& r, GameState& g
     // Original $6754 initializer. The same payload byte is interpreted on a
     // different axis depending on C0D5, so it is NOT an absolute Y value.
     // Extended records expose their first inline byte after the count byte.
-    const unsigned payload_index = special26 ? 1u : 0u;
+    const unsigned payload_index = (special26 || special2b) ? 1u : 0u;
     if (r.payload.size() <= payload_index) { e->clear(); return false; }
     const std::uint8_t pos = r.payload[payload_index] & 0x7fu;
     std::uint8_t xh = 0x20u, yh = pos;
@@ -787,6 +828,16 @@ bool instantiate_stage0_spawn(const Rom& rom, const SpawnRecord& r, GameState& g
         // retarget cadence and +03 is an optional speed bias.
         e->raw[0x17]=0x0au;
         e->raw[0x03]=r.payload.size()>1u ? r.payload[1] : 0u;
+    } else if(r.type==0x2bu) {
+        // Bank05 $8341. Extended record grammar is
+        //   03 <position/orientation> <interval> 02 16
+        // where the trailing descriptor creates type-$16 attackers.
+        if(r.payload.size()<5u) { e->clear(); return false; }
+        const auto position=r.payload[1];
+        e->raw[0x20]=(position>>7u)&1u;
+        e->raw[0x06]=e->raw[0x20];
+        e->raw[0x18]=r.payload[2];
+        e->raw[0x3e]=4u;
     } else if(r.type==0x2du) {
         // Bank05 $844D: surface runner. It alternates a long cruise phase
         // with two short direction-change phases. +20 selects which of the
@@ -794,6 +845,17 @@ bool instantiate_stage0_spawn(const Rom& rom, const SpawnRecord& r, GameState& g
         e->raw[0x17]=0x28u;
         e->raw[0x18]=0x02u;
         e->raw[0x20]=r.payload.size()>1u ? (r.payload[1]&1u) : 0u;
+    } else if(r.type==0x2eu) {
+        // Bank05 $84F9/$8512. The second inline byte packs a low-nibble
+        // compositor selector and a high-nibble "double child" flag.
+        const auto packed=r.payload.size()>1u?r.payload[1]:0u;
+        e->raw[0x20]=packed&0x0fu;
+        e->raw[0x03]=packed&0xf0u;
+        if(e->raw[0x03]) {
+            e->raw[0x06]=2u;
+            e->set_y_fixed(std::uint16_t(e->y_fixed()+0x0400u));
+            e->raw[0x20]=0u;
+        }
     } else if(r.type==0x29u) {
         // Bank05 $82CA: stage-2 small turret, upside-down payload bit 7.
         e->raw[0x20]=(r.payload[0]>>7u)&1u;
@@ -845,7 +907,7 @@ bool instantiate_stage0_spawn(const Rom& rom, const SpawnRecord& r, GameState& g
     }
     // Type $64 must enter bank06:$A300 (state 0). Starting it at state 1
     // skips the ROM initializer that positions the tower at X=$2800/Y=$0C00.
-    e->state() = (r.type == 0x64u || r.type==0x47u) ? 0u : 1u;
+    e->state() = (r.type == 0x64u || r.type==0x47u || r.type==0x2eu) ? 0u : 1u;
     return true;
 }
 }

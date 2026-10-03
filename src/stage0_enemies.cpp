@@ -278,6 +278,8 @@ bool step_stage0_blue_enemy(GameState& game,Entity64& e) {
     return fire;
 }
 bool Stage0Enemies::destroyed(const Entity64& enemy) {
+    // Type $2C uses +34 as an object-parent link, not a $51 wave id.
+    if(enemy.type()==0x2cu) return enemy.raw[0x3d]!=0;
     const unsigned id=enemy.raw[0x34];
     if(!id || id>waves_.size()) return enemy.raw[0x3d]!=0;
     auto& w=waves_[id-1];
@@ -297,7 +299,7 @@ void Stage0Enemies::move_60hz(GameState& game,unsigned frame) {
             if(--e.raw[0x3e]==0) e.clear();
             continue;
         }
-        if(e.active() && (flight(e.type()) || e.type()==0x1eu || e.type()==0x11u || e.type()==0x27u || e.type()==0x2du || e.type()==0x68u || e.type()==0x70u || e.type()==0x40u)) {
+        if(e.active() && (flight(e.type()) || e.type()==0x16u || e.type()==0x1eu || e.type()==0x11u || e.type()==0x27u || e.type()==0x2cu || e.type()==0x2du || e.type()==0x68u || e.type()==0x70u || e.type()==0x40u)) {
         const int divisor=e.type()==0x40u?3:4,phase=int(frame%unsigned(divisor));
         auto delta=[&](int v){return v*(phase+1)/divisor-v*phase/divisor;};
         e.set_x_fixed(std::uint16_t(e.x_fixed()+delta(signed_word(e,13))));
@@ -571,6 +573,97 @@ void Stage0Enemies::step_15hz(const Rom& rom,GameState& game,unsigned tick,std::
                 put(e,11,0);
                 put(e,13,game.difficulty<4u?-0x00c0:-0x0120); // fixed $5135
                 e.state()=3;
+            }
+        } else if(e.type()==0x2bu) {
+            // Bank05 $8367-$83A6. The extended launcher emits type-$16
+            // attackers. Two normal 16-tick gaps are followed by a 64-tick
+            // pause; ceiling/floor orientation is copied to child +20.
+            if(expired(e,0x18)) {
+                e.raw[0x18]=0x10u;
+                if(auto* c=create(rom,game,0x16u)) {
+                    const int yo=e.raw[0x20]?2:-2;
+                    c->set_x_fixed(std::uint16_t(e.x_fixed()+0x0200u));
+                    c->set_y_fixed(std::uint16_t(e.y_fixed()+yo*0x0100));
+                    c->raw[0x20]=e.raw[0x20];
+                    if(e.raw[0x3d]) {
+                        ++e.raw[0x22];
+                        if((e.raw[0x22]&1u)==0u) ++c->raw[0x3d];
+                    }
+                }
+                if(++e.raw[0x21]>=3u) {
+                    e.raw[0x21]=0u;e.raw[0x18]=0x40u;
+                }
+            }
+        } else if(e.type()==0x2cu) {
+            // Bank05 $83BF-$8401. The child sleeps until the player is left
+            // of it and 0..7 coarse cells below, then fires three fixed-angle
+            // rounds at five-tick spacing and cools down for ten ticks.
+            if(e.state()==0u) {
+                const int dx=int(game.player.raw[0x0a])-int(e.raw[0x0a]);
+                const int dy=int(game.player.raw[0x08])-int(e.raw[0x08]);
+                if(dx<0 && dy>=0 && dy<8) {
+                    e.state()=1u;e.raw[0x17]=3u;e.raw[0x18]=5u;
+                }
+            } else if(e.state()==1u) {
+                if(expired(e,0x18)) {
+                    e.raw[0x18]=5u;e.raw[0x24]=1u;
+                    if(expired(e,0x17)) {e.state()=2u;e.raw[0x18]=10u;}
+                }
+            } else if(e.state()==2u && expired(e,0x18)) {
+                e.state()=0u;
+            }
+        } else if(e.type()==0x2eu) {
+            // Bank05 $8512-$8580. Initial state creates one child for the
+            // low form and two for the high-nibble form. $69BF links them to
+            // this parent; once the linked children are gone, the launcher
+            // advances its packed-compositor closing animation.
+            auto linked_children=[&] {
+                unsigned n=0;
+                for(const auto& c:game.enemies)
+                    n+=c.active() && c.type()==0x2cu && c.raw[0x34]==e.raw[0x2d];
+                return n;
+            };
+            if(e.state()==0u) {
+                const unsigned count=e.raw[0x03]?2u:1u;
+                for(unsigned n=0;n<count;++n) if(auto* c=create(rom,game,0x2cu)) {
+                    c->set_x_fixed(std::uint16_t(e.x_fixed()-0x0200u));
+                    c->set_y_fixed(std::uint16_t((unsigned(e.raw[0x08])+5u)<<8u));
+                    put(*c,11,0x0060);c->raw[0x34]=e.raw[0x2d];
+                }
+                e.raw[0x37]=std::uint8_t(linked_children());
+                e.state()=1u;
+            } else if(e.state()==1u) {
+                e.raw[0x37]=std::uint8_t(linked_children());
+                if(e.raw[0x37]==0u) {
+                    if(e.raw[0x03]==0u) {e.raw[0x06]=1u;e.state()=3u;}
+                    else {e.raw[0x06]=3u;e.state()=2u;e.raw[0x17]=3u;}
+                }
+            } else if(e.state()==2u && expired(e,0x17)) {
+                e.raw[0x17]=3u;
+                if(++e.raw[0x06]>=5u) e.state()=3u;
+            }
+        } else if(e.type()==0x16u) {
+            // Fixed $542C. Type-$16 is the attacker emitted by $2B. Keep the
+            // ROM's launch acceleration, timed re-aim and camera detach. The
+            // final steering phase is persistent in native SDL rather than
+            // re-entering the bank-switch continuation bookkeeping.
+            if(e.state()==0u) {
+                put(e,15,e.raw[0x20]?4:-4);put(e,17,0);
+                e.raw[0x18]=0x10u;e.raw[0x17]=0xc0u;e.flags15()|=0x04u;e.state()=1u;
+            } else if(e.state()==1u) {
+                put(e,11,signed_word(e,11)+signed_word(e,15));
+                put(e,13,signed_word(e,13)+signed_word(e,17));
+                if(expired(e,0x18)) e.state()=2u;
+            } else if(e.state()==2u) {
+                aimed_velocity(rom,e,game.player,game.difficulty<4u?0x10u:0x14u);
+                e.raw[0x18]=0x18u;e.state()=3u;
+            } else if(e.state()==3u && expired(e,0x18)) {
+                e.flags15()&=std::uint8_t(~0x04u);
+                const int dx=int(game.player.raw[0x0a])-int(e.raw[0x0a]);
+                const int dy=int(game.player.raw[0x08])-int(e.raw[0x08]);
+                put(e,11,std::abs(dy)<2?0:(dy<0?-0x40:0x40));
+                put(e,13,std::abs(dx)<2?0:(dx<0?-0x80:0x80));
+                e.state()=4u;
             }
         } else if(e.type()==0x27u) {
             // Bank05 $8170-$81A9. Every ten object ticks the enemy recomputes

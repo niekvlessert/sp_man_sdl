@@ -66,6 +66,16 @@ bool Stage0Combat::fire(const Rom& rom,const Entity64& source,const Entity64& ta
         b.set_y_fixed(std::uint16_t((source.y_fixed()&0xff00u)+yo*32));
         b.type()=0x67;b.state()=0;b.raw[5]=std::uint8_t(heading/2);b.flags15()=0x35;
         b.raw[0x17]=4;
+    } else if(source.type()==0x2cu) {
+        // Bank05 $8420 -> $9CB5 uses BC=0, therefore heading entry 0 from
+        // $9D0D. It shares the type-$67 projectile speed table with cannons.
+        constexpr unsigned heading=0u;
+        const unsigned p=0x138d+heading*2u;
+        const auto signs=bank[p];const unsigned a=bank[p+1u];
+        const unsigned speed=rom.bank(5)[0x1d15u+difficulty/2u];
+        put(b,11,(signs&1u?-1:1)*int(unsigned(bank[0x13ad+a])*speed/32u));
+        put(b,13,(signs&2u?-1:1)*int(unsigned(bank[0x13ad+63u-a])*speed/32u));
+        b.type()=0x67u;b.state()=0u;b.raw[5]=0u;b.flags15()=0x35u;b.raw[0x17]=4u;
     }
     return true;
 }
@@ -229,6 +239,12 @@ void Stage0Combat::step(const Rom& rom,GameState& game,unsigned frame,int dx,int
             // vertical type-$61 pair exactly when its six-tick pause timer
             // reaches three.
             shot=fire_type15_pair(e);
+        }
+        if(e.type()==0x2cu && e.raw[0x24]) {
+            // $83EA->$8420 queues one fixed-heading shot. The enemy handler
+            // owns the three-shot cadence; combat owns the projectile pool.
+            e.raw[0x24]=0u;
+            shot=fire(rom,e,game.player,game.difficulty) || shot;
         }
         if(e.type()==0x1eu && step_stage0_blue_enemy(game,e)) {
                 for(auto offset:std::array<std::pair<int,int>,3>{{{-8,8},{16,0},{40,8}}})

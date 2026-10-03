@@ -86,6 +86,57 @@ int main(int argc,char** argv) {
         else { ++runners2d; assert(game.enemies[0].raw[0x17]==0x28u); }
     }
     assert(movers27==5u && runners2d==8u);
+
+    // Second regular batch: seven scripted $2B launchers plus three $2E
+    // composed launchers. $2B records are extended and must not be rejected
+    // just because their control byte has bit 7 set.
+    unsigned launchers2b=0,launchers2e=0;
+    const sm::SpawnRecord* first2b=nullptr;const sm::SpawnRecord* first2e=nullptr;
+    for(const auto& record:stream.records()) {
+        if(record.type!=0x2bu && record.type!=0x2eu) continue;
+        sm::GameState game;
+        assert(sm::instantiate_stage0_spawn(rom,record,game,1));
+        auto& e=game.enemies[0];assert(e.type()==record.type);
+        if(record.type==0x2bu) {
+            ++launchers2b;if(!first2b) first2b=&record;
+            assert(record.payload.size()==5u && record.payload[0]==3u && record.payload[3]==2u && record.payload[4]==0x16u);
+            assert(e.raw[0x20]==((record.payload[1]>>7u)&1u));
+            assert(e.raw[0x18]==record.payload[2] && e.raw[0x3e]==4u);
+        } else {
+            ++launchers2e;if(!first2e) first2e=&record;
+            assert(!sm::decode_stage0_tile_visuals(rom,e).empty());
+        }
+    }
+    assert(launchers2b==7u && launchers2e==3u && first2b && first2e);
+    {
+        sm::GameState game;sm::Stage0Enemies enemies;
+        assert(sm::instantiate_stage0_spawn(rom,*first2b,game,1));
+        const auto interval=game.enemies[0].raw[0x18];
+        for(unsigned i=0;i<interval;++i) enemies.step_15hz(rom,game,i,0,false,nullptr);
+        const auto child=std::find_if(game.enemies.begin(),game.enemies.end(),[](const auto& e){return e.type()==0x16u;});
+        assert(child!=game.enemies.end() && child->state()==1u);
+        assert(child->raw[0x20]==game.enemies[0].raw[0x20]);
+    }
+    {
+        sm::GameState game;sm::Stage0Enemies enemies;sm::Stage0Combat child_combat;
+        assert(sm::instantiate_stage0_spawn(rom,*first2e,game,1));
+        enemies.step_15hz(rom,game,0,0,false,nullptr);
+        auto children=[&] {return unsigned(std::count_if(game.enemies.begin(),game.enemies.end(),[](const auto& e){return e.type()==0x2cu;}));};
+        assert(children()==2u && game.enemies[0].state()==1u && game.enemies[0].raw[0x37]==2u);
+        auto child=std::find_if(game.enemies.begin(),game.enemies.end(),[](const auto& e){return e.type()==0x2cu;});
+        assert(child!=game.enemies.end());
+        child->set_x_fixed(0x1200u);child->set_y_fixed(0x0800u);
+        game.player.set_x_fixed(0x0800u);game.player.set_y_fixed(0x0a00u);
+        enemies.step_15hz(rom,game,1,0,false,nullptr);
+        assert(child->state()==1u);
+        for(unsigned i=0;i<5u;++i) enemies.step_15hz(rom,game,2u+i,0,false,nullptr);
+        assert(child->raw[0x24]==1u);
+        std::vector<sm::PlaySound> sounds;child_combat.step(rom,game,0,0,0,sounds);
+        assert(std::any_of(child_combat.bullets().begin(),child_combat.bullets().end(),[](const auto& b){return b.type()==0x67u;}));
+        for(auto& e:game.enemies) if(e.type()==0x2cu) e.clear();
+        enemies.step_15hz(rom,game,8,0,false,nullptr);
+        assert(game.enemies[0].state()==2u && game.enemies[0].raw[0x06]==3u);
+    }
     {
         sm::GameState game;game.difficulty=10u;
         sm::SpawnRecord r;r.type=r.raw_type=0x27u;r.payload={10u,2u};
@@ -127,5 +178,5 @@ int main(int argc,char** argv) {
         assert(fired);
         assert(std::find(sounds.begin(),sounds.end(),sm::PlaySound::EnemyShot)!=sounds.end());
     }
-    std::cout<<"Stage 2: ROM tile rings, route boundary, shot lifetime, turrets, $27 and $2D PASS\n";
+    std::cout<<"Stage 2: ROM tile rings, turrets, $27/$2D and $2B/$2E/$2C launcher families PASS\n";
 }
