@@ -242,7 +242,7 @@ void draw_tile_actor(const Rom& rom,const Screen4Snapshot& video,const Entity64&
     if(!e.active()) return;
     if(pickup_only) { if(e.type()!=3) return; }
     else if(e.type()==0x64u && e.state()==0u) return;
-    else if(e.type()!=0x1eu && e.type()!=0x1fu && e.type()!=0x20u && e.type()!=0x29u && e.type()!=0x22u && e.type()!=0x24u && e.type()!=0x26u &&
+    else if(e.type()!=0x1eu && e.type()!=0x1fu && e.type()!=0x20u && e.type()!=0x29u && e.type()!=0x22u && e.type()!=0x2eu && e.type()!=0x24u && e.type()!=0x26u &&
             e.type()!=0x55u && e.type()!=0x47u && e.type()!=0x56u && e.type()!=0x64u && e.type()!=0x6au && e.type()!=0x6bu && e.type()!=0x3du) return;
     // Do not cull large cannon tile actors by anchor position. Their matrix can
     // still overlap the left edge after the anchor itself has crossed x=0;

@@ -155,6 +155,34 @@ int main(int argc,char** argv) {
             if(v.tiles==std::vector<std::uint8_t>{0xcau,0xcbu}) ++caps;
         }
         assert(barrier.size()==42u && body==36u && caps==6u);
+        // Live D988 rows are cap=0, body=1..12, cap=13 for each of the
+        // three columns. A previous packed-run decoder double-applied the
+        // first +1 Y delta, leaving a visible missing row below the top cap.
+        for(int column:{0,3,6}) {
+            std::array<bool,14> rows{};
+            for(const auto& v:barrier) if(v.tile_x_offset==column) {
+                assert(v.tile_y_offset>=0 && v.tile_y_offset<14);
+                rows[std::size_t(v.tile_y_offset)]=true;
+                if(v.tile_y_offset==0 || v.tile_y_offset==13)
+                    assert(v.tiles==std::vector<std::uint8_t>({0xcau,0xcbu}));
+                else
+                    assert(v.tiles==std::vector<std::uint8_t>({0xccu,0xcdu}));
+            }
+            assert(std::all_of(rows.begin(),rows.end(),[](bool v){return v;}));
+        }
+        // $2E is rendered as a native sub-tile overlay in presentation code;
+        // the coarse D988 render path must not stamp a second quantized copy.
+        // Collision composition still explicitly requests the tile matrix.
+        sm::Stage0BackgroundStream barrier_stream(rom);barrier_stream.reset_stage(1);
+        sm::GameState barrier_game;barrier_game.enemies[0]=game.enemies[0];
+        barrier_game.enemies[0].set_x_fixed(0x0800u);
+        barrier_game.enemies[0].set_y_fixed(0x0600u);
+        std::array<std::uint8_t,24u*32u> coarse{};
+        sm::stamp_stage0_tile_objects(rom,barrier_stream,barrier_game,coarse);
+        assert(std::none_of(coarse.begin(),coarse.end(),[](auto t){return t!=0u;}));
+        sm::stamp_stage0_tile_objects(rom,barrier_stream,barrier_game,coarse,true);
+        assert(std::count(coarse.begin(),coarse.end(),0xccu)==36u);
+        assert(std::count(coarse.begin(),coarse.end(),0xcdu)==36u);
         // $8650/$865C launch the linked modules in opposite Y directions.
         std::array<int,2> child_vy{};unsigned cv=0;
         for(const auto& c:game.enemies) if(c.type()==0x2cu) {

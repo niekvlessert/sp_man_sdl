@@ -69,6 +69,16 @@ window. At world X=$047C the two children now reproduce the original Y=$0AA0/
 $0B60 directions, and by X=$04AC the first module has emitted the complete
 three-round type-$67 burst.
 
+The `$2E` laser columns also need native presentation rather than direct D988
+ownership. The name-table path quantizes the actor to 8x8 cells, so the three
+red columns appear to sit correctly and then jump one full tile left at a
+coarse carry. `$2E` is now excluded from presentation D988/right-edge stamps
+and drawn once from the same sub-tile tile-actor overlay as the other composed
+actors; collision composition still requests its full matrix explicitly. The
+packed `$8C,$02` body run is also normalized to the live D988 geometry: cap at
+row 0, twelve `$CC/$CD` rows at 1..12, bottom cap at 13. This removes the
+missing row directly beneath the top cap.
+
 Type `$2D` was a separate bug hidden by the earlier generic movement model.
 Bank05 `$8426-$844C` shows that payload `$83` is the ceiling variant at Y=$03
 (frame/+20=1), while `$14` is the floor variant at Y=$14 (frame/+20=0). Its

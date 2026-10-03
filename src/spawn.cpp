@@ -524,7 +524,21 @@ std::vector<Stage0TileVisual> decode_stage0_tile_visuals(const Rom& rom,
                 const unsigned count=control&0x7fu;
                 if(!count || p>=end) break;
                 const unsigned index=bank5[p++];
-                for(unsigned i=0;i<count;++i) append_matrix(index);
+                for(unsigned i=0;i<count;++i) {
+                    append_matrix(index);
+                    // The $2E laser body's $8C,$02 run occupies the twelve
+                    // rows immediately below its cap in the live D988 output.
+                    // decode_stage0_tile_frame() exposes matrix $02's +1 Y
+                    // delta, while the packed placement already supplies the
+                    // first +1 row. Applying both to the first/each repeated
+                    // cell leaves a one-row hole at the top. Compensate that
+                    // placement bias for this repeated $2E body only; the
+                    // accumulated cursor must still advance for the next cell.
+                    if(entity.type()==0x2eu && index==2u && !out.empty()) {
+                        auto& v=out.back();
+                        --v.tile_y_offset;v.y-=8;
+                    }
+                }
             } else {
                 const unsigned count=control;
                 if(p+count>end) break;
@@ -634,7 +648,7 @@ void stamp_stage0_tile_objects(const Rom& rom, const Stage0BackgroundStream& str
         // tile+sprite actors (cannon body/barrel and type $64 core) jump at
         // R18/tile carries. Keep scenery in D988, but render these actors once
         // as native overlays in every stage-0 raster mode.
-        if(!include_native_overlays && (entity.type()==0x1eu || entity.type()==0x1fu || entity.type()==0x20u || entity.type()==0x29u || entity.type()==0x22u ||
+        if(!include_native_overlays && (entity.type()==0x1eu || entity.type()==0x1fu || entity.type()==0x20u || entity.type()==0x29u || entity.type()==0x22u || entity.type()==0x2eu ||
            entity.type()==0x24u || entity.type()==0x26u || entity.type()==0x55u ||
            entity.type()==0x47u || entity.type()==0x56u || entity.type()==0x64u || entity.type()==0x6au ||
            entity.type()==0x6bu || entity.type()==0x3du)) continue;
@@ -678,7 +692,7 @@ void stamp_stage0_tile_objects_right_edge(const Rom& rom, const Stage0Background
         if(!entity.active() || entity.type()==3u) continue;
         // Same ownership rule as the main D988 stamper: native overlays own
         // these complete actors, including the successor edge.
-        if(entity.type()==0x1eu || entity.type()==0x1fu || entity.type()==0x20u || entity.type()==0x29u || entity.type()==0x22u ||
+        if(entity.type()==0x1eu || entity.type()==0x1fu || entity.type()==0x20u || entity.type()==0x29u || entity.type()==0x22u || entity.type()==0x2eu ||
            entity.type()==0x24u || entity.type()==0x26u || entity.type()==0x55u ||
            entity.type()==0x47u || entity.type()==0x56u || entity.type()==0x64u || entity.type()==0x6au ||
            entity.type()==0x6bu || entity.type()==0x3du) continue;
