@@ -15,13 +15,13 @@ int main(int argc,char** argv) {
     assert(session.at_fight_gate());total=session.frame();
     // Live terminal-gate regression using exactly the interactive jump/test
     // loadout: max power + W + two options + M. The tower must become
-    // vulnerable while visibly entering and those real projectiles must lower
+    // vulnerable at the ROM entrance boundary and those real projectiles must lower
     // HP; a synthetic single-shot fixture is not sufficient for this path.
     session.set_max_test_loadout();
     assert(session.upgrades().power==16u && session.upgrades().speed==4u &&
            session.upgrades().options==2u && session.upgrades().wave &&
            session.upgrades().missile && !session.upgrades().missile_armed);
-    for(unsigned i=0;i<220u;++i) {
+    for(unsigned i=0;i<400u;++i) {
         sm::PlayerInput input{}; input.fire=true; input.fire_pressed=(i%5u)==0u;
         session.step_60hz(input);
     }
@@ -86,7 +86,11 @@ int main(int argc,char** argv) {
     }
     // Post-upward mode-0 must return to the real streamed D988/raster scene,
     // not the earlier vehicle-only static native fallback. Across four phases,
-    // one is the exact coarse endpoint and must match ordinary render 2x-wide.
+    // one is the exact scenery endpoint and must match ordinary render 2x-wide.
+    // The last two ground rows and stars now have independent smooth phases;
+    // check their displacement separately rather than snapped raster pixels.
+    // Stars are checked separately in
+    // feedback-test rather than requiring the old R18-snapped star pixels.
     session.reset();
     const unsigned late_target=total*99u/100u;
     while(session.frame()<late_target) session.step_60hz({});
@@ -94,9 +98,12 @@ int main(int argc,char** argv) {
     for(unsigned n=0;n<4;++n) {
         const auto normal=session.render(),wide=session.render_wide();
         unsigned mismatch=0;
-        for(unsigned y=28;y<212;++y) for(unsigned x=0;x<256;++x)
+        for(unsigned y=28;y<196;++y) for(unsigned x=0;x<256;++x) {
+            constexpr auto star=0xff9292b6u;
+            if(normal[y*256u+x]==star || wide[y*512u+x*2u]==star || wide[y*512u+x*2u+1u]==star) continue;
             mismatch+=(wide[y*512u+x*2u]!=normal[y*256u+x]) ||
                       (wide[y*512u+x*2u+1u]!=normal[y*256u+x]);
+        }
         best_late_mismatch=std::min(best_late_mismatch,mismatch);
         session.step_60hz({});
     }
@@ -204,5 +211,5 @@ int main(int argc,char** argv) {
     assert(session.shots()[0].active() && session.shots()[0].x_fixed()!=missile_x);
     session.reset();assert(session.upgrades().options==0 && session.upgrades().power==0);
     std::cout<<"Play features PASS: "<<total<<" route frames, 10 deterministic jumps, top movement, four flight types, "
-        <<hits<<" hits, "<<kills<<" kills, "<<enemy_shots<<" cannon shots and "<<pickup_frames<<" frames with pickups\n";
+        <<hits<<" hits, "<<kills<<" kills, "<<enemy_shots<<" aimed enemy shots and "<<pickup_frames<<" frames with pickups\n";
 }

@@ -10,9 +10,11 @@ PlayAudio::PlayAudio(const std::filesystem::path& directory) {
     device_=SDL_OpenAudioDevice(nullptr,0,&wanted,&format_,0);
     if(!device_) throw std::runtime_error(SDL_GetError());
     try {
-        music_=load(directory/"stage0.wav");
+        stage_music_[0]=load(directory/"stage0.wav");
+        stage_music_[1]=load(directory/"stage1.wav");
+        music_=stage_music_[0];
         unsigned index=0;
-        for(const auto name:{"shot","wave_shot","power_shot","explosion","hit","enemy_shot","pickup","powerup","option_mode","missile_launch","tower_explosion","turret_explosion","heavy_vehicle_explosion","large_cannon_explosion","boss_hit","platform_explosion","platform_burst","platform_rumble"})
+        for(const auto name:{"shot","wave_shot","power_shot","explosion","hit","enemy_shot","pickup","powerup","option_mode","missile_launch","tower_explosion","turret_explosion","heavy_vehicle_explosion","large_cannon_explosion","boss_hit","platform_explosion","platform_burst","platform_rumble","cannon_shot","claw_close","claw_open","terrain_hit","terrain_break","bomb_expand","bomb_blast","carrier_launch","hatch_shot"})
             effects_[index++]=load(directory/(std::string(name)+".wav"));
     } catch(...) {SDL_CloseAudioDevice(device_);device_=0;throw;}
     SDL_PauseAudioDevice(device_,0);
@@ -36,6 +38,12 @@ std::vector<Sint16> PlayAudio::load(const std::filesystem::path& path) {
     if(samples.empty()) throw std::runtime_error("empty audio asset: "+path.string());
     return samples;
 }
+void PlayAudio::set_stage(unsigned stage) {
+    if(stage>=stage_music_.size()) return;
+    SDL_LockAudioDevice(device_);
+    music_=stage_music_[stage];music_position_=0;voices_={};music_playing_=true;
+    SDL_UnlockAudioDevice(device_);
+}
 void PlayAudio::seek(double seconds) {
     SDL_LockAudioDevice(device_);
     music_position_=std::size_t(std::max(0.0,seconds)*format_.freq)%music_.size();
@@ -51,17 +59,23 @@ void PlayAudio::pause(bool paused) {SDL_PauseAudioDevice(device_,paused?1:0);}
 void PlayAudio::mute(bool muted) {
     SDL_LockAudioDevice(device_);muted_=muted;SDL_UnlockAudioDevice(device_);
 }
+void PlayAudio::set_speed(unsigned speed) {
+    SDL_LockAudioDevice(device_);speed_=speed==5?5:1;SDL_UnlockAudioDevice(device_);
+}
+void PlayAudio::set_music_playing(bool playing) {
+    SDL_LockAudioDevice(device_);music_playing_=playing;SDL_UnlockAudioDevice(device_);
+}
 void PlayAudio::callback(void* self, Uint8* output, int bytes) {
     auto& audio=*static_cast<PlayAudio*>(self);
     auto* samples=reinterpret_cast<Sint16*>(output);
     for(int i=0;i<bytes/int(sizeof(Sint16));++i) {
-        int mixed=audio.music_[audio.music_position_++];
-        if(audio.music_position_==audio.music_.size()) audio.music_position_=0;
+        int mixed=audio.music_playing_?audio.music_[audio.music_position_]:0;
+        if(audio.music_playing_) audio.music_position_=(audio.music_position_+audio.speed_)%audio.music_.size();
         for(auto& voice:audio.voices_) if(voice.active) {
             if(voice.clip>=audio.effects_.size()) {voice.active=false;continue;}
             const auto& clip=audio.effects_[voice.clip];
             if(clip.empty() || voice.position>=clip.size()) {voice.active=false;continue;}
-            mixed+=clip[voice.position++];
+            mixed+=clip[voice.position];voice.position+=audio.speed_;
             if(voice.position>=clip.size()) voice.active=false;
         }
         samples[i]=audio.muted_?0:Sint16(std::clamp(mixed,-32768,32767));

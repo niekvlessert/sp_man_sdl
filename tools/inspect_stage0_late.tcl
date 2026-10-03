@@ -1,4 +1,6 @@
-# Visual audit: unpatched ROM, stationary player and RAM-only invincibility.
+# Diagnostic screenshots only: unpatched ROM and RAM-only invincibility.
+# SDLGL-PP can retain stale frames even after throttle is enabled. Validate
+# screenshots against fresh RAM/VRAM captures before using them as evidence.
 # One logged pending-damage injection allows observation past the type-$64 gate.
 set throttle off
 set renderer SDLGL-PP
@@ -29,9 +31,9 @@ namespace eval lateaudit {
  }
  proc request_snap {} {
   # Unthrottled OpenMSX paints at 10 wall-clock fps even with maxframeskip=0.
-  # Render several throttled frames before reading the screen and CPU state.
+  # Allow 0.25 seconds of throttled frames; this does not guarantee freshness.
   set throttle on
-  after time 0.05 {lateaudit::snap}
+  after time 0.25 {lateaudit::snap}
  }
  proc snap {} {
   variable out; variable f
@@ -50,7 +52,7 @@ namespace eval lateaudit {
   puts $f "# CAPTURE actual_time=$t tag=$tag"
   flush $f
   set throttle off
-  if {$t<215} {after time 0.45 {lateaudit::request_snap}} else {close $f;exit}
+  if {$t<215} {after time 0.25 {lateaudit::request_snap}} else {close $f;exit}
  }
  puts $f "time\tx\ty\tsource\ttrigger\tmode\tstage\tdifficulty\tr23\tactors"
  debug set_bp 0x7c63 {[peek 0xf0f1]==4} {lateaudit::damage}

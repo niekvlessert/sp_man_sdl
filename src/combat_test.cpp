@@ -51,7 +51,7 @@ int main(int argc,char** argv) {
 
     // Vehicle hatch $22: threshold opens frame +06 for six logic ticks and
     // then emits the original pair of type-$70 child actors before closing.
-    game={};sm::Stage0Enemies actors;
+    game={};game.difficulty=5;sm::Stage0Enemies actors;
     auto& hatch=game.enemies[0];hatch.type()=0x22;hatch.state()=1;
     hatch.set_x_fixed(0x1b00);hatch.set_y_fixed(0x0a00);hatch.raw[0x20]=0;
     actors.step_15hz(rom,game,0,0);
@@ -63,7 +63,7 @@ int main(int argc,char** argv) {
 
     // Launcher $26: open, launch three type-$11 children at the ROM cadence,
     // close for eight ticks and return to state 1.
-    game={};actors={};game.player.set_y_fixed(0x0800);
+    game={};game.difficulty=5;actors={};game.player.set_y_fixed(0x0800);
     auto& launcher=game.enemies[0];launcher.type()=0x26;launcher.state()=1;
     launcher.set_x_fixed(0x1a00);launcher.set_y_fixed(0x0f00);
     launcher.raw[0x21]=3;
@@ -80,7 +80,7 @@ int main(int argc,char** argv) {
     auto& cannon=game.enemies[0];assert(cannon.raw[0x16]==5);
     for(unsigned i=0;i<5;++i) assert(sm::apply_stage0_damage(rom,cannon,1)==sm::Stage0DamageResult::Hit);
     assert(sm::apply_stage0_damage(rom,cannon,1)==sm::Stage0DamageResult::Destroyed);
-    game={};combat.reset();sounds.clear();
+    game={};game.difficulty=15;combat.reset();sounds.clear();
     spawn.type=spawn.raw_type=0x20;spawn.payload={11};
     for(unsigned i=0;i<4;++i) {
         assert(sm::instantiate_stage0_spawn(rom,spawn,game));
@@ -116,6 +116,7 @@ int main(int argc,char** argv) {
     game.player.set_x_fixed(0x0500);game.player.set_y_fixed(0x0800);
     auto& attacker=game.enemies[0];attacker.type()=0x18;attacker.state()=1;attacker.raw[0x17]=1;
     attacker.set_x_fixed(0x1900);attacker.set_y_fixed(0x0600);
+    game.difficulty=15;
     combat.step(rom,game,0,0,0,sounds);
     auto it60=std::find_if(combat.bullets().begin(),combat.bullets().end(),[](const auto& b){return b.type()==0x60;});
     assert(it60!=combat.bullets().end() && it60->state()==0 && it60->flags15()==0x21 && it60->raw[0x17]==4);
@@ -125,7 +126,7 @@ int main(int argc,char** argv) {
 
     // Blue clears vulnerable enemies and their bullets but leaves the chassis.
     auto& chassis=game.enemies[4];chassis.type()=0x24;chassis.raw[0x14]=5;
-    combat.collect(rom,13,game,sounds);
+    combat.clear_vulnerable(rom,game);combat.blast_bosses(rom,game);
     for(unsigned i=0;i<4;++i) assert(!game.enemies[i].active() || game.enemies[i].type()!=0x20);
     assert(chassis.active());for(auto& b:combat.bullets()) assert(!b.active());
     combat.reset();assert(combat.upgrades().power==0 && combat.upgrades().options==0);

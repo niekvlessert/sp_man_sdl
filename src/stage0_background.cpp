@@ -27,7 +27,11 @@ Stage0BackgroundStream::Stage0BackgroundStream(const Rom& rom) : rom_(rom) {
 }
 
 void Stage0BackgroundStream::reset() {
+    stage_index_=0;
+    metatile_base_=0;
+    tower_destroyed_=false;
     ring_.fill(0);
+    overscan_valid_.fill(false);
 
     // Exact stage-0 state at $A13F (X=1536), well before the old $A288
     // renderer hand-off. Reconstruct the live 64-column ring from the ROM
@@ -81,6 +85,8 @@ void Stage0BackgroundStream::reset() {
     macro_phase_ = 1;       // live C0DA
     // Phase 0 of A13F has ALREADY replaced the retiring column at this
     // anchor. Leaving column128 here exposed blue-scene tiles as machinery.
+    // Stream writes use the integrated C0CD column, independently from the
+    // pre-integrated window used by raster presentation.
     write_vertical(source_, 31);
     c0d2_ = 0x38u;
     c0b5_ = 0x00u;
@@ -112,6 +118,41 @@ void Stage0BackgroundStream::reset() {
 
     trigger_cursor_ = 0x10C0u; // live $CA34 at $A13F
     gated_ = false;
+}
+
+void Stage0BackgroundStream::reset_stage(unsigned stage) {
+    if(stage==0u) {reset();return;}
+    if(stage>=9u) throw std::out_of_range("stage index");
+    reset();stage_index_=stage;ring_.fill(0);gated_=false;
+    const auto b=rom_.bank(9);
+    auto word=[&](unsigned p){return unsigned(b[p])|(unsigned(b[p+1])<<8);};
+    const auto cp=word(0x1c8c+stage*2u)-0x6000u;
+    source_=std::uint16_t(word(cp));trigger_cursor_=std::uint16_t(word(cp+2u));
+    metatile_base_=word(0x1d76+stage*2u)-0x8000u;
+    x_fp_=y_fp_=0;macro_phase_=0;phase_accum_=0;
+    graphics_set_=0;palette_set_=1;c0d2_=0;c0b5_=0;
+    ca3a_=0;c0e6_=c0e8_=0;
+    prepare_data();
+    // The original stage initializer preloads 31 columns before releasing
+    // the player. Keep native overscan disabled until that ring is complete.
+    suppress_prefetch_=true;
+    for(unsigned column=1;column<=31u;++column) {
+        x_fp_=int(column*8u)<<8;
+        stream_phase();
+    }
+    suppress_prefetch_=false;
+    prefetch_successor_column();
+}
+
+unsigned Stage0BackgroundStream::pattern_base(int graphics_override) const noexcept {
+    static constexpr std::array<unsigned,7> registers{0x33,0x0b,0x13,0x23,0x2b,0x33,0x3b};
+    const unsigned set=std::min<unsigned>(graphics_override>=0?unsigned(graphics_override):graphics_set_,6u);
+    return ((stage_index_ && set==0u?0x03u:registers[set])&0x3cu)<<11u;
+}
+unsigned Stage0BackgroundStream::color_base(int graphics_override) const noexcept {
+    static constexpr std::array<unsigned,7> registers{6,1,2,4,5,6,7};
+    const unsigned set=std::min<unsigned>(graphics_override>=0?unsigned(graphics_override):graphics_set_,6u);
+    return 0x2000u+(stage_index_ && set==0u?0u:registers[set])*0x4000u;
 }
 
 unsigned Stage0BackgroundStream::world_x() const noexcept {
@@ -172,7 +213,7 @@ std::array<std::uint8_t, 24u * 32u> Stage0BackgroundStream::compose_d988_raw() c
 void Stage0BackgroundStream::apply_fast_ground_phase(
         std::array<std::uint8_t,24u*32u>& out,bool alternate,
         std::uint8_t phase,std::uint8_t row_offset) const {
-    if(row_offset>=3u) return;
+    if(stage_index_ || row_offset>=3u) return;
     const auto fixed=rom_.bank(0);
     const unsigned table=alternate?0x1e6bu:0x1e4bu;
     for(unsigned line=0;line<2u;++line) {
@@ -202,6 +243,7 @@ void Stage0BackgroundStream::apply_d988_parallax_phase(
     // of the eight pre-shifted star tiles $C6..$CD. The interactive native
     // path supplies the original per-video-frame presentation phase; the
     // coarse stream state remains separately validated at the ROM anchors.
+    if(stage_index_) return;
     const auto h=std::uint8_t(phase>>8u);
     const auto l=std::uint8_t(0xcdu-((phase&0xffu)>>5u));
     for (unsigned y = 0; y < 24u; ++y) {
@@ -224,11 +266,13 @@ std::array<std::uint8_t, 24u * 32u> Stage0BackgroundStream::compose_d988_base() 
     return out;
 }
 
-std::array<std::uint8_t,24u> Stage0BackgroundStream::compose_right_edge() const {
+std::array<std::uint8_t,24u> Stage0BackgroundStream::compose_right_edge(bool include_stars) const {
     std::array<std::uint8_t,24u> out{};
     // The streamer maintains logical column 32 one tile ahead in the ring,
     // so fine-scroll can expose it directly without reading stale ring data.
     for(unsigned y=0;y<24u;++y) out[y]=view_tile(32u,y);
+
+    if(stage_index_) return out;
 
     // Same $5DD8 fast-ground composition as D988, evaluated at x=32.
     const auto ca1b=std::uint8_t(ca1a()>>8u);
@@ -246,11 +290,24 @@ std::array<std::uint8_t,24u> Stage0BackgroundStream::compose_right_edge() const 
 
     // $6EE7 stars are modulo-32 display columns. Column 32 is the successor
     // of column31, so a star at logical column0 repeats here for interpolation.
-    for(unsigned y=0;y<24u;++y) if(out[y]==0u) {
+    for(unsigned y=0;include_stars && y<24u;++y) if(out[y]==0u) {
         const unsigned c0=(unsigned(e800_[y])+parallax_h_)&31u;
         const unsigned c1=(unsigned(e800_[y+1u])+parallax_h_+13u)&31u;
         if(c0==0u || c1==0u) out[y]=parallax_l_;
     }
+    return out;
+}
+
+std::array<std::uint8_t,24u> Stage0BackgroundStream::compose_left_edge() const {
+    std::array<std::uint8_t,24u> out{};
+    for(unsigned y=0;y<24u;++y) out[y]=view_tile(unsigned(-1),y);
+    if(stage_index_) return out;
+    const unsigned row_offset=std::uint8_t(0u-std::uint8_t(ca1a()>>8u));
+    const unsigned phase=(ca3a_+(ca1c()>>8u))&7u;
+    const auto fixed=rom_.bank(0);
+    const unsigned table=fast_ground_alternate()?0x1e6bu:0x1e4bu;
+    if(row_offset<3u) for(unsigned line=0;line<2u;++line)
+        if(21u+row_offset+line<24u) out[21u+row_offset+line]=fixed[table+line*16u+phase+7u];
     return out;
 }
 
@@ -283,6 +340,8 @@ std::uint8_t Stage0BackgroundStream::view_tile(unsigned x, unsigned y) const noe
     // Exact A288 E000 ring and D988 captures validate this source column.
     const unsigned c = (ring_col() + x) & 63u;
     const unsigned r = (ring_row() + y) & 31u;
+    if(x==32u && (mode_==0u || mode_==2u) && overscan_valid_[r*64u+c])
+        return overscan_[r*64u+c];
     return ring_[r * 64u + c];
 }
 
@@ -343,6 +402,7 @@ bool Stage0BackgroundStream::prepare_data() {
         // boundaries and $1E to enter the $5000 fight gate.
         if (cmd == 0x14u || cmd == 0x1bu || cmd == 0x1eu)
             advance_trigger_segment();
+        if(cmd==0x1eu && stage_index_==0u) x_fp_=4352<<8;
         // $18 calls $6E2D/$6E0B on the original Z80: clear the complete
         // E000-E7FF 32x64 tile ring and its D988 composition buffer.
         // Without this, stale machinery from the previous scene leaks into
@@ -352,15 +412,12 @@ bool Stage0BackgroundStream::prepare_data() {
         const unsigned n = payload_size(cmd);
         const auto po = source_ >= 0xA000u ? std::size_t(source_ - 0xA000u) : stream.size();
 
-        // $10 is a conditional stream branch.  The stage-0 reference path
-        // used by the current native preview takes this branch (live trace:
-        // $A38A -> $A3B2), skipping the three alternative columns at
-        // $A394/$A39A/$A3A0.  The condition is CE4C in the original and will
-        // later be wired to the native game-state/difficulty flag.
+        // $10 branches only after CE4C records destruction of the $56 tower.
+        // Without that flag the three alternative columns remain in the route.
         if (cmd == 0x10u && n == 2u && po + 1u < stream.size()) {
             const std::uint16_t target = std::uint16_t(stream[po]) |
                                          (std::uint16_t(stream[po + 1u]) << 8);
-            source_ = target;
+            source_ = tower_destroyed_ ? target : std::uint16_t(source_+2u);
             continue;
         }
 
@@ -410,33 +467,31 @@ bool Stage0BackgroundStream::prepare_data() {
 }
 
 void Stage0BackgroundStream::write_vertical(std::uint16_t source, int col_offset) {
-    const auto defs = rom_.bank(25);
     const auto stream = rom_.bank(27);
     if (source < 0xA000u || source + 6u > 0xC000u) return;
     const unsigned p = source - 0xA000u;
     const unsigned phase = (world_x() & 0x18u) >> 3u;
-    const int col = int(ring_col()) + col_offset;
+    const int col = floor_div8(int(world_x())) + col_offset;
     const int row = int(ring_row());
     for (unsigned block = 0; block < 6u; ++block) {
         const auto macro = stream[p + block];
         const unsigned base = unsigned(macro) * 16u + phase;
         for (unsigned r = 0; r < 4u; ++r)
-            put(col, row + int(block * 4u + r), defs[base + r * 4u]);
+            put(col, row + int(block * 4u + r), rom_.bank(25u+(metatile_base_+base+r*4u)/Rom::BankSize)[(metatile_base_+base+r*4u)%Rom::BankSize]);
     }
 }
 void Stage0BackgroundStream::write_horizontal(std::uint16_t source, int col_offset,
                                               int row_offset, unsigned row_phase) {
-    const auto defs = rom_.bank(25);
     const auto stream = rom_.bank(27);
     if (source < 0xA000u || source + 15u > 0xC000u) return;
     unsigned p = source - 0xA000u;
-    int col = int(ring_col()) + col_offset;
+    int col = floor_div8(int(world_x())) + col_offset;
     const int row = int(ring_row()) + row_offset;
     for (unsigned block = 0; block < 15u; ++block) {
         const auto macro = stream[p++];
         const unsigned base = unsigned(macro) * 16u + row_phase;
         for (unsigned c = 0; c < 4u; ++c)
-            put(col++, row, defs[base + c]);
+            put(col++, row, rom_.bank(25u+(metatile_base_+base+c)/Rom::BankSize)[(metatile_base_+base+c)%Rom::BankSize]);
     }
 }
 
@@ -445,10 +500,11 @@ void Stage0BackgroundStream::prefetch_successor_column() {
     // D988 window's ring_col carry occurs 2 pixels later. Between two stream
     // events the exposed logical column 32 can therefore move from physical
     // ring+32 to ring+33 before the Z80 would have decoded another column.
-    // Keep BOTH future physical cells warm. Only logical column 32 is ever
-    // displayed; +33 is staging for the next ring carry.
+    // Keep BOTH future physical cells in a separate overscan cache. Writing
+    // predictions into the canonical ring corrupted the later diagonal rows.
     if (suppress_prefetch_ || gated_ || (mode_ != 0u && mode_ != 2u) || x_vel_fp_ <= 0)
         return;
+    overscan_valid_.fill(false);
     Stage0BackgroundStream future(*this);
     future.suppress_prefetch_ = true;
     const int dst_row = int(ring_row());
@@ -460,8 +516,10 @@ void Stage0BackgroundStream::prefetch_successor_column() {
             future.step_15hz();
         if (future.world_x() < target) break;
         const int dst_col = int(ring_col()) + 31 + int(ahead);
-        for (unsigned y = 0; y < 24u; ++y)
-            put(dst_col, dst_row + int(y), future.view_tile(31u, y));
+        for (unsigned y = 0; y < 24u; ++y) {
+            const unsigned i=((unsigned(dst_row)+y)&31u)*64u+(unsigned(dst_col)&63u);
+            overscan_[i]=future.view_tile(31u,y);overscan_valid_[i]=true;
+        }
     }
 }
 
@@ -514,6 +572,7 @@ void Stage0BackgroundStream::stream_phase() {
 }
 
 void Stage0BackgroundStream::step_parallax() {
+    if(stage_index_) return;
     // $6E8A path used by stage 0 (CA10=0). CA12/CA14 are the negated
     // camera velocities divided by 8, in signed 8.8 tile units.
     const auto vy = std::int16_t(y_vel_fp_);
@@ -544,12 +603,16 @@ void Stage0BackgroundStream::step_parallax() {
 }
 
 void Stage0BackgroundStream::step_15hz() {
-    if (gated_) return;
+    if (gated_) {
+        // The streamer stops at $16; the $65 animation/parallax controller
+        // keeps running during the boss fight, including the $3D tread phases.
+        ca3a_=std::uint8_t((ca3a_+1u)&7u);step_parallax();return;
+    }
     ++c09b_;
     // Fixed-bank $5DDB increments this in the same coarse scene handler that
     // rebuilds the lower-ground strip. Existing live D988 write traces show
     // about 70-75 ms between updates (~15 Hz), not 60 Hz.
-    ca3a_ = std::uint8_t((ca3a_ + 1u) & 7u);
+    if(!stage_index_) ca3a_ = std::uint8_t((ca3a_ + 1u) & 7u);
     const std::uint8_t old_hi = std::uint8_t(phase_accum_ >> 8);
     phase_accum_ = std::uint16_t(phase_accum_ + phase_step_);
     const std::uint8_t new_hi = std::uint8_t(phase_accum_ >> 8);

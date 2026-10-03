@@ -1,4 +1,5 @@
 #include "game_state.hpp"
+#include "rom.hpp"
 
 namespace sm {
 GameState::GameState() noexcept {
@@ -37,4 +38,12 @@ std::size_t GameState::active_enemy_count() const noexcept {
     for (const auto& e : enemies) if (e.active()) ++n;
     return n;
 }
+std::uint8_t rom_random(const Rom& rom,GameState& game) {
+    const auto fixed=rom.bank(0);
+    game.random_value=std::uint8_t(fixed[0x600u+game.random_index]^game.random_value^
+                                 fixed[0x700u+game.random_index]);
+    ++game.random_index;
+    return game.random_value;
+}
+
 }

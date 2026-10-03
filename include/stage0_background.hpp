@@ -17,8 +17,10 @@ class Stage0BackgroundStream {
 public:
     explicit Stage0BackgroundStream(const Rom& rom);
     void reset();
+    void reset_stage(unsigned stage);
     void step_15hz();
     void seek_world_x(unsigned x);
+    void set_tower_destroyed(bool value) noexcept { tower_destroyed_=value; }
 
     // Original stage-0 composition state (ring -> D988 -> parallax).
     std::array<std::uint8_t, 24u * 32u> compose_d988_raw() const;
@@ -33,12 +35,17 @@ public:
     std::array<std::uint8_t, 24u * 32u> compose_d988_base() const;
     // Fully composed logical column immediately to the right of D988. This is
     // native-only staging for borderless fine-scroll presentation.
-    std::array<std::uint8_t,24u> compose_right_edge() const;
+    std::array<std::uint8_t,24u> compose_right_edge(bool include_stars=true) const;
+    std::array<std::uint8_t,24u> compose_left_edge() const;
+    std::uint16_t star_x_phase() const noexcept { return c0e8_; }
     std::uint16_t ca1a() const noexcept; // signed Y tile-scroll delta, 8.8
     std::uint16_t ca1c() const noexcept; // signed X tile-scroll delta, 8.8
     std::int32_t x_velocity_fp() const noexcept { return x_vel_fp_; }
     std::int32_t y_velocity_fp() const noexcept { return y_vel_fp_; }
 
+    unsigned stage_index() const noexcept { return stage_index_; }
+    unsigned pattern_base(int graphics_override=-1) const noexcept;
+    unsigned color_base(int graphics_override=-1) const noexcept;
     unsigned world_x() const noexcept;
     int world_y() const noexcept;
     std::uint16_t source_address() const noexcept { return source_; }
@@ -68,7 +75,10 @@ public:
 
 private:
     const Rom& rom_;
+    unsigned stage_index_=0;
     std::array<std::uint8_t, 64u * 32u> ring_{};
+    std::array<std::uint8_t,64u*32u> overscan_{};
+    std::array<bool,64u*32u> overscan_valid_{};
     std::uint16_t source_ = 0xA13F;
     std::uint16_t phase_accum_ = 0;
     std::uint16_t phase_step_ = 0x0200;
@@ -91,6 +101,8 @@ private:
     std::uint8_t parallax_h_ = 0x4f;
     std::uint8_t parallax_l_ = 0xcd;
     std::uint16_t trigger_cursor_ = 0x10c0; // original $CA34 at $A13F entry
+    unsigned metatile_base_=0;
+    bool tower_destroyed_=false;
     bool gated_ = false;
     bool suppress_prefetch_ = false;
 

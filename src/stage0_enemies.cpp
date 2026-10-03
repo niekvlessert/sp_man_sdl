@@ -39,7 +39,7 @@ bool expired(Entity64& e,unsigned field) {
     if(e.raw[field]==1) return true;
     --e.raw[field];return false;
 }
-void step_stage0_gate_object(GameState& game,Entity64& e) {
+void step_stage0_gate_object(const Rom& rom,GameState& game,Entity64& e,std::vector<PlaySound>* sounds) {
     if(e.type()==0x64u) {
         // Bank06 $A2D8-$A493. Keep the actual phase records in the object
         // just like the Z80 does; this also reproduces the $2800 -> $1200
@@ -59,7 +59,24 @@ void step_stage0_gate_object(GameState& game,Entity64& e) {
                 static constexpr std::array<std::uint8_t,5> direct{0,0,1,4,4};
                 e.raw[0x05]=direct[tile];
             } else if(tile==6u) e.raw[0x05]=2u;
-            else e.raw[0x05]=directional[direction8(game,e)];
+            else e.raw[0x05]=directional[(direction8(game,e)+2u)&7u];
+        };
+        auto attacks=[&](bool closed) {
+            if(closed) ++e.raw[0x24]; else e.raw[0x24]=0;
+            if(!expired(e,0x18)) return;
+            const auto old=e.raw[0x23]--;
+            if(old) return;
+            e.raw[0x23]=2;
+            if(auto* child=create(rom,game,0x40)) {
+                child->raw[0x24]=e.raw[0x24];child->raw[0x21]=e.raw[0x21];
+                child->set_x_fixed(std::uint16_t(std::uint8_t(e.raw[10]+12u+(e.raw[0x25]&3u)))<<8);
+                child->set_y_fixed(std::uint16_t(e.raw[8])<<8);
+            }
+            ++e.raw[0x25];
+            if(--e.raw[0x21]) return;
+            const auto b=rom.bank(6);unsigned i=e.raw[0x22]++;
+            if(i>=4u || b[0x453+i*2]==0) {i=0;e.raw[0x22]=0;}
+            e.raw[0x18]=b[0x453+i*2];e.raw[0x21]=b[0x454+i*2];e.raw[0x25]=0;
         };
         // $6A13 consumes the movement installed by the preceding A3F9.
         // For this boss that movement is horizontal and stored at +11/+12.
@@ -68,6 +85,10 @@ void step_stage0_gate_object(GameState& game,Entity64& e) {
         if(e.state()==0u) {
             e.set_x_fixed(0x2800u);e.set_y_fixed(0x0c00u);
             e.raw[0x06]=6u;e.raw[0x26]=0x12u;e.raw[0x3f]=1u;
+            if(auto* child=create(rom,game,0x3d)) {
+                child->set_x_fixed(0x2c00);child->set_y_fixed(0x1200);
+                child->state()=1;child->raw[0x34]=e.raw[0x2d];
+            }
             e.state()=1u;
         } else if(e.state()==1u) {
             e.state()=2u;load_phase(2u);
@@ -76,29 +97,30 @@ void step_stage0_gate_object(GameState& game,Entity64& e) {
             // single zero crossing. Afterwards the byte simply underflows.
             if(--e.raw[0x26]==0u && e.raw[0x06]) --e.raw[0x06];
             sprite();
-            // Native playability cleanup: as soon as the main tower body is
-            // substantially inside the viewport, accept player damage. The
-            // original waits until the full entrance timer expires at $1200;
-            // that made several seconds of visibly intersecting shots appear
-            // to pass through the boss in the native test flow.
-            if(e.x_fixed()<=0x1800u) e.raw[0x14]|=0x80u;
-            if(expired(e,0x17)) {e.raw[0x14]|=0x80u;e.state()=3u;load_phase(3u);}
+            if(expired(e,0x17)) {
+                e.raw[0x14]|=0x80u;e.state()=3u;load_phase(3u);
+                e.raw[0x18]=6;e.raw[0x21]=6;e.raw[0x22]=1;
+            }
         } else if(e.state()==3u) {
-            sprite();
+            sprite();attacks(false);
             if(expired(e,0x17)) {e.state()=4u;load_phase(4u);}
         } else if(e.state()==4u) {
             // A3DF: once +20 reaches one it stays there, so the selector
             // decreases on every following logic tick down to zero.
-            if(expired(e,0x20) && e.raw[0x06]) --e.raw[0x06];
+            if(expired(e,0x20) && e.raw[0x06]) {
+                if(--e.raw[0x06]==0u && sounds) sounds->push_back(PlaySound::ClawOpen);
+            }
             sprite();
             if(expired(e,0x17)) {e.state()=5u;load_phase(5u);}
         } else if(e.state()==5u) {
-            sprite();
+            sprite();attacks(true);
             if(expired(e,0x17)) {e.state()=6u;load_phase(6u);}
         } else {
             // A3C4 mirrors A3DF and stops at selector 5; on phase expiry
             // state 6 returns directly to state 3.
-            if(expired(e,0x20) && e.raw[0x06]<5u) ++e.raw[0x06];
+            if(expired(e,0x20) && e.raw[0x06]<5u) {
+                if(++e.raw[0x06]==1u && sounds) sounds->push_back(PlaySound::ClawClose);
+            }
             sprite();
             if(expired(e,0x17)) {e.state()=3u;load_phase(3u);}
         }
@@ -151,8 +173,8 @@ std::vector<Box> boxes(const Rom& rom,const Entity64& e) {
         const unsigned c=p+1+i*6,shape=b8[c+5];
         if(!shape || shape>=21) continue;
         const unsigned s=0x219+shape*4;
-        result.push_back({int(std::int16_t(e.x_fixed()))/32+b8[c+2]+b7[s+2],
-            int(std::int16_t(e.y_fixed()))/32+b8[c+1]+b7[s],b7[s+3],b7[s+1]});
+        result.push_back({int(std::int16_t(e.x_fixed()))/32+int(std::int8_t(b8[c+2]))+b7[s+2],
+            int(std::int16_t(e.y_fixed()))/32+int(std::int8_t(b8[c+1]))+b7[s],b7[s+3],b7[s+1]});
     }
     return result;
 }
@@ -169,19 +191,6 @@ bool stage0_sprite_overlap(const Rom& rom,const Entity64& a,const Entity64& b) {
     // destructible 64x80 upper section of the large vertical tower. Collide
     // against the exact nonzero tile cells used by the native compositor.
     if(b.type()==0x26u || b.type()==0x56u || b.type()==0x64u || b.type()==0x6au) {
-        if(b.type()==0x56u && std::int16_t(b.x_fixed())>0x1000)
-            return false; // first natural ROM hits occur at X=$0F80 under continuous fire
-        if(b.type()==0x64u) {
-            // Type $64 mixes several tile matrices with a sprite-plane core.
-            // The original coarse collision service effectively treats the
-            // complete visible boss body as one target. Keep a contiguous
-            // envelope around that silhouette so W/max-power shots cannot fly
-            // through visual seams between individual matrix/core hit boxes.
-            const int bx=int(std::int16_t(b.x_fixed()))/32;
-            const int by=int(std::int16_t(b.y_fixed()))/32;
-            const Box boss{bx-72,by-72,200,160};
-            for(const auto& x:abox) if(overlaps(x,boss)) return true;
-        }
         for(const auto& v:decode_stage0_tile_visuals(rom,b))
             for(unsigned ty=0;ty<v.rows;++ty) for(unsigned tx=0;tx<v.cols;++tx) {
                 if(!v.tiles[ty*unsigned(v.cols)+tx]) continue;
@@ -249,6 +258,25 @@ bool Stage0Enemies::spawn(const Rom& rom,const SpawnRecord& r,GameState& game,st
     w->bonus=(p[4]==2 && (p[5]&128)) || (p[4]==1 && p[0]>=8 && p[8]);
     return true;
 }
+bool step_stage0_blue_enemy(GameState& game,Entity64& e) {
+    // $BB69-$BC2C. State 1 attacks before stopping at X=$1A; state 2
+    // reverses vertical travel before testing alignment for its next burst.
+    auto vertical=[&] {put(e,11,e.raw[0x20]?0x40:-0x40);};
+    bool fire=false;
+    if(e.state()==1u) {
+        if(expired(e,0x17)) {e.raw[0x17]=8;fire=true;}
+        if(e.raw[10]==0x1au) {put(e,13,0);vertical();e.state()=2;}
+    } else if(e.state()==2u) {
+        if(e.raw[8]<2u || e.raw[8]>=15u) {
+            e.raw[0x20]^=1;vertical();
+            if(++e.raw[0x21]>=3u) {put(e,11,0);put(e,13,-0xa0);e.state()=3;}
+        }
+        if(expired(e,0x17) && std::abs(int(game.player.raw[8])-int(e.raw[8]))<2) {
+            e.raw[0x17]=40;fire=true;
+        }
+    }
+    return fire;
+}
 bool Stage0Enemies::destroyed(const Entity64& enemy) {
     const unsigned id=enemy.raw[0x34];
     if(!id || id>waves_.size()) return enemy.raw[0x3d]!=0;
@@ -258,7 +286,7 @@ bool Stage0Enemies::destroyed(const Entity64& enemy) {
     if(w.bonus && w.killed==w.count) {w.killed=0;return true;}
     return false;
 }
-void Stage0Enemies::move_60hz(GameState& game) {
+void Stage0Enemies::move_60hz(GameState& game,unsigned frame) {
     for(auto& e:game.enemies) {
 
         // +3E is ROM handler/script metadata, never a generic lifetime.
@@ -269,9 +297,11 @@ void Stage0Enemies::move_60hz(GameState& game) {
             if(--e.raw[0x3e]==0) e.clear();
             continue;
         }
-        if(e.active() && (flight(e.type()) || e.type()==0x11u || e.type()==0x68u || e.type()==0x70u)) {
-        e.set_x_fixed(std::uint16_t(e.x_fixed()+signed_word(e,13)/4));
-        e.set_y_fixed(std::uint16_t(e.y_fixed()+signed_word(e,11)/4));
+        if(e.active() && (flight(e.type()) || e.type()==0x1eu || e.type()==0x11u || e.type()==0x68u || e.type()==0x70u || e.type()==0x40u)) {
+        const int divisor=e.type()==0x40u?3:4,phase=int(frame%unsigned(divisor));
+        auto delta=[&](int v){return v*(phase+1)/divisor-v*phase/divisor;};
+        e.set_x_fixed(std::uint16_t(e.x_fixed()+delta(signed_word(e,13))));
+        e.set_y_fixed(std::uint16_t(e.y_fixed()+delta(signed_word(e,11))));
         const int x=std::int16_t(e.x_fixed())/32,y=std::int16_t(e.y_fixed())/32;
         if(x < -80 || x>=352 || y < -80 || y>=256) {
             const unsigned id=e.raw[0x34];
@@ -283,10 +313,51 @@ void Stage0Enemies::move_60hz(GameState& game) {
         }
     }
 }
-void Stage0Enemies::step_gate_20hz(GameState& game) {
-    for(auto& e:game.enemies)
-        if(e.active() && (e.type()==0x64u || e.type()==0x6au))
-            step_stage0_gate_object(game,e);
+void Stage0Enemies::step_gate_20hz(const Rom& rom,GameState& game,unsigned tick,
+                                   std::vector<PlaySound>* sounds,std::uint8_t ca3b,std::uint8_t fine_x) {
+    for(auto& e:game.enemies) if(e.active()) {
+        if(e.type()==0x64u || e.type()==0x6au) {
+            const bool finishing=e.type()==0x6au && e.state()==1u && e.raw[0x17]<=1u;
+            const bool death_wrap=e.type()==0x6au && e.state()==0u && e.raw[6]==7u;
+            step_stage0_gate_object(rom,game,e,sounds);
+            if(death_wrap) for(auto& child:game.enemies)
+                if(child.type()==0x3du) child.clear();
+            if(finishing) stage_complete_=true;
+        } else if(e.type()==0x3du) {
+            for(const auto& parent:game.enemies) if(parent.type()==0x64u) {
+                e.set_x_fixed(std::uint16_t(parent.x_fixed()+0x0400));
+                e.set_y_fixed(std::uint16_t(parent.y_fixed()+0x0600));
+                break;
+            }
+            e.raw[6]=std::uint8_t(e.raw[0x20]+((ca3b+e.raw[10]+
+                (unsigned(fine_x)+e.raw[9]>=256u?1u:0u))&7u));
+        } else if(e.type()==0x40u) {
+            // Bank06 A57F..A639: upward launch, three-frame aim animation,
+            // then accelerated aimed flight after a heading-dependent delay.
+            if(e.state()==0u) {
+                e.raw[0x17]=e.raw[0x24]?4u:11u;
+                put(e,11,-0x0060);put(e,15,-8);e.state()=1;
+            } else if(e.state()==1u) {
+                put(e,11,signed_word(e,11)+signed_word(e,15));
+                if(expired(e,0x17)) e.state()=2;
+            } else if(e.state()==2u && (tick&3u)==0u) {
+                e.raw[5]=std::uint8_t((e.raw[5]+1u)%3u);
+                if(e.raw[5]<2u) continue;
+                const auto angle=std::min(0x98u,target_global_angle(rom,e,game.player));
+                const auto spread=(rom_random(rom,game)&7u)*4u;
+                global_angle_velocity(rom,e,(angle-spread)&255u,0x1d);
+                const auto b=rom.bank(6);
+                e.raw[0x18]=b[0x601+((angle>>5u)&7u)];e.raw[0x17]=6;
+                put(e,15,0x12);e.state()=3;
+            } else if(e.state()==3u) {
+                if(e.raw[8]==0xffu) e.set_y_fixed(0);
+                if(expired(e,0x18)) {
+                    put(e,11,signed_word(e,11)+signed_word(e,15));
+                    if(expired(e,0x17)) e.raw[5]=3;
+                }
+            }
+        }
+    }
 }
 void Stage0Enemies::step_15hz(const Rom& rom,GameState& game,unsigned tick,std::uint16_t trigger,
                               bool include_gate,std::vector<PlaySound>* sounds) {
@@ -324,10 +395,6 @@ void Stage0Enemies::step_15hz(const Rom& rom,GameState& game,unsigned tick,std::
     }
     // Vehicle-mounted actors from bank06. These were previously static in
     // the native port even though the original runs substantial state machines.
-    // Original stage-0 reference has CA19=$05. This is observable from the
-    // vehicle gates themselves: minimum-5 events execute, minimum-8 events
-    // advance their cursor but are skipped. Keep the paired ROM tables intact.
-    static constexpr std::uint8_t kStage0Ca19=5;
     static constexpr std::array<std::uint8_t,4> k22X{0x1b,0x18,0x10,0x04};
     static constexpr std::array<std::uint8_t,4> k22Min{3,0,5,8}; // $BD6B
     static constexpr std::array<std::uint8_t,3> k26X{0x1a,0x12,0x06};
@@ -336,10 +403,12 @@ void Stage0Enemies::step_15hz(const Rom& rom,GameState& game,unsigned tick,std::
         2,3,4,4,5,5,6,6,7,7,8,9,10,11,12,13}; // bank06 $BF04
     for(auto& e:game.enemies) if(e.active()) {
         if(e.type()==0x56u) {
+            e.raw[0x3c]&=1u; // native mirror of CE48: clear the transient white bit
             // Bank06 $BF14-$BFB7: the large vertical tower is a boss-like
             // object with its own damage/death continuation. It must not be
             // replaced immediately through the generic death table.
             if(e.state()==1u) {
+                e.raw[6]=std::uint8_t((e.raw[6]+1u)&3u); // $BF3F -> $6AC2
                 const auto pending=e.raw[0x04];
                 if(pending) {
                     e.raw[0x04]=0;
@@ -350,7 +419,7 @@ void Stage0Enemies::step_15hz(const Rom& rom,GameState& game,unsigned tick,std::
                     // $7C6B preserves subtraction carry: equality (HP=0) is
                     // not fatal; only damage > previous HP enters state 2.
                     if(pending>old) {
-                        e.raw[0x3c]=1u;
+                        e.raw[0x3c]=1u;game.tower_destroyed=true;
                         e.state()=2u;e.raw[0x17]=5u;
                         e.raw[0x18]=std::uint8_t(e.raw[0x18]+1u);
                         if(!e.raw[0x20]) e.raw[0x20]=1u;
@@ -361,14 +430,12 @@ void Stage0Enemies::step_15hz(const Rom& rom,GameState& game,unsigned tick,std::
                     }
                 }
             } else if(e.state()==2u || e.state()==3u) {
-                // $BF9A: random 1..8 destruction cadence. Use a deterministic
-                // phase of the same domain for the native replay.
+                // $BF9A: use the ROM PRNG for the 1..8 destruction cadence.
                 if(e.raw[0x20]>1u) --e.raw[0x20];
                 else {
-                    const unsigned slot=unsigned(&e-game.enemies.data());
-                    e.raw[0x20]=std::uint8_t(1u+((tick+slot*3u)&7u));
-                    e.raw[0x3c]=1u;
-                    if(sounds) sounds->push_back(PlaySound::PlatformRumble); // $35
+                    e.raw[0x20]=std::uint8_t(1u+(rom_random(rom,game)&7u));
+                    e.raw[0x3c]=3u; // $BF9A writes CE48=$03 (red + white flash)
+                    if(sounds && !game.platform_chain_active) sounds->push_back(PlaySound::PlatformRumble); // $35
                 }
                 if(e.state()==2u) {
                     if(e.raw[0x18]>1u) --e.raw[0x18];
@@ -383,11 +450,13 @@ void Stage0Enemies::step_15hz(const Rom& rom,GameState& game,unsigned tick,std::
                             static constexpr std::array<std::uint16_t,4> off{
                                 0x02fdu,0x08feu,0x0402u,0xfe04u}; // bank06 $BFB8
                             const auto q=off[std::min<unsigned>(next-1u,3u)];
-                            const auto yo=std::int8_t(q&0xffu);
-                            const auto xo=std::int8_t(q>>8u);
                             if(auto* x=create(rom,game,0x69u)) {
-                                x->set_y_fixed(std::uint16_t(std::uint8_t(e.raw[0x08]+yo))<<8u);
-                                x->set_x_fixed(std::uint16_t(std::uint8_t(e.raw[0x0a]+xo))<<8u);
+                                // $9A6A adds the packed Y/X cells as one word;
+                                // a Y carry also increments the X cell.
+                                const auto packed=std::uint16_t((unsigned(e.raw[10])<<8u)|e.raw[8]);
+                                const auto position=std::uint16_t(packed+q);
+                                x->set_y_fixed(std::uint16_t(position&255u)<<8u);
+                                x->set_x_fixed(std::uint16_t(position&0xff00u));
                                 x->state()=1u;x->raw[0x06]=0u;
                             }
                         }
@@ -396,6 +465,18 @@ void Stage0Enemies::step_15hz(const Rom& rom,GameState& game,unsigned tick,std::
                     if(e.raw[0x17]>1u) --e.raw[0x17];
                     else e.clear();
                 }
+            }
+        } else if(e.type()==0x47u) {
+            // Fixed $5B2B: the trailing machinery only explodes after CE4C.
+            // Its seven packed matrix scripts advance every two logic ticks.
+            if(e.state()==0u) {
+                e.raw[8]=0x0d;
+                if(!game.tower_destroyed) {e.clear();continue;}
+                e.raw[0x17]=2;game.platform_chain_active=true;e.state()=1;
+            } else if(expired(e,0x17)) {
+                e.raw[0x17]=2;
+                if(++e.raw[6]==7u) e.clear();
+                else if(e.raw[6]==1u && sounds) sounds->push_back(PlaySound::PlatformBurst);
             }
         } else if(e.type()==0x69u) {
             // Bank05 $9A7C-$9AAA: six-frame distributed platform blast.
@@ -412,6 +493,7 @@ void Stage0Enemies::step_15hz(const Rom& rom,GameState& game,unsigned tick,std::
                 if(e.raw[0x0a]==e.raw[0x20]) {
                     ++e.raw[0x17]; // original starts the rise with timer 1
                     e.state()=2;
+                    if(sounds) sounds->push_back(PlaySound::CarrierLaunch); // fixed $593F: $1A
                 }
             } else if(e.state()==2u) {
                 // $58BC: while rising, emit at most three type-$68 exhaust
@@ -450,7 +532,7 @@ void Stage0Enemies::step_15hz(const Rom& rom,GameState& game,unsigned tick,std::
             e.raw[0x06]=std::uint8_t(std::min(5u,d));
             e.raw[0x05]=(tick&1u)?0u:std::uint8_t(d<3u?0u:(d==3u?1u:2u));
         } else if(e.type()==0x64u || e.type()==0x6au) {
-            if(include_gate) step_stage0_gate_object(game,e);
+            if(include_gate) step_stage0_gate_object(rom,game,e,sounds);
         } else if(e.type()==0x6bu) {
             // Bank05 $9B38. $6B is the persistent wreck/replacement used by
             // destroyed $1F/$22/$26/$55 actors. The source actor's +3E is
@@ -487,7 +569,7 @@ void Stage0Enemies::step_15hz(const Rom& rom,GameState& game,unsigned tick,std::
                 if(expired(e,0x18)) e.state()=2;
             } else if(e.state()==2u) {
                 put(e,11,0);
-                put(e,13,-0x0120); // fixed $5135: CA19=$05 selects $FEE0
+                put(e,13,game.difficulty<4u?-0x00c0:-0x0120); // fixed $5135
                 e.state()=3;
             }
         } else if(e.type()==0x22u) {
@@ -495,7 +577,7 @@ void Stage0Enemies::step_15hz(const Rom& rom,GameState& game,unsigned tick,std::
                 const unsigned i=e.raw[0x20];
                 if(i<k22X.size() && e.raw[0x0a]<=k22X[i]) {
                     ++e.raw[0x20];
-                    if(kStage0Ca19>=k22Min[i]) {
+                    if(game.difficulty>=k22Min[i]) {
                         e.raw[0x18]=6;e.raw[0x06]=1;e.state()=2;
                     }
                 }
@@ -510,6 +592,7 @@ void Stage0Enemies::step_15hz(const Rom& rom,GameState& game,unsigned tick,std::
                         c->raw[0x17]=6;c->raw[0x12]=0x10;c->raw[0x11]=0x10;
                         c->raw[0x0f]=n?0x20:0x60;c->state()=0;
                     }
+                    if(sounds) sounds->push_back(PlaySound::HatchShot); // bank06 $BD5D: $17
                     e.raw[0x06]=0;e.state()=1;
                 }
             }
@@ -518,7 +601,7 @@ void Stage0Enemies::step_15hz(const Rom& rom,GameState& game,unsigned tick,std::
                 const unsigned i=e.raw[0x26];
                 if(i<k26X.size() && e.raw[0x0a]<=k26X[i]) {
                     ++e.raw[0x26];
-                    if(kStage0Ca19>=k26Min[i]) {
+                    if(game.difficulty>=k26Min[i]) {
                         int d=int(std::uint8_t(game.player.raw[0x08]))-int(std::uint8_t(e.raw[0x08]));
                         e.raw[0x25]=std::uint8_t(std::min(15,std::abs(d)));
                         e.raw[0x18]=6;e.raw[0x06]=1;e.state()=2;
@@ -527,10 +610,14 @@ void Stage0Enemies::step_15hz(const Rom& rom,GameState& game,unsigned tick,std::
             } else if(e.state()==2u) {
                 e.raw[0x06]=1;
                 if(expired(e,0x18)) {
-                    // $BEC4: launch type $11 at (+2,+2) cells. +17 receives
-                    // the distance-indexed delay from $BF04.
+                    // $BEC4 stores (+2,+2) cells in hardware coordinates. SDL
+                    // tiles and SAT sprites have different native origins: a
+                    // 16px disc has its center at anchor+15, while the 32px
+                    // hatch center is anchor+16. Compensate X at birth so both
+                    // its visible pose and collision geometry leave the hatch
+                    // center; retain the ROM rise, delay and homing velocity.
                     if(auto* c=create(rom,game,0x11)) {
-                        c->set_x_fixed(std::uint16_t(e.x_fixed()+0x200));
+                        c->set_x_fixed(std::uint16_t(e.x_fixed()+0x20));
                         c->set_y_fixed(std::uint16_t(e.y_fixed()+0x200));
                         c->raw[0x17]=k26Delay[e.raw[0x25]&15u];c->state()=0;
                     }
@@ -554,7 +641,7 @@ void Stage0Enemies::step_15hz(const Rom& rom,GameState& game,unsigned tick,std::
             } else if(e.state()==1u && expired(e,0x17)) {
                 // Fixed $531E: CA19=$05 selects speed $20. $6B6C aims at
                 // the player and then the child detaches from camera scrolling.
-                aimed_velocity(rom,e,game.player,0x20);
+                aimed_velocity(rom,e,game.player,game.difficulty<4u?0x12:0x20);
                 e.flags15()&=std::uint8_t(~0x04u);e.state()=2;
             } else if(e.state()==2u && e.raw[0x26]) {
                 // $5337 can re-arm the launch phase when a non-zero target Y

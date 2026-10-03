@@ -37,11 +37,13 @@ Screen4Snapshot Screen4Snapshot::load(const std::filesystem::path& vram_path,
     return s;
 }
 
-Screen4Snapshot Screen4Snapshot::from_stage0_rom(const Rom& rom) {
-    const auto assets = decode_stage0_video(rom);
+Screen4Snapshot Screen4Snapshot::from_stage0_rom(const Rom& rom) {return from_stage_rom(rom,0);}
+Screen4Snapshot Screen4Snapshot::from_stage_rom(const Rom& rom,unsigned stage) {
+    const auto assets = decode_stage_video(rom,stage);
     Screen4Snapshot s;
     s.vram = assets.vram;
     s.object_pattern_base = assets.object_pattern_base;
+    s.object_pattern_page = assets.object_pattern_page;
     for (unsigned i = 0; i < 16; ++i) {
         s.palette[i] = argb_from_grb(assets.palette_grb[i]);
         s.late_palette[i] = argb_from_grb(assets.late_palette_grb[i]);
@@ -150,13 +152,8 @@ std::vector<std::uint32_t> render_stage0_page(
         const std::array<std::uint8_t,24u>* right_edge,
         int start_row_override, int graphics_set_override, int palette_set_override) {
     std::vector<std::uint32_t> out(256u * 212u, 0xff000000u);
-    static constexpr std::array<std::uint8_t, 7> kR4{
-        0x33u, 0x0bu, 0x13u, 0x23u, 0x2bu, 0x33u, 0x3bu};
-    static constexpr std::array<std::uint8_t, 7> kR10{
-        0x06u, 0x01u, 0x02u, 0x04u, 0x05u, 0x06u, 0x07u};
-    const unsigned set = std::min<unsigned>(graphics_set_override >= 0 ? unsigned(graphics_set_override) : stream.graphics_set(), 6u);
-    const unsigned pattern_base = (unsigned(kR4[set]) & 0x3cu) << 11u;
-    const unsigned color_base = 0x02000u + unsigned(kR10[set]) * 0x4000u;
+    const unsigned pattern_base=stream.pattern_base(graphics_set_override);
+    const unsigned color_base=stream.color_base(graphics_set_override);
     const unsigned palette_set = palette_set_override >= 0 ? unsigned(palette_set_override) : stream.palette_set();
     const auto& palette = palette_set >= 2u ? video.tower_palette : video.late_palette;
     const int r23 = int(presentation.r23) + extra_y_pixels;
@@ -167,6 +164,7 @@ std::vector<std::uint32_t> render_stage0_page(
     const int horizontal_shift = int((presentation.r18 & 0x0fu) ^ 0x07u) - 7;
     const int x_sub = -horizontal_shift + extra_x_pixels;
     const unsigned start_row = start_row_override >= 0 ? unsigned(start_row_override) : ((unsigned(stream.scroll_row()) & 0xf8u) >> 3u);
+    const auto left_edge=stream.compose_left_edge();
     for (unsigned sy = 0; sy < 212u; ++sy) {
         const unsigned display_y = unsigned(int(sy) + r23) & 255u;
         const unsigned physical_row = display_y >> 3u;
@@ -183,18 +181,16 @@ std::vector<std::uint32_t> render_stage0_page(
             const unsigned logical_row=(physical_row+32u-start_row)&31u;
             unsigned px=0;
             std::uint8_t tile=0;
-            if(xq<0 && xq>=-8) {
-                // Native left-edge extension used only while a newly integrated
-                // coarse state is presented 1..2 pixels back toward its old
-                // position. Reuse the first complete tile instead of exposing
-                // black or wrapping column 31.
-                tile=page[physical_row*32u];
+            if(xq<0 && xq>=-8 && logical_row<24u) {
+                // The preceding ring column is distinct from column0. Repeating
+                // column0 duplicated the left rim of the late tower structure.
+                tile=left_edge[logical_row];
                 px=unsigned(xq+8);
             } else if(xq>=0 && xq<256) {
                 const unsigned tx=unsigned(xq)>>3;
                 px=unsigned(xq)&7u;
                 tile=page[physical_row*32u+tx];
-            } else if(xq<264 && logical_row<24u && right_edge) {
+            } else if(xq>=256 && xq<264 && logical_row<24u && right_edge) {
                 // Native right-edge extension. The background streamer already
                 // exposes the real successor column (logical x=32); use it
                 // instead of repeating tile 31. Repeating the final visible

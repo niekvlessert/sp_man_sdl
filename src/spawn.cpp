@@ -1,5 +1,6 @@
 #include "spawn.hpp"
 #include <stdexcept>
+#include <algorithm>
 
 namespace sm {
 namespace {
@@ -14,9 +15,15 @@ std::uint16_t le16(std::span<const std::uint8_t> b, unsigned p) {
 }
 
 StageSpawnStream StageSpawnStream::decode_stage0(const Rom& rom, bool include_prelude) {
+    auto out=decode_stage(rom,0);
+    if(!include_prelude) std::erase_if(out.records_,[](const auto& r){return r.trigger<kStage0Origin;});
+    return out;
+}
+StageSpawnStream StageSpawnStream::decode_stage(const Rom& rom,unsigned stage) {
+    if(stage>=9u) throw std::out_of_range("stage spawn index");
     StageSpawnStream out;
     const auto bank = rom.bank(2);
-    const auto cpu = le16(bank, kStagePointerTable);
+    const auto cpu = le16(bank, kStagePointerTable+stage*2u);
     if (cpu < 0x8000u || cpu >= 0xa000u)
         throw std::runtime_error("stage-0 spawn pointer outside bank 02 window");
     unsigned p = cpu - 0x8000u;
@@ -37,10 +44,8 @@ StageSpawnStream StageSpawnStream::decode_stage0(const Rom& rom, bool include_pr
         r.type = raw_type & 0x7fu;
         r.control = control;
         r.payload.assign(bank.begin() + p + 4u, bank.begin() + p + len);
-        if (include_prelude || trigger >= kStage0Origin) {
-            r.world_x = trigger>=kStage0Origin?unsigned(trigger - kStage0Origin)*8u:0u;
-            out.records_.push_back(std::move(r));
-        }
+        r.world_x = trigger>=kStage0Origin?unsigned(trigger - kStage0Origin)*8u:0u;
+        out.records_.push_back(std::move(r));
         p += len;
     }
     return out;
@@ -99,7 +104,8 @@ void scroll_stage0_objects(GameState& game, int dx, int dy) noexcept {
         // coordinates) and it disappears on the next $40 step to $EEC0.
         // The old generic -$0200 guard therefore removed its visible tracks
         // roughly fifteen tiles too early.
-        const int left_guard = e.type() == 0x24u ? -0x1100 : -0x0200;
+        const int left_guard = e.type()==0x56u ? -0x3000 :
+            (e.type()==0x47u ? -0x2000 : (e.type()==0x24u ? -0x1100 : (e.type()==0x1fu ? -0x0800 : -0x0200)));
         if (dx > 0 && nx < left_guard) { e.clear(); continue; }
         e.set_x_fixed(std::uint16_t(std::int16_t(nx)));
         e.set_y_fixed(std::uint16_t(std::int16_t(ny)));
@@ -255,8 +261,8 @@ bool decode_stage0_tile_def(const Rom& rom, const Entity64& entity,
     out.cols = bank[d + 3u];
     const unsigned count = unsigned(out.rows) * unsigned(out.cols);
     if (!count || count > 256u || d + 4u + count > bank.size()) return false;
-    out.x = int(std::int16_t(entity.x_fixed())) / 32 + out.tile_x_offset * 8;
-    out.y = int(std::int16_t(entity.y_fixed())) / 32 + out.tile_y_offset * 8;
+    out.x = (int(std::int16_t(entity.x_fixed())) >> 5) + out.tile_x_offset * 8;
+    out.y = (int(std::int16_t(entity.y_fixed())) >> 5) + out.tile_y_offset * 8;
     out.tiles.assign(bank.begin() + d + 4u, bank.begin() + d + 4u + count);
     return true;
 }
@@ -317,12 +323,6 @@ std::vector<Stage0TileVisual> decode_stage0_tile_visuals(const Rom& rom,
             if(decode_stage0_tile_frame(rom,entity,c.frame,v)) {
                 v.x+=int(c.x)*8; v.y+=int(c.y)*8;
                 v.tile_x_offset+=c.x; v.tile_y_offset+=c.y;
-                // Native cleanup requested for the terminal tower: matrix 7
-                // becomes a detached sliver at the extreme left while the
-                // mechanism retracts. The MSX name-table shows that artifact,
-                // but in the native presentation hide it once its anchor is
-                // within the first 32 pixels instead of showing a duplicate.
-                if(c.frame==7u && v.x<32) continue;
                 out.push_back(std::move(v));
             }
         }
@@ -330,6 +330,8 @@ std::vector<Stage0TileVisual> decode_stage0_tile_visuals(const Rom& rom,
     }
 
     if (entity.type() == 0x6au) {
+        // $9ADE jumps past $7B65 during the post-explosion countdown.
+        if(entity.state()==1u) return out;
         // Bank05 $9AD7: destruction animation for the stage-0 tower. The
         // eight selectors map to matrix frames 0,1,2,3,4,2,1,0 and use the
         // exact signed origins exported from the original stamp scripts.
@@ -407,13 +409,13 @@ std::vector<Stage0TileVisual> decode_stage0_tile_visuals(const Rom& rom,
         return out;
     }
 
-    if (entity.type() == 0x55u) {
+    if (entity.type() == 0x55u || entity.type()==0x47u) {
         // Fixed $58F0 -> $7B65. $5A19 is a six-entry pointer table indexed
         // by +06. The pointed lists use the same packed placement grammar as
         // the later $56 actor, but live in fixed bank 0 rather than bank 6.
         const auto fixed = rom.bank(0);
-        unsigned frame = std::min<unsigned>(entity.raw[0x06], 5u);
-        const unsigned table = 0x5a19u - 0x4000u;
+        unsigned frame = std::min<unsigned>(entity.raw[0x06], entity.type()==0x47u?6u:5u);
+        const unsigned table = (entity.type()==0x47u?0x5b67u:0x5a19u) - 0x4000u;
         if (table + frame * 2u + 1u >= fixed.size()) return out;
         const auto list_cpu = le16(fixed, table + frame * 2u);
         if (list_cpu < 0x4000u || list_cpu >= 0x6000u) return out;
@@ -529,7 +531,7 @@ std::vector<Stage0TileVisual> decode_stage0_t24_visuals_phase(const Rom& rom,
 
 void stamp_stage0_tile_objects(const Rom& rom, const Stage0BackgroundStream& stream,
                                const GameState& game,
-                               std::array<std::uint8_t, 24u * 32u>& d988) {
+                               std::array<std::uint8_t, 24u * 32u>& d988,bool include_native_overlays) {
     const auto fine_x = std::uint16_t(stream.ca1c() & 0x00ffu);
     const auto fine_y = std::uint16_t(stream.ca1a() & 0x00ffu);
     for (const auto& entity : game.enemies) {
@@ -540,10 +542,10 @@ void stamp_stage0_tile_objects(const Rom& rom, const Stage0BackgroundStream& str
         // tile+sprite actors (cannon body/barrel and type $64 core) jump at
         // R18/tile carries. Keep scenery in D988, but render these actors once
         // as native overlays in every stage-0 raster mode.
-        if(entity.type()==0x1fu || entity.type()==0x20u || entity.type()==0x22u ||
+        if(!include_native_overlays && (entity.type()==0x1eu || entity.type()==0x1fu || entity.type()==0x20u || entity.type()==0x22u ||
            entity.type()==0x24u || entity.type()==0x26u || entity.type()==0x55u ||
-           entity.type()==0x56u || entity.type()==0x64u || entity.type()==0x6au ||
-           entity.type()==0x6bu) continue;
+           entity.type()==0x47u || entity.type()==0x56u || entity.type()==0x64u || entity.type()==0x6au ||
+           entity.type()==0x6bu || entity.type()==0x3du)) continue;
         const auto visuals = decode_stage0_tile_visuals(rom, entity);
         if (visuals.empty()) continue;
 
@@ -584,10 +586,10 @@ void stamp_stage0_tile_objects_right_edge(const Rom& rom, const Stage0Background
         if(!entity.active() || entity.type()==3u) continue;
         // Same ownership rule as the main D988 stamper: native overlays own
         // these complete actors, including the successor edge.
-        if(entity.type()==0x1fu || entity.type()==0x20u || entity.type()==0x22u ||
+        if(entity.type()==0x1eu || entity.type()==0x1fu || entity.type()==0x20u || entity.type()==0x22u ||
            entity.type()==0x24u || entity.type()==0x26u || entity.type()==0x55u ||
-           entity.type()==0x56u || entity.type()==0x64u || entity.type()==0x6au ||
-           entity.type()==0x6bu) continue;
+           entity.type()==0x47u || entity.type()==0x56u || entity.type()==0x64u || entity.type()==0x6au ||
+           entity.type()==0x6bu || entity.type()==0x3du) continue;
         const auto visuals=decode_stage0_tile_visuals(rom,entity);
         if(visuals.empty()) continue;
         const auto ax=std::uint16_t(entity.x_fixed()+fine_x);
@@ -676,6 +678,23 @@ Stage0DamageResult apply_stage0_damage(const Rom& rom, Entity64& entity,
     return Stage0DamageResult::Destroyed;
 }
 
+void append_stage0_damage_sounds(const Rom& rom,std::uint8_t original_type,
+        Stage0DamageResult damage,std::vector<PlaySound>& sounds) {
+    if(damage==Stage0DamageResult::Ignored) return;
+    // $7C44/$7C63 request the impact even on a fatal subtraction, before
+    // $7CC3 requests the family-specific destruction sound.
+    sounds.push_back(original_type==0x64u ? PlaySound::BossHit : PlaySound::Hit);
+    if(damage!=Stage0DamageResult::Destroyed) return;
+    const auto bank4=rom.bank(4);
+    const auto sound_id=bank4[0x1e74u+unsigned(original_type)*3u+1u];
+    PlaySound sound=PlaySound::Explosion;
+    if(sound_id==0x11u) sound=PlaySound::TurretExplosion;
+    else if(sound_id==0x13u) sound=PlaySound::HeavyVehicleExplosion;
+    else if(sound_id==0x14u) sound=PlaySound::LargeCannonExplosion;
+    else if(sound_id==0x4du) sound=PlaySound::TowerExplosion;
+    sounds.push_back(sound);
+}
+
 SpawnTypeMetadata decode_spawn_type_metadata(const Rom& rom, std::uint8_t type) {
     if (type == 0) throw std::runtime_error("zero spawn type has no metadata");
     const auto bank = rom.bank(2);
@@ -699,9 +718,9 @@ bool instantiate_stage0_spawn(const Rom& rom, const SpawnRecord& r, GameState& g
     // type $64 from real gameplay, leaving only the scenery copy visible.
     const bool special64 = r.type == 0x64u && r.control_flag();
     if (r.control_flag() && !special26 && !special64) return false;
-    if (r.type != 0x1fu && r.type != 0x20u && r.type != 0x22u &&
+    if (r.type != 0x1eu && r.type != 0x1fu && r.type != 0x20u && r.type != 0x22u &&
         r.type != 0x24u && r.type != 0x26u && r.type != 0x55u &&
-        r.type != 0x56u && r.type != 0x64u) return false;
+        r.type != 0x56u && r.type != 0x47u && r.type != 0x64u) return false;
     if (r.payload.empty() || (r.type == 0x24u && r.payload.size() < 2u)) return false;
     auto* e = game.allocate_enemy();
     if (!e) return false;
@@ -728,7 +747,13 @@ bool instantiate_stage0_spawn(const Rom& rom, const SpawnRecord& r, GameState& g
     }
     e->set_x_fixed(std::uint16_t(xh) << 8);
     e->set_y_fixed(std::uint16_t(yh) << 8);
-    if (r.type == 0x1fu) {
+    if (r.type == 0x1eu) {
+        // $BB75: low six bits are altitude; bit 7 chooses rise/fall.
+        e->set_y_fixed(std::uint16_t(r.payload[0]&0x3fu)<<8);
+        e->set_x_fixed(0x1e00);e->raw[0x20]=(r.payload[0]>>7u)&1u;
+        e->raw[0x17]=1;
+        e->raw[13]=0x80;e->raw[14]=0xff;
+    } else if (r.type == 0x1fu) {
         e->raw[0x3e] = 0x09;
         e->raw[0x05] = 0x01;
         e->raw[0x24] = 0x00;
@@ -759,6 +784,9 @@ bool instantiate_stage0_spawn(const Rom& rom, const SpawnRecord& r, GameState& g
             default:    e->raw[0x23] = 3; break;
             }
         }
+    } else if (r.type == 0x47u) {
+        // $5B2B does not call $6754: the cleared pool record retains X=0.
+        e->set_x_fixed(0);
     } else if (r.type == 0x56u) {
         // Exact live creation state at trigger $3018. The original handler
         // consumes the one-byte payload, leaving +2E/+2F at 1, and chooses
@@ -777,7 +805,7 @@ bool instantiate_stage0_spawn(const Rom& rom, const SpawnRecord& r, GameState& g
     }
     // Type $64 must enter bank06:$A300 (state 0). Starting it at state 1
     // skips the ROM initializer that positions the tower at X=$2800/Y=$0C00.
-    e->state() = r.type == 0x64u ? 0u : 1u;
+    e->state() = (r.type == 0x64u || r.type==0x47u) ? 0u : 1u;
     return true;
 }
 }

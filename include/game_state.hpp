@@ -4,6 +4,7 @@
 #include <cstdint>
 
 namespace sm {
+class Rom;
 // Native mirror of the original 0x40-byte object record. Positions use the
 // game's 8.8 tile coordinates: +07/+08 Y and +09/+0A X (32 units/pixel).
 struct Entity64 {
@@ -28,6 +29,9 @@ struct Entity64 {
 struct GameState {
     Entity64 player{}; // original structure base: $CA40
     std::array<Entity64, 20> enemies{}; // original pool base: $CE80
+    bool tower_destroyed=false, platform_chain_active=false; // CE4C/CE4D
+    std::uint8_t difficulty = 1; // CA19 from the active weapon records
+    std::uint8_t random_index = 0, random_value = 0; // C917/C918
     double camera_x = 0.0;
     std::uint8_t logic_phase = 0; // CA02&7 surrogate for staggered object handlers
 
@@ -35,4 +39,5 @@ struct GameState {
     Entity64* allocate_enemy() noexcept;
     std::size_t active_enemy_count() const noexcept;
 };
+std::uint8_t rom_random(const Rom& rom,GameState& game);
 }

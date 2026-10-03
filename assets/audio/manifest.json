@@ -10,109 +10,116 @@
       "sha256": "dff012d35ff2a017fd6287dc3cb32ced2ff904fa46b371fb8b70991dfcecab46"
     },
     {
+      "name": "stage1",
+      "rate": 44100,
+      "channels": 1,
+      "seconds": 180.00507936507935,
+      "sha256": "62ce50b90a144192a3730ad465a772290e375de4f047691673366857a560401d"
+    },
+    {
       "name": "shot",
       "rate": 44100,
       "channels": 1,
       "seconds": 0.9984580498866213,
-      "sha256": "ef84dc1dca5b7be0c1761631e57e8f47e94243dacb0957306f26c4bdd9116417"
+      "sha256": "aeecf0b39925f21763ba25201a35d08d0db1b8dc330620e25f012242a8d7a31f"
     },
     {
       "name": "wave_shot",
       "rate": 44100,
       "channels": 1,
       "seconds": 0.9984580498866213,
-      "sha256": "ed4aa93180baf9a666c7276d2a682eb7a92e6ed1b1072d72b69e2ad099d071fe"
+      "sha256": "bb49d2a35d3a5a2d39148a3d9a3d984234303b823885826b25db10b2e57b4342"
     },
     {
       "name": "power_shot",
       "rate": 44100,
       "channels": 1,
       "seconds": 0.9984580498866213,
-      "sha256": "50102932b1047efe5ddddebe4357c83d234089b82fe44597fee12fd4144d72c6"
+      "sha256": "92b4d1b453e60a33509e4a918e25430abfdd46daebe6fb5edb04b9985225375d"
     },
     {
       "name": "explosion",
       "rate": 44100,
       "channels": 1,
       "seconds": 1.9969160997732427,
-      "sha256": "052d690501141f8cf3c951c2517bda7e184d83ee9f93752506dd3cb5b128ee5b"
+      "sha256": "c3ee23b133bff53573aef6c6c4cb438d2df0b5c756423acd41594327c91aeb40"
     },
     {
       "name": "hit",
       "rate": 44100,
       "channels": 1,
       "seconds": 0.9984580498866213,
-      "sha256": "66f1e7887d0b9be24374c0a37d1124df5528c4d34ead41c4548af61f321e5a3f"
+      "sha256": "5a6ba13099166bc9f08f72ec612733ee67a7dddfd2393fbee3192f66d4cc03aa"
     },
     {
       "name": "enemy_shot",
       "rate": 44100,
       "channels": 1,
       "seconds": 0.9984580498866213,
-      "sha256": "3ae198ec5fb6960ea3b1832e4f42903a8b15c4bba367729d3d00f856a5aeae35"
+      "sha256": "d5a3aa42f2694c80a8f4584800322e3709c5f7f78ef173b6813d87bf254f0d36"
     },
     {
       "name": "pickup",
       "rate": 44100,
       "channels": 1,
       "seconds": 1.003265306122449,
-      "sha256": "48c8704d2b6b6c11bba074d33001e8b3ab73485981056139376bdb8971f60b2b"
+      "sha256": "a6a1b24756784285535b72c32699b589032d8a001208eddd282aaa57c0b6905d"
     },
     {
       "name": "powerup",
       "rate": 44100,
       "channels": 1,
       "seconds": 1.003015873015873,
-      "sha256": "b2edc3ac29d2f16d378f48d871d99795d6f47ed0f444cae46f7e47732a13aff6"
+      "sha256": "48ff96b30427c50710be8164b20b2ff940a5e1c3b0289fa9396b4f32f0f36b97"
     },
     {
       "name": "option_mode",
       "rate": 44100,
       "channels": 1,
       "seconds": 0.9984580498866213,
-      "sha256": "20446fd9c09dedb7cda1c4654e9bf7f72850c90a9399b2b9a89829b5783cbae3"
+      "sha256": "1ea127d9a35e344bfc1b75bfd9b4c05ca3dcd6335fcffe8513d0bd6b62d02959"
     },
     {
       "name": "missile_launch",
       "rate": 44100,
       "channels": 1,
       "seconds": 0.9984580498866213,
-      "sha256": "1a9e3f6ba25a0b3a7ce999d4c3a426c2769c529255aefaf6ec5413bf92e3ed46"
+      "sha256": "45ff178aba60a376f455f95ed3c27d77aa484031ddafcc71ec43d1fe25da0dba"
     },
     {
       "name": "tower_explosion",
       "rate": 44100,
       "channels": 1,
       "seconds": 2.995374149659864,
-      "sha256": "0030058cf1720d895470c50e915e430cf2449b17b51a2141857d596228bf2ecb"
+      "sha256": "4f5905af66cd943cdd61a0139ba50ab97ecce382c9d9e9c924f2e7fb574a309c"
     },
     {
       "name": "turret_explosion",
       "rate": 44100,
       "channels": 1,
       "seconds": 1.9969160997732427,
-      "sha256": "6750c88a2f7aeb1f82b6b0937b31cde76b346ce2e070af42fedc931259be3ba1"
+      "sha256": "b8b96fb5856d075c5027471514dd0504bdafee62ed518fc8502516eef558f35d"
     },
     {
       "name": "heavy_vehicle_explosion",
       "rate": 44100,
       "channels": 1,
       "seconds": 1.9969160997732427,
-      "sha256": "ea257239e82b204d655bb012b5b7447cbf68bee52dc0e3e909a6a757098d9dcc"
+      "sha256": "a7345fee0442bf3626e73472d1801f8b9ff3e7b996a1c4a72e6de6f8584e2e99"
     },
     {
       "name": "large_cannon_explosion",
       "rate": 44100,
       "channels": 1,
       "seconds": 1.9969160997732427,
-      "sha256": "4e9404350db71ed7128ecece55ba45674a548629497787d0d00e7e107de36b4d"
+      "sha256": "01360bdd4332a3b32ef45cb059e60031f86cc494f040264fb2d8c19bfc4c0f7d"
     },
     {
       "name": "boss_hit",
       "rate": 44100,
       "channels": 1,
       "seconds": 0.9984580498866213,
-      "sha256": "fcce3f24225b559b5198d584935661b4f7dc2733da9319a3e9fb2990e8c7e8e9"
+      "sha256": "57b8bb72006aaba5f464371908f2f16fd455667d7c2ff103ace0b326d5097075"
     },
     {
       "name": "platform_explosion",
@@ -126,14 +133,77 @@
       "rate": 44100,
       "channels": 1,
       "seconds": 2.003356009070295,
-      "sha256": "d560370c451c38ad831b476098896547e606977c1d6bf583e286c09bdff57b6b"
+      "sha256": "2efd461aa38603d23a496161266bbec31f161161a9f1e2904d26ac27c3ad3d0a"
     },
     {
       "name": "platform_rumble",
       "rate": 44100,
       "channels": 1,
       "seconds": 1.9969160997732427,
-      "sha256": "a3377fa8c6377d0e74a7285ed09a0ff108899aaef22c2acd115e570245b1769e"
+      "sha256": "8ffc459d728ea725f6d89a23502d054d4fd2494669e1c43c3870d69a688d5c1e"
+    },
+    {
+      "name": "cannon_shot",
+      "rate": 44100,
+      "channels": 1,
+      "seconds": 0.9984580498866213,
+      "sha256": "3b9eaa49620be7a9e9afbffed1474d4383feba3168d491e70b39207e40aa78f3"
+    },
+    {
+      "name": "claw_close",
+      "rate": 44100,
+      "channels": 1,
+      "seconds": 1.9969160997732427,
+      "sha256": "fb2aad7bffc507820677ac7602c2ced44d558fdc6424298ba6873820c5f7c27d"
+    },
+    {
+      "name": "claw_open",
+      "rate": 44100,
+      "channels": 1,
+      "seconds": 1.9969160997732427,
+      "sha256": "3a69fcacf71cb9435ee3eedba3d26f802b66a75d4ac5d1a1c1c09fc4979ae47d"
+    },
+    {
+      "name": "terrain_hit",
+      "rate": 44100,
+      "channels": 1,
+      "seconds": 0.9984580498866213,
+      "sha256": "239b761680382842f50d35a8f3c2abbf1948b917891d82c649c8d808de6d8496"
+    },
+    {
+      "name": "terrain_break",
+      "rate": 44100,
+      "channels": 1,
+      "seconds": 0.9984580498866213,
+      "sha256": "a4b68be6bc724e5123d444447e7ae265f08844f799530d1356b8d3f0723ee343"
+    },
+    {
+      "name": "bomb_expand",
+      "rate": 44100,
+      "channels": 1,
+      "seconds": 1.9969160997732427,
+      "sha256": "1389e4b544fc5fc0dfd4152529a87c029e009ae343950ce549ca1736804da66f"
+    },
+    {
+      "name": "bomb_blast",
+      "rate": 44100,
+      "channels": 1,
+      "seconds": 1.9969160997732427,
+      "sha256": "496c1c30491c94a1ddce2fdcfa462ac38aec72ad688edb5dedcafec92cfd691c"
+    },
+    {
+      "name": "carrier_launch",
+      "rate": 44100,
+      "channels": 1,
+      "seconds": 2.995374149659864,
+      "sha256": "3804c700e7d982ae68734528bc42f8ab7036b62a9f69eefc9cdc36d05c78e829"
+    },
+    {
+      "name": "hatch_shot",
+      "rate": 44100,
+      "channels": 1,
+      "seconds": 1.9969160997732427,
+      "sha256": "a853c1dcc72b19f84238222fa910e20de458cb35f2be06393afffca2d8d07923"
     }
   ]
 }

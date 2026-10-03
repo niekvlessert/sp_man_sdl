@@ -1,4 +1,5 @@
 #include "stage0_combat.hpp"
+#include "stage0_enemies.hpp"
 #include <algorithm>
 #include <cstdlib>
 
@@ -26,11 +27,19 @@ std::uint8_t direction8(const Entity64& target,const Entity64& source) {
     return std::uint8_t(c&7u);
 }
 }
+unsigned PlayerUpgrades::difficulty(const Rom& rom) const {
+    // Bank02 $83E7: sum the five active weapon record weights, divide by 16,
+    // add the power tier ($4E79), and cap at $0F. Speed is independent.
+    const auto b=rom.bank(2);
+    const unsigned weights=b[0x42d+(wave?9u:0u)]+(missile?b[0x42f]:0u)+
+                           options*b[0x42e];
+    return std::min(15u,(weights>>4u)+power_level());
+}
 void Stage0Combat::spawned(Entity64& e) {
     // Bank05 $82CA/$82E4, every fourth small turret awards a pickup.
     if(e.type()==0x20 && (++turret_count_&3)==0) e.raw[0x3d]=1;
 }
-bool Stage0Combat::fire(const Rom& rom,const Entity64& source,const Entity64& target,int yo,int xo) {
+bool Stage0Combat::fire(const Rom& rom,const Entity64& source,const Entity64& target,unsigned difficulty,int yo,int xo) {
     auto it=std::find_if(bullets_.begin(),bullets_.end(),[](auto& b){return !b.active();});
     if(it==bullets_.end()) return false;
     auto& b=*it;b.clear();b.type()=0x60;b.state()=0;b.raw[5]=0;b.flags15()=0x21;b.raw[0x17]=4;
@@ -40,16 +49,22 @@ bool Stage0Combat::fire(const Rom& rom,const Entity64& source,const Entity64& ta
     const int dy=int(std::uint8_t(target.y_fixed()/32))-int(std::uint8_t(b.y_fixed()/32));
     const auto bank=rom.bank(4);
     const unsigned angle=bank[0x13ed+(unsigned(std::abs(dy))&0xf0)+(unsigned(std::abs(dx))>>4)];
-    const unsigned speed=bank[0x11a8]; // difficulty zero, $7197
+    const unsigned speed=bank[0x11a8+difficulty]; // original $7197 / CA19
     put(b,11,(dy<0?-1:1)*int(unsigned(bank[0x13ad+angle])*speed/32));
     put(b,13,(dx<0?-1:1)*int(unsigned(bank[0x13ad+63-angle])*speed/32));
-    if(source.type()==0x1f) {
+    if(source.type()==0x1f || source.type()==0x1e) {
         // $9CC0 -> $7362: the large cannon fires along its five discrete
         // barrel directions, rather than re-aiming between burst shots.
-        const unsigned p=0x138d+unsigned(source.raw[5])*4;
+        const unsigned heading=rom.bank(5)[0x1d0d+unsigned(source.type()==0x1e?0:source.raw[5])];
+        const unsigned p=0x138d+heading*2;
         const auto signs=bank[p];const unsigned a=bank[p+1];
-        put(b,11,(signs&1?-1:1)*int(unsigned(bank[0x13ad+a])*speed/32));
-        put(b,13,(signs&2?-1:1)*int(unsigned(bank[0x13ad+63-a])*speed/32));
+        const unsigned cannon_speed=rom.bank(5)[0x1d15+difficulty/2];
+        put(b,11,(signs&1?-1:1)*int(unsigned(bank[0x13ad+a])*cannon_speed/32));
+        put(b,13,(signs&2?-1:1)*int(unsigned(bank[0x13ad+63-a])*cannon_speed/32));
+        b.set_x_fixed(std::uint16_t((source.x_fixed()&0xff00u)+xo*32));
+        b.set_y_fixed(std::uint16_t((source.y_fixed()&0xff00u)+yo*32));
+        b.type()=0x67;b.state()=0;b.raw[5]=std::uint8_t(heading/2);b.flags15()=0x35;
+        b.raw[0x17]=4;
     }
     return true;
 }
@@ -75,7 +90,8 @@ void Stage0Combat::drop(const Rom& rom,Entity64& slot,std::uint16_t x,std::uint1
     // $7049 maps their selector values to tile icons.
     auto kind=bank[0x1042+pickup_cursor_];pickup_cursor_=(pickup_cursor_+1)%6;
     // $6FF7/$6FE1 substitutes $0C when W is already equipped. Both $0C
-    // and $0D use the original blue icon matrices ($7049 selectors 6/8).
+    // and $0D have distinct handlers; the icon alone does not imply a blast.
+    if(kind==3 && upgrades_.missile) kind=14;
     if(kind==10 && upgrades_.wave) kind=12;
     if(kind==7 && upgrades_.options==2) kind=14;
     slot.clear();slot.type()=3;slot.state()=1;slot.flags15()=0x56;
@@ -111,9 +127,18 @@ void Stage0Combat::clear_vulnerable(const Rom& rom, GameState& game) {
            std::find(excluded.begin(),excluded.end(),e.type())!=excluded.end()) continue;
         e.raw[0x04]=1;
         e.raw[0x16]=0;
-        if(e.raw[0x14]&0x80u) (void)apply_stage0_damage(rom,e,1);
     }
     bullets_={};
+    (void)rom;
+}
+void Stage0Combat::blast_bosses(const Rom& rom,GameState& game) {
+    // $708B/$70D2 changes the first special boss to CE4A-1, rather than
+    // destroying it. The type-$56 tower is excluded from this service.
+    static constexpr std::array<std::uint8_t,8> types{0x3e,0x3e,0x64,0x71,0x7a,0x14,0x77,0x7b};
+    for(auto& e:game.enemies) if(e.active() && std::find(types.begin(),types.end(),e.type())!=types.end()) {
+        e.raw[0x16]=std::uint8_t((decode_spawn_type_metadata(rom,e.type()).bytes[3]/4u)-1u); e.raw[0x3c]=1;
+        break;
+    }
 }
 
 void Stage0Combat::collect(const Rom& rom,std::uint8_t kind,GameState& game,std::vector<PlaySound>& sounds) {
@@ -134,11 +159,11 @@ void Stage0Combat::collect(const Rom& rom,std::uint8_t kind,GameState& game,std:
         upgrades_.missile_armed=true;break;
     case 7:upgrades_.options=std::min(2u,upgrades_.options+1);break;
     case 14:upgrades_.power=std::min(16u,upgrades_.power+1);break;
-    case 12:case 13:
-        // Blue capsule: $7058 marks vulnerable actors for destruction.
-        clear_vulnerable(rom,game);sounds.push_back(PlaySound::Explosion);break;
+    case 12:upgrades_.wave=false;break; // N: $8437 -> primary selector $01
+    case 13:break; // $844B requests the power-up chime; no $7058 blast here.
     default:break;
     }
+    game.difficulty=std::uint8_t(upgrades_.difficulty(rom));
     sounds.push_back(PlaySound::Pickup);
 }
 void Stage0Combat::step(const Rom& rom,GameState& game,unsigned frame,int dx,int dy,std::vector<PlaySound>& sounds) {
@@ -198,20 +223,24 @@ void Stage0Combat::step(const Rom& rom,GameState& game,unsigned frame,int dx,int
             // reaches three.
             shot=fire_type15_pair(e);
         }
+        if(e.type()==0x1eu && step_stage0_blue_enemy(game,e)) {
+                for(auto offset:std::array<std::pair<int,int>,3>{{{-8,8},{16,0},{40,8}}})
+                    shot=fire(rom,e,game.player,game.difficulty,offset.first,offset.second)||shot;
+        }
         if(e.type()==0x18u) {
             // Fixed $5525-$5548. +17 is a 23-tick attack timer; at stage-0
-            // difficulty CA19=$05 the $750F gate accepts this zero selector,
+            // $750F accepts random selectors below the current CA19 value;
             // then $7143 creates a standard aimed type-$60 round.
             if(e.raw[0x17]>1u) --e.raw[0x17];
             else if(e.raw[0x17]==1u) {
                 e.raw[0x17]=0x17;
-                shot=fire(rom,e,game.player);
+                if((rom_random(rom,game)&15u)<game.difficulty) shot=fire(rom,e,game.player,game.difficulty);
             }
         }
         if(e.type()==0x20 && e.raw[10]<28 && e.raw[8]<22 &&
            (((frame/4)^e.raw[0x2d])&31)==0) {
             const bool below=game.player.y_fixed()>=e.y_fixed();
-            if(below==bool(e.raw[0x20])) shot=fire(rom,e,game.player) || shot;
+            if((rom_random(rom,game)&15u)<game.difficulty && below==bool(e.raw[0x20])) shot=fire(rom,e,game.player,game.difficulty) || shot;
         }
         if(e.type()==0x55 && e.state()>=2u && e.state()<=4u &&
            (((frame/4)^e.raw[0x2d])&15u)==0u) {
@@ -229,7 +258,7 @@ void Stage0Combat::step(const Rom& rom,GameState& game,unsigned frame,int dx,int
             const int dyp=std::abs(int(std::int16_t(game.player.y_fixed()-muzzle.y_fixed())));
             // $7725 with BC=$0C00 suppresses the shot only in the immediate
             // close-radius around the player.
-            if(dxp+dyp>=0x0c00) shot=fire(rom,muzzle,game.player);
+            if(dxp+dyp>=0x0c00) shot=fire(rom,muzzle,game.player,game.difficulty);
         }
         if(e.type()==0x1f && e.raw[10]<28 && e.raw[8]<24) {
             if(e.raw[0x24]==0) {
@@ -247,11 +276,11 @@ void Stage0Combat::step(const Rom& rom,GameState& game,unsigned frame,int dx,int
                 if(phase==3) {e.raw[0x24]=0;e.raw[0x17]=32;++e.raw[0x18];}
                 else if(phase!=1) {
                     const auto b6=rom.bank(6);const unsigned p=0x1cb6+unsigned(e.raw[5])*2;
-                    shot=fire(rom,e,game.player,int(b6[p])*8,int(b6[p+1])*8);
+                    shot=fire(rom,e,game.player,game.difficulty,int(b6[p])*8,int(b6[p+1])*8);
                 }
             }
         }
-        if(shot) sounds.push_back(PlaySound::EnemyShot);
+        if(shot) sounds.push_back(e.type()==0x1f ? PlaySound::CannonShot : PlaySound::EnemyShot);
     }
 }
 }

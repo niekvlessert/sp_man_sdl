@@ -1,0 +1,107 @@
+{
+  "rom_sha256": "bca5696ebbf4a3493bb226baa03ba8f8c5cc4876a4ad0eaa9722f583a42192b0",
+  "reference": "Unmodified ROM on Panasonic_FS-A1WSX; invulnerability and tower-kill RAM fixture; bank09 $7AF1/$7B08 after completed stream writes",
+  "snapshots": [
+    {
+      "snapshot": "stream_A2C7_0D18_0000",
+      "bytes": 2048,
+      "mismatches": 0,
+      "original_sha256": "87ff068f4434152d7e2ac916486ad7fe5ec45c6328b22863c271a4d5f1c88cae",
+      "native_sha256": "87ff068f4434152d7e2ac916486ad7fe5ec45c6328b22863c271a4d5f1c88cae"
+    },
+    {
+      "snapshot": "stream_A2C7_0D20_FFF8",
+      "bytes": 2048,
+      "mismatches": 0,
+      "original_sha256": "788d66b1ff6d2ad4b1d2dc26b0a09414a78bd7e464bfe0451836218a7cafbb7d",
+      "native_sha256": "788d66b1ff6d2ad4b1d2dc26b0a09414a78bd7e464bfe0451836218a7cafbb7d"
+    },
+    {
+      "snapshot": "stream_A2C7_0D28_FFF0",
+      "bytes": 2048,
+      "mismatches": 0,
+      "original_sha256": "bce49cf8b900d5326ce84ef1d3905f722b8736fd8c103d9f91d3e24ecb80d847",
+      "native_sha256": "bce49cf8b900d5326ce84ef1d3905f722b8736fd8c103d9f91d3e24ecb80d847"
+    },
+    {
+      "snapshot": "stream_A2D6_0D30_FFE8",
+      "bytes": 2048,
+      "mismatches": 0,
+      "original_sha256": "17318b89815394f2be55033be7154d07706bc8e05a2fae8e5de06b7d0c1d8ac5",
+      "native_sha256": "17318b89815394f2be55033be7154d07706bc8e05a2fae8e5de06b7d0c1d8ac5"
+    },
+    {
+      "snapshot": "stream_A2D6_0D38_FFE0",
+      "bytes": 2048,
+      "mismatches": 0,
+      "original_sha256": "363ddfe1e6e0822ca3e6a668fd7b5dd532a151397261f88cb811cb6ae8450633",
+      "native_sha256": "363ddfe1e6e0822ca3e6a668fd7b5dd532a151397261f88cb811cb6ae8450633"
+    },
+    {
+      "snapshot": "stream_A2D6_0D40_FFD8",
+      "bytes": 2048,
+      "mismatches": 0,
+      "original_sha256": "756d8dc615872189d76aa51b532f003b5fae461d5ea39507b7861ce6c08e14f8",
+      "native_sha256": "756d8dc615872189d76aa51b532f003b5fae461d5ea39507b7861ce6c08e14f8"
+    },
+    {
+      "snapshot": "stream_A2D6_0D48_FFD0",
+      "bytes": 2048,
+      "mismatches": 0,
+      "original_sha256": "756d8dc615872189d76aa51b532f003b5fae461d5ea39507b7861ce6c08e14f8",
+      "native_sha256": "756d8dc615872189d76aa51b532f003b5fae461d5ea39507b7861ce6c08e14f8"
+    },
+    {
+      "snapshot": "stream_A336_0DE0_FF40",
+      "bytes": 2048,
+      "mismatches": 0,
+      "original_sha256": "c7a77282c298e8543148f37ecb5f35e76dec25ec0105688fddf35202c4760008",
+      "native_sha256": "c7a77282c298e8543148f37ecb5f35e76dec25ec0105688fddf35202c4760008"
+    },
+    {
+      "snapshot": "stream_A336_0DE8_FF40",
+      "bytes": 2048,
+      "mismatches": 0,
+      "original_sha256": "c7a77282c298e8543148f37ecb5f35e76dec25ec0105688fddf35202c4760008",
+      "native_sha256": "c7a77282c298e8543148f37ecb5f35e76dec25ec0105688fddf35202c4760008"
+    },
+    {
+      "snapshot": "stream_A336_0DF0_FF40",
+      "bytes": 2048,
+      "mismatches": 0,
+      "original_sha256": "c7a77282c298e8543148f37ecb5f35e76dec25ec0105688fddf35202c4760008",
+      "native_sha256": "c7a77282c298e8543148f37ecb5f35e76dec25ec0105688fddf35202c4760008"
+    },
+    {
+      "snapshot": "stream_A33C_0DF8_FF40",
+      "bytes": 2048,
+      "mismatches": 0,
+      "original_sha256": "c7a77282c298e8543148f37ecb5f35e76dec25ec0105688fddf35202c4760008",
+      "native_sha256": "c7a77282c298e8543148f37ecb5f35e76dec25ec0105688fddf35202c4760008"
+    },
+    {
+      "snapshot": "stream_A33C_0E00_FF40",
+      "bytes": 2048,
+      "mismatches": 0,
+      "original_sha256": "14bc7d1e5d8c149bef704f925d2aac70550af5894ef25719014b6c498a2ccb4f",
+      "native_sha256": "14bc7d1e5d8c149bef704f925d2aac70550af5894ef25719014b6c498a2ccb4f"
+    },
+    {
+      "snapshot": "stream_A33C_0E08_FF40",
+      "bytes": 2048,
+      "mismatches": 0,
+      "original_sha256": "85477a3e59e29fc740682e3db2bba09c8691041dcb28000c6c2eedf0092b1710",
+      "native_sha256": "85477a3e59e29fc740682e3db2bba09c8691041dcb28000c6c2eedf0092b1710"
+    },
+    {
+      "snapshot": "stream_A33C_0E10_FF40",
+      "bytes": 2048,
+      "mismatches": 0,
+      "original_sha256": "6e6943eaad7a43c38c9408d7f70ba37426d8e95f2fc7160c09377afd7ac64bba",
+      "native_sha256": "6e6943eaad7a43c38c9408d7f70ba37426d8e95f2fc7160c09377afd7ac64bba"
+    }
+  ],
+  "player_movement_calls": 20,
+  "average_movement_interval_seconds": 0.050222834113509446,
+  "limitations": "Ring geometry at 14 diagonal/upward/post-upward checkpoints and input cadence. No whole-level pixel/audio equivalence claim."
+}

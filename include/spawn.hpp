@@ -1,6 +1,7 @@
 #pragma once
 #include "game_state.hpp"
 #include "rom.hpp"
+#include "play_sound.hpp"
 #include "screen4.hpp"
 #include <array>
 #include <cstdint>
@@ -28,6 +29,7 @@ struct SpawnTypeMetadata {
 };
 class StageSpawnStream {
 public:
+    static StageSpawnStream decode_stage(const Rom& rom,unsigned stage);
     static StageSpawnStream decode_stage0(const Rom& rom, bool include_prelude=false);
     std::span<const SpawnRecord> records() const noexcept { return records_; }
     std::span<const SpawnRecord> step_to_world_x(unsigned world_x,
@@ -83,7 +85,8 @@ std::vector<Stage0TileVisual> decode_stage0_t24_visuals_phase(const Rom& rom,
                                                                unsigned phase);
 void stamp_stage0_tile_objects(const Rom& rom, const Stage0BackgroundStream& stream,
                                const GameState& game,
-                               std::array<std::uint8_t, 24u * 32u>& d988);
+                               std::array<std::uint8_t, 24u * 32u>& d988,
+                               bool include_native_overlays=false);
 void stamp_stage0_tile_objects_right_edge(const Rom& rom, const Stage0BackgroundStream& stream,
                                           const GameState& game,
                                           std::array<std::uint8_t, 24u>& edge);
@@ -93,6 +96,8 @@ void stamp_stage0_tile_objects_right_edge(const Rom& rom, const Stage0Background
 void seed_stage0_gate_reference(GameState& game) noexcept;
 
 enum class Stage0DamageResult { Ignored, Hit, Destroyed };
+void append_stage0_damage_sounds(const Rom& rom,std::uint8_t original_type,
+    Stage0DamageResult damage,std::vector<PlaySound>& sounds);
 Stage0DamageResult apply_stage0_damage(const Rom& rom, Entity64& entity,
                                        std::uint8_t damage) noexcept;
 

@@ -156,8 +156,10 @@ void process_sprite_table(const Rom& rom, unsigned cpu_addr,
             const unsigned dest = 0xc800u + unsigned(base) * 8u + plane * 0x800u;
             upload(out.vram, dest, data);
         }
-        if (object_type < out.object_pattern_base.size())
+        if (object_type < out.object_pattern_base.size()) {
             out.object_pattern_base[object_type] = base;
+            out.object_pattern_page[object_type]=(mask&2u)?1u:((mask&4u)?2u:0u);
+        }
         p += 6u;
     }
 }
@@ -171,9 +173,9 @@ std::array<std::uint16_t, 16> level1_palette() {
             0x0445,0x0030,0x0770,0x0647,0x0326,0x0333,0x0777,0x0000};
 }
 std::array<std::uint16_t, 16> apply_palette_script(
-        const Rom& rom, std::array<std::uint16_t, 16> palette, unsigned cpu_addr) {
-    const auto bank = rom.bank(27);
-    unsigned p = cpu_addr - 0xA000u;
+        const Rom& rom, std::array<std::uint16_t, 16> palette, unsigned cpu_addr,unsigned bank_index=27u,unsigned base=0xa000u) {
+    const auto bank = rom.bank(bank_index);
+    unsigned p = cpu_addr - base;
     while (p < bank.size() && bank[p] < 0xF0u) {
         if (p + 1u >= bank.size()) break;
         const auto a = bank[p++];
@@ -207,19 +209,28 @@ std::array<std::uint16_t, 16> apply_boss_palette_entries(
 }
 }
 
-Stage0VideoAssets decode_stage0_video(const Rom& rom) {
+Stage0VideoAssets decode_stage0_video(const Rom& rom) { return decode_stage_video(rom,0); }
+Stage0VideoAssets decode_stage_video(const Rom& rom,unsigned stage) {
+    if(stage>=9u) throw std::out_of_range("stage graphics index");
     Stage0VideoAssets result;
     result.vram.assign(0x20000u, 0);
     // Resolved endpoints of the three stage-0 bank-10 asset command groups.
     // Each points at the $FF ending the command preamble; destination lists
     // and the 8-byte graphics descriptors immediately follow.
-    for (unsigned group : {0x840bu, 0x8458u, 0x8666u})
-        process_group(rom, group, result.vram);
+    const unsigned root=unsigned(bank10(rom,0x8165u+stage*2u))|
+        (unsigned(bank10(rom,0x8166u+stage*2u))<<8u);
+    unsigned end=root;
+    while(bank10(rom,end)!=0xffu) ++end;
+    process_group(rom,0x840bu,result.vram);
+    process_group(rom,end,result.vram);
+    if(stage==0u) process_group(rom,0x8666u,result.vram);
 
     // $8371: global sprite patterns, then the stage-0 table selected through
     // the pointer list at $83C0. These also build the original $DFxx table.
     process_sprite_table(rom, 0x92b8u, result);
-    process_sprite_table(rom, 0x92d7u, result);
+    const unsigned sprites=unsigned(bank10(rom,0x83c0u+stage*2u))|
+        (unsigned(bank10(rom,0x83c1u+stage*2u))<<8u);
+    process_sprite_table(rom,sprites,result);
     // Bank02's weapon renderer maintains sprite bitmaps outside the compressed
     // stage tables.  $871E/$8749 installs the O-direction patterns at $C9A0
     // (and the second R6 page at $D1A0); $8732 installs the primary shot at
@@ -236,6 +247,7 @@ Stage0VideoAssets decode_stage0_video(const Rom& rom) {
     for (unsigned destination : {0xca20u, 0xd220u})
         std::copy(missile_weapon.begin(), missile_weapon.end(), result.vram.begin() + destination);
     result.palette_grb = level1_palette();
+    if(stage>0u) result.palette_grb=apply_palette_script(rom,result.palette_grb,root,10u,0x8000u);
     result.late_palette_grb = apply_palette_script(rom, result.palette_grb, 0xA43Au);
     result.tower_palette_grb = apply_palette_script(rom, result.late_palette_grb, 0xA44Du);
     // AA22 selects the stage-0 red boss table through bank07:$86D2 -> $8764.
@@ -246,6 +258,10 @@ Stage0VideoAssets decode_stage0_video(const Rom& rom) {
     // complete VDP palette, hence the whole surrounding platform reddens.
     result.vehicle_tower_palette_grb = apply_boss_palette_entries(rom, result.late_palette_grb, 0x8754u);
     result.vehicle_tower_red_palette_grb = apply_boss_palette_entries(rom, result.vehicle_tower_palette_grb, 0x87d4u);
+    if(stage>0u) {
+        result.late_palette_grb=result.palette_grb;
+        result.tower_palette_grb=result.palette_grb;
+    }
     return result;
 }
 }

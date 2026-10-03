@@ -1,156 +1,59 @@
-# Visuele inspectie: vóór de toren tot en met de eindbaas
+# Inspectie van de late stage-0-sectie — gecorrigeerd
 
-Datum: 2026-10-03. Doel: dezelfde zichtbare inhoud als de originele ROM,
-met soepele presentatie in SDL. Verschillen in de interne C++/Z80-uitvoering
-zijn alleen relevant wanneer ze zichtbaar gedrag veranderen.
+2026-10-03, vanaf het voertuig vóór de toren met rode bal ($56) tot de
+klauwbaas ($64), inclusief de afloop. Doel: originele inhoud en gedrag met
+soepeler native presentatie. Zie de uitgevoerde reparaties en validatie in
+[sdl_late_combat_fixes_2026-10-03.md](sdl_late_combat_fixes_2026-10-03.md).
 
-## Referentie en werkwijze
+## Correctie van de oorspronkelijke beeldvergelijking
 
-De toren met de bal is type **$56**. De blauwe eindbaas met grijparm is
-type **$64**. Oudere notities en broncommentaren noemen $64 soms nog een
-"tower/gate"; dat is een onjuiste visuele naam.
+De eerste versie van deze inspectie trok drie verkeerde conclusies uit
+OpenMSX SDLGL-PP-screenshots: een verschoven toren, ontbrekend voertuig tijdens
+de verticale terugkeer en een blauwe baasachtergrond. Bij throttle=off kon
+OpenMSX een oud videoframe teruggeven naast de actuele CPU-state. Throttle
+kort inschakelen (0,05 of zelfs 0,25 emulatieseconden) garandeerde geen vers
+beeld. De mappen `original_synced/`, `comparison*.png` en de eerdere
+`comparison_pairs.json` zijn daarom **diagnostiek, geen betrouwbare synchrone
+visuele referentie**. Het script `tools/inspect_stage0_late.tcl` waarschuwt hiervoor.
 
-De originele, ongewijzigde cartridge is opnieuw uitgevoerd in de bestaande
-OpenMSX-build, machine Panasonic_FS-A1WSX. Screenshots en objectrecords zijn
-vastgelegd van 100 tot 215 emulatieseconden. RAM-only onkwetsbaarheid via
-CA53/CA54 voorkomt dat de stilstaande speler de route afbreekt. De route
-gebruikt geen autofire. Na twintig seconden observatie van $64 is één
-gelogde pending-damage-injectie HP+1 gebruikt om de afloop te kunnen bekijken.
-Er zijn geen cartridgebytes aangepast.
+Onafhankelijke nieuwe captures:
 
-OpenMSX slaat bij throttle=off videoframes over op basis van de werkelijke
-klok, ook met maxframeskip=0. De definitieve referentie schakelt daarom vóór
-iedere screenshot 0,05 emulatieseconden throttle in en gebruikt frameskip=0.
-Alleen `original_synced/` geldt als definitieve beeldreferentie. De twee
-eerdere runs zijn diagnostiek en mogen niet als synchrone referentie dienen.
+- `tools/probe_out/parity_video_t123/`: een afzonderlijke videorun toont de
+  toren bij camera X=3896/Y=-192 wel midden in beeld, zoals de native scène.
+- `tools/probe_out/parity_t132/`: de actuele originele E000–E7FF-ring is leeg
+  en de actieve naamtafel bevat sterren; het eerder afgebeelde voertuig was oud.
+- `tools/probe_out/parity_t150/`: actuele ROM/RAM/VRAM/palet/registers ondersteunen
+  geen permanent blauwe arena. Geen kunstmatige arena- of torenverschuiving toegevoegd.
 
-SDL-beelden komen uit de werkelijke `PlaySession::render_wide()`-presentatie
-(512x212), niet uit de oudere `--capture-at`-route die gewone `render()` gebruikt.
-Er is een run zonder input en een aparte run met maximale bewapening en vuur
-vanaf native frame 7200. Dat tweede pad dient om vernietiging/afloop te observeren.
+ROM: `space_manbow.rom`, SHA256
+`bca5696ebbf4a3493bb226baa03ba8f8c5cc4876a4ad0eaa9722f583a42192b0`.
+OpenMSX-machine: Panasonic_FS-A1WSX. RAM-only spelerbescherming houdt de route
+actief. Voor de stage-overgang is bij t=148 een gelogde pending-damage-injectie
+gebruikt; de cartridge is ongewijzigd. Deze snapshots zijn toestandsevidence,
+geen claim van een complete natuurlijke, gelijke-input-videovalidatie.
 
-Beelden zijn gekoppeld op camera X/Y, streamfase en, bij de baas, objectpositie,
-fase en tile-selector. De torenvergelijking bij ROM t=123 heeft exact dezelfde
-camera X=3896/Y=-192 als SDL f=7680. Tijdens de verticale overgang lopen de
-wereldcoördinaten zelf uiteen: bij dezelfde scriptfase A3F6 heeft de ROM
-X=4254/Y=-66 en SDL X=4166/Y=-58. Die vergelijking bewijst een ontbrekend
-scènedeel, maar is geen exacte pixelvergelijking bij identieke toestand.
-Bij de baas vergelijken ROM t=150 en SDL f=9720 beide fase6/tile3/sprite4;
-de ankers verschillen slechts twee logische pixels in X.
+## Werkelijke defecten en hun status
 
-Bewijs onder `tools/probe_out/late_visual_audit_2026-10-03/`:
-`comparison_selected.png`, `comparison.png`, `comparison_pairs.json`,
-`native_motion.json`, originele/native states.tsv en `provenance.json`.
-De map bevat ook de diagnostische native inspector en reproductiescripts.
+| Defect | Reparatie |
+| --- | --- |
+| $56-bovendeel volledig verborgen bij anker x<96 | Verwijderd; volledige ROM-matrices worden aan de viewport geknipt |
+| $56 en andere grote voertuigobjecten te vroeg verwijderd | Afzonderlijke grenzen voor de volledige objectgeometrie |
+| $64-klauwframe volledig verborgen bij x<32 | Verwijderd; zichtbaar deel blijft getekend |
+| Y-scrolling bleef 0,0,0,1 pixel per vier frames | Native presentatie op halve X- en kwart Y-pixels, elke video-frame |
+| Baas- en $40-sprites lazen de pagina van eerdere flyers | Spritepagina geselecteerd uit de originele laadmaskers; $64/$40 gebruiken D800 |
+| $3D-onderstel en $40-aanvalshandlers ontbraken | ROM-fasen, richtingen, acceleratie, PRNG, framecarry en 20-Hz-cadans aangesloten |
+| Baasgevecht bevroor achtergrond-/onderstelanimatie | Animatiecontroller blijft lopen terwijl de stream gate stopt |
+| Grote kanonnen vuurden algemene puntkogels | Eigen type-$67-schoten, vijf looprichtingen, ROM-snelheid en SFX |
+| FF10-route sloeg alternatieve kolommen altijd over | Vertakking volgt de werkelijk vernietigde $56-toren |
+| $6A-afloop bleef eeuwig in de boss gate | Vernietigingsreeks voltooit stage; volgende achtergrond, sprites en muziek geladen |
+| Vaste moeilijkheid 5 en onmiddellijke schade per pellet | ROM-loadoutmoeilijkheid en pending-schade op de oorspronkelijke servicecadans |
 
-## Aangetoonde verschillen
+De native captures in `native_smooth_final/` en `native_smooth_firing/` zijn
+werkelijke `render_smooth()`-frames (512×848), met respectievelijk geen vuur
+en maximaal test-loadout/vuur vanaf frame7200. De oude PNG-contactvellen
+worden niet opnieuw als bewijs gebruikt.
 
-### 1. Toren en omringend voertuig staan in de verkeerde beeldfase/positie
-
-Bij X=3896/Y=-192 verschijnt de toren in de ROM pas aan de rechterkant.
-SDL toont op precies die camera al een vrijwel complete toren midden in beeld.
-Ook de volgorde/plaatsing van de naburige dekdelen en kanonnen verschilt.
-Dit is dus geen verschil dat alleen ontstaat door een andere afspeeltijd.
-De native overlays en het geroteerde achtergrondbeeld delen hier geen
-correcte zichtbare oorsprong. Het opnieuw gebruiken van ROM-tegels alleen
-garandeert de juiste plaatsing niet.
-
-### 2. Bovenkant verdwijnt abrupt en de toren wordt te vroeg verwijderd
-
-`draw_tile_actor()` in `src/play_session.cpp` verbergt $56 expliciet wanneer
-zijn anker links van **x=96** komt. Daardoor verdwijnt het bovendeel terwijl de
-basis nog zichtbaar is. `scroll_stage0_objects()` gebruikt bovendien voor
-$56 de algemene grens -$0200, slechts -16 pixels, om het hele object te verwijderen.
-
-De ROM houdt $56 juist actief met negatieve ankercoördinaten: bijvoorbeeld
-X=$EE80 rond t=129 en X=$DF80 rond t=132. Het samengestelde voertuig/torenbeeld
-is in die laatste referentie nog duidelijk zichtbaar. Clipping moet volgen
-uit de volledige zichtbare geometrie en de juiste scènetransformatie.
-
-### 3. Bij de verticale terugkeer verdwijnt te veel decor
-
-Tijdens A3B2..A3F6 blijft de toren met het aansluitende voertuig in de ROM
-zichtbaar terwijl het beeld verticaal terugschuift. SDL toont daar al vrijwel
-alleen sterren en de speler. Het voertuig schuift daardoor onvoldoende als
-een samenhangend geheel uit beeld. Objectverwijdering, achtergrondpositie
-en de omschakeling van raster/patrooncontext moeten gezamenlijk worden hersteld.
-
-### 4. Verticaal scrollen is nog niet soepel op 60 Hz
-
-Framevergelijkingen f=6897..6912 geven voor de verticale verplaatsing telkens
-`0,0,0,1` logische pixel over vier frames. De horizontale presentatie gebruikt
-wel halve pixels. `render_wide()` fixeert de onderliggende renderfase op het
-coarse eindpunt en interpoleert daarna uitsluitend de X-verplaatsing.
-Dat laat de Y-beweging op de oude 15-Hz-stappen staan. Voor het gewenste beeld
-moet ook Y tussen de scènes worden gepresenteerd, inclusief de bewegende overlays.
-
-### 5. De klauw van de eindbaas wordt soms volledig weggeknipt
-
-In `decode_stage0_tile_visuals()` wordt matrixframe7 van $64 weggegooid zodra
-zijn oorsprong links van **x=32** ligt. Dat verwijdert ook een complete, nog
-zichtbare klauw tijdens de normale terugtrekbeweging. De vergelijking van
-ROM t=150 met SDL f=9720 laat dit zien bij dezelfde baasfase/tile-selector.
-De ROM toont de hand links; SDL mist de hand en houdt losse blauwe spritefragmenten over.
-Dit is een te ruime ingreep uit een eerdere artefactcorrectie.
-
-### 6. Onderstelanimatie en echte aanvallen van de eindbaas ontbreken
-
-De ROM creëert naast $64 een object **$3D** voor het afzonderlijke, fasegestuurde
-tiledeel van het onderstel. Bank06 $A530..$A55D kiest zijn frame met CA3B en de
-scrollcarry. De ROM maakt daarnaast **$40**-aanvalsobjecten via $A560; de
-handler $A57F.. gebruikt meerdere bewegings-/richtfasen en spelergericht gedrag.
-
-De referentie bij t=142 bevat $64, $3D en drie $40-objecten; bij t=150 zijn
-vier $40-objecten aanwezig. De native run bevat in die ontmoeting alleen $64.
-De native baas heeft wel de basis van de open/dicht-beweging, maar mist daarmee
-onderstelanimatie, zichtbare salvo's en hun vervolgbeweging.
-
-### 7. Kanonschoten hebben een ander uiterlijk
-
-De ROM-captures tonen lange gele schoten, ook diagonaal. SDL gebruikt in deze
-sectie veel kleine oranje/witte stippen. `Stage0Combat::fire()` maakt ook voor
-de grote $1F-kanonnen de algemene type-$60-kogel. De eigen oorspronkelijke
-projectielroute van die kanonnen is nog niet volledig overgenomen.
-Het juiste projectielbeeld en bewegingspatroon moeten worden teruggebracht.
-
-### 8. De afloop na het verslaan van de baas ontbreekt
-
-In de ROM volgt op de gelogde vernietiging $64->$6A de vernietigingssequentie,
-de voltooiingsvlag en de volgende stage-initialisatie. Rond t=160 staat de
-originele stage-index op1 en daarna komt de volgende achtergrond binnen.
-
-In de native vuur-run is $64 verdwenen, maar op f=9000..13200 blijft het beeld
-bij camera4352, streamA43A en gated=true staan. Er wordt geen volgend level
-gestart. De native $6A-handler verwijdert uiteindelijk alleen het object;
-een aangesloten levelcontroller ontbreekt.
-
-## Overige zichtbare afwijkingen en grenzen van de inspectie
-
-- Tijdens het originele baasgevecht verschijnt in deze referentie een blauwe
-  arena-achtergrond; SDL houdt zijn zwarte sterrenveld. De zichtbare context
-  verschilt. De precieze trigger van die blauwe fase is nog niet geïsoleerd,
-  dus dit mag niet worden opgelost door de hele baasachtergrond permanent blauw
-  te maken zonder aanvullend onderzoek.
-- HUD-lettervorm, formaat en plaatsing verschillen; de levensindicator ontbreekt.
-  Scorewaarden zijn hier niet één-op-één vergelijkbaar door verschillend spelverloop.
-- De native voertuigaanvallen gebruiken een vaste CA19-equivalent5. De verse
-  originele run heeft CA19=1. Aantallen en precieze frequentie van die aanvallen
-  zijn daarom geen eerlijke directe vergelijking. Ontbrekende baasfamilies en
-  de geometrische fouten hierboven hangen niet van alleen die aantallen af.
-- De destructiesequentie van $56 heeft inmiddels eigen native fasen, kleuren,
-  geluiden en $69-effecten. Deze inspectie bewijst niet dat die volledige
-  reeks visueel exact is. Dat moet apart met gelijke schade-/wapentoestanden
-  worden vergeleken voordat nieuwe wijzigingen eraan worden voorgesteld.
-
-## Aanbevolen volgorde
-
-1. Herstel de positie/compositie van toren en decor; vervang de x=96-ingreep
-   en de te vroege objectverwijdering door clipping op zichtbare geometrie.
-2. Presenteer verticale/diagonale scènebeweging ook op 60 Hz en behoud het
-   volledige voertuig tijdens de verticale overgang.
-3. Herstel de volledige klauw en voeg het onderstel en de $40-aanvallen toe.
-4. Controleer arena-/paletfasen, projectielbeelden en de baasafloop.
-
-Dit onderzoek verandert geen native gameplay- of rendercode. Er is geen
-volledig opnieuw uitgevoerde regressiesuite nodig geweest; het zijn verse
-visuele/state-captures, ROM-handlerinspectie en meting van de bestaande uitvoer.
+De HUD en alle vervolglevels zijn nog geen complete, visueel gevalideerde
+port. De volgende-stage-initialisatie is aangesloten; die stage heeft nog
+niet alle eigen vijandhandlers. Chipkanaalprioriteiten en het volledige
+natuurlijke PRNG-aanroeppatroon blijven afzonderlijke fideliteitsgrenzen.

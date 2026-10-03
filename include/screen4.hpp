@@ -17,10 +17,12 @@ struct Screen4Snapshot {
     std::array<std::uint32_t, 16> vehicle_tower_palette{};
     std::array<std::uint32_t, 16> vehicle_tower_red_palette{};
     std::array<std::uint8_t, 0x80> object_pattern_base{};
+    std::array<std::uint8_t,0x80> object_pattern_page{}; // sprite R6 page selected by loader mask
 
     static Screen4Snapshot load(const std::filesystem::path& vram_path,
                                 const std::filesystem::path& palette_path);
     static Screen4Snapshot from_stage0_rom(const Rom& rom);
+    static Screen4Snapshot from_stage_rom(const Rom& rom,unsigned stage);
 };
 
 std::vector<std::uint32_t> render_level_screen4(const LevelMap& level,
