@@ -791,7 +791,7 @@ bool instantiate_stage0_spawn(const Rom& rom, const SpawnRecord& r, GameState& g
     // type $64 from real gameplay, leaving only the scenery copy visible.
     const bool special64 = r.type == 0x64u && r.control_flag();
     if (r.control_flag() && !special26 && !special2b && !special53 && !special64) return false;
-    if (r.type != 0x19u && r.type != 0x1eu && r.type != 0x1fu && r.type != 0x20u && r.type != 0x27u && r.type != 0x29u && r.type != 0x2bu && r.type != 0x2du && r.type != 0x2eu && r.type != 0x2fu && r.type != 0x31u && r.type != 0x22u &&
+    if (r.type != 0x19u && r.type != 0x1eu && r.type != 0x1fu && r.type != 0x20u && r.type != 0x27u && r.type != 0x29u && r.type != 0x2bu && r.type != 0x2du && r.type != 0x2eu && r.type != 0x2fu && r.type != 0x31u && r.type != 0x3cu && r.type != 0x22u &&
         r.type != 0x24u && r.type != 0x26u && r.type != 0x53u && r.type != 0x55u &&
         r.type != 0x56u && r.type != 0x47u && r.type != 0x64u) return false;
     if (r.payload.empty() || (r.type == 0x24u && r.payload.size() < 2u)) return false;
@@ -889,6 +889,11 @@ bool instantiate_stage0_spawn(const Rom& rom, const SpawnRecord& r, GameState& g
         e->raw[0x03]=r.payload[1];e->raw[0x05]=r.payload[1]&1u;
         e->raw[0x0b]=0x60u;e->raw[0x0c]=0xffu;
         e->raw[0x0d]=0u;e->raw[0x0e]=0u;
+    } else if(r.type==0x3cu) {
+        // Bank06 $A2B1: common $6754 position, then one extra selector byte
+        // becomes the tile-frame/controller selector at +06.
+        if(r.payload.size()<2u) {e->clear();return false;}
+        e->raw[0x06]=r.payload[1];
     } else if(r.type==0x29u) {
         // Bank05 $82CA: stage-2 small turret, upside-down payload bit 7.
         e->raw[0x20]=(r.payload[0]>>7u)&1u;

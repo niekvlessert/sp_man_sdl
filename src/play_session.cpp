@@ -947,6 +947,11 @@ void PlaySession::step_60hz(PlayerInput input) {
         if(stage_tick && !background_.gated()) {
             step_stage0_object_scroll_15hz(game_,background_.x_velocity_fp(),background_.y_velocity_fp(),&rom_);
             step_stage0_object_logic_15hz(game_);background_.step_15hz();
+            // Bank06 $A2C3-$A2CB: selector-0 type $3C owns the final-sector
+            // raster anchor and executes fixed $6C75 with A=$FB every tick.
+            for(const auto& e:game_.enemies)
+                if(e.type()==0x3cu && e.state()==1u && e.raw[0x06]==0u)
+                    background_.apply_object_raster_anchor(e.x_fixed(),e.y_fixed(),0xfbu);
             camera_half_pixels_=3072u+background_.world_x()*2u;
         }
     } else if (camera_pixels()<1536) {

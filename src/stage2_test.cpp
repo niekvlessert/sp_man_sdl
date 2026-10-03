@@ -266,6 +266,29 @@ int main(int argc,char** argv) {
         assert(max_phase>=9u);
     }
 
+    // Final-sector type $3C: five actual ROM objects, selectors 0..4.
+    // Selector zero also owns the fixed-bank $6C75 raster anchor.
+    {
+        unsigned count3c=0;std::array<bool,5> selectors{};
+        for(const auto& record:stream.records()) if(record.type==0x3cu) {
+            sm::GameState game;assert(sm::instantiate_stage0_spawn(rom,record,game,1));
+            const auto& e=game.enemies[0];++count3c;
+            assert(record.payload.size()==2u && e.state()==1u);
+            assert(e.raw[0x08]==record.payload[0] && e.raw[0x0a]==0x20u);
+            assert(e.raw[0x06]==record.payload[1] && e.raw[0x06]<selectors.size());
+            selectors[e.raw[0x06]]=true;
+            assert(e.flags15()==0x46u && e.raw[0x16]==1u);
+            assert(!sm::decode_stage0_tile_visuals(rom,e).empty());
+        }
+        assert(count3c==5u && std::all_of(selectors.begin(),selectors.end(),[](bool v){return v;}));
+        sm::Stage0BackgroundStream raster(rom);raster.reset_stage(1);
+        const auto wx=raster.world_x();const auto wy=raster.world_y();
+        raster.apply_object_raster_anchor(0x20a0u,0x0120u,0xfbu);
+        assert((raster.ca1c()&0xffu)==0x60u && (raster.ca1a()&0xffu)==0xe0u);
+        assert(raster.scroll_row()==0x1fu && raster.presentation_state().r18==0x0bu);
+        assert(raster.world_x()==wx && raster.world_y()==wy);
+    }
+
     // Stage-2 wave generator: one $53 controller creates two initial $2A
     // lanes, then repeats a top-entry child on the original $40-tick cadence.
     {
@@ -315,5 +338,5 @@ int main(int argc,char** argv) {
         assert(fired);
         assert(std::find(sounds.begin(),sounds.end(),sm::PlaySound::EnemyShot)!=sounds.end());
     }
-    std::cout<<"Stage 2: 56 regular spawns, launchers, $53 generator and 9 $5F scene commands PASS\n";
+    std::cout<<"Stage 2: regular spawns, $53/$5F controllers and five $3C final objects PASS\n";
 }

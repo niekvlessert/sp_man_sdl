@@ -21,6 +21,10 @@ public:
     void step_15hz();
     void seek_world_x(unsigned x);
     void set_tower_destroyed(bool value) noexcept { tower_destroyed_=value; }
+    // Fixed $6C75: final-sector type $3C selector 0 derives the raster fine
+    // scroll bytes from its own 8.8 position without changing world position.
+    void apply_object_raster_anchor(std::uint16_t x_fixed,std::uint16_t y_fixed,
+                                    std::uint8_t bias) noexcept;
 
     // Original stage-0 composition state (ring -> D988 -> parallax).
     std::array<std::uint8_t, 24u * 32u> compose_d988_raw() const;
@@ -105,6 +109,10 @@ private:
     bool tower_destroyed_=false;
     bool gated_ = false;
     bool suppress_prefetch_ = false;
+    bool object_raster_anchor_ = false;
+    std::uint8_t anchor_ca1a_low_ = 0;
+    std::uint8_t anchor_ca1c_low_ = 0;
+    std::uint8_t anchor_c0bb_ = 0;
 
     unsigned ring_col() const noexcept;
     unsigned ring_row() const noexcept;

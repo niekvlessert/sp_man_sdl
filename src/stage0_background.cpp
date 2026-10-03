@@ -27,7 +27,7 @@ Stage0BackgroundStream::Stage0BackgroundStream(const Rom& rom) : rom_(rom) {
 }
 
 void Stage0BackgroundStream::reset() {
-    stage_index_=0;
+    stage_index_=0;object_raster_anchor_=false;
     metatile_base_=0;
     tower_destroyed_=false;
     ring_.fill(0);
@@ -144,7 +144,7 @@ void Stage0BackgroundStream::reset_stage(unsigned stage) {
         x_fp_=int(column*8u)<<8;
         stream_phase();
     }
-    suppress_prefetch_=false;
+    suppress_prefetch_=false;object_raster_anchor_=false;
     prefetch_successor_column();
 }
 
@@ -168,10 +168,29 @@ int Stage0BackgroundStream::world_y() const noexcept {
 }
 
 std::uint16_t Stage0BackgroundStream::ca1a() const noexcept {
-    return std::uint16_t(asr3(std::int16_t(std::uint16_t(y_fp_ & 0xffff))));
+    auto value=std::uint16_t(asr3(std::int16_t(std::uint16_t(y_fp_ & 0xffff))));
+    if(object_raster_anchor_) value=std::uint16_t((value&0xff00u)|anchor_ca1a_low_);
+    return value;
 }
 std::uint16_t Stage0BackgroundStream::ca1c() const noexcept {
-    return std::uint16_t(asr3(std::int16_t(std::uint16_t(x_fp_ & 0xffff))));
+    auto value=std::uint16_t(asr3(std::int16_t(std::uint16_t(x_fp_ & 0xffff))));
+    if(object_raster_anchor_) value=std::uint16_t((value&0xff00u)|anchor_ca1c_low_);
+    return value;
+}
+void Stage0BackgroundStream::apply_object_raster_anchor(std::uint16_t x_fixed,
+        std::uint16_t y_fixed,std::uint8_t bias) noexcept {
+    // Byte-for-byte fixed-bank $6C75-$6CAD. Only the low CA1A/CA1C bytes,
+    // C0BB and C0D2 are replaced; the stage world coordinates stay intact.
+    std::uint8_t d=std::uint8_t(bias+std::uint8_t(y_fixed>>8u));
+    d=std::uint8_t(0u-d);d=std::uint8_t((unsigned(d)*8u)&0xf8u);
+    auto xl=std::uint8_t(x_fixed);xl=std::uint8_t(0u-(xl&0xe0u));xl&=0xe0u;
+    auto yl=std::uint8_t(y_fixed);yl&=0xe0u;
+    if(yl) d=std::uint8_t(d-8u);
+    yl=std::uint8_t(0u-yl);yl&=0xe0u;
+    anchor_ca1c_low_=xl;anchor_ca1a_low_=yl;
+    anchor_c0bb_=std::uint8_t((unsigned(xl)<<3u)|(unsigned(xl)>>5u));
+    const auto yr=std::uint8_t((unsigned(yl)<<3u)|(unsigned(yl)>>5u));
+    c0d2_=std::uint8_t(yr|d);object_raster_anchor_=true;
 }
 std::uint8_t Stage0BackgroundStream::vertical_scroll() const noexcept {
     // During the mode-4 diagonal raster program the live VDP uses
@@ -197,7 +216,8 @@ Stage0PresentationState Stage0BackgroundStream::presentation_state() const noexc
     // native stream object already contains the newly-integrated X. Rewind one
     // coarse velocity step to obtain the exact C0BB observed by $6F43.
     const int previous_x = int(world_x()) - int(x_vel_fp_ / 256);
-    p.r18 = std::uint8_t(((previous_x & 7) - 8) & 15);
+    const unsigned c0bb=object_raster_anchor_?anchor_c0bb_:unsigned(previous_x&7);
+    p.r18 = std::uint8_t(((c0bb & 7u) - 8u) & 15u);
 
     // The same routine patches the next line interrupt. The two programs use
     // different fixed offsets: $6C for R2=$30, $8C for R2=$31. At A31A this
