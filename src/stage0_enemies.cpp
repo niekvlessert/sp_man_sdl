@@ -299,7 +299,7 @@ void Stage0Enemies::move_60hz(GameState& game,unsigned frame) {
             if(--e.raw[0x3e]==0) e.clear();
             continue;
         }
-        if(e.active() && (flight(e.type()) || e.type()==0x16u || e.type()==0x1eu || e.type()==0x11u || e.type()==0x27u || e.type()==0x2cu || e.type()==0x2du || e.type()==0x68u || e.type()==0x70u || e.type()==0x40u)) {
+        if(e.active() && (flight(e.type()) || e.type()==0x16u || e.type()==0x1eu || e.type()==0x11u || e.type()==0x27u || e.type()==0x2cu || e.type()==0x2du || e.type()==0x2fu || e.type()==0x31u || e.type()==0x68u || e.type()==0x70u || e.type()==0x40u)) {
         const int divisor=e.type()==0x40u?3:4,phase=int(frame%unsigned(divisor));
         auto delta=[&](int v){return v*(phase+1)/divisor-v*phase/divisor;};
         e.set_x_fixed(std::uint16_t(e.x_fixed()+delta(signed_word(e,13))));
@@ -362,7 +362,8 @@ void Stage0Enemies::step_gate_20hz(const Rom& rom,GameState& game,unsigned tick,
     }
 }
 void Stage0Enemies::step_15hz(const Rom& rom,GameState& game,unsigned tick,std::uint16_t trigger,
-                              bool include_gate,std::vector<PlaySound>* sounds) {
+                              bool include_gate,std::vector<PlaySound>* sounds,
+                              const TerrainProbe& terrain_probe) {
     // Bank05:$9A41 calls $6AB8 with B=4 on the object-logic cadence. Live
     // OpenMSX traces show frames 0->1->2->3 over roughly 0.2 s, not four
     // consecutive video frames. Keep frame 0 for one logic interval, then
@@ -702,6 +703,43 @@ void Stage0Enemies::step_15hz(const Rom& rom,GameState& game,unsigned tick,std::
                         e.state()=0u;e.raw[0x17]=0x28u;e.raw[0x18]=2u;
                     }
                 }
+            }
+        } else if(e.type()==0x2fu) {
+            // Bank05 $8694-$8707. State 1 waits until the player enters the
+            // 8x8 coarse-cell neighbourhood. States 2..4 alternate a four-
+            // tick 8-direction movement burst and a four-tick pause. $8708
+            // can steer around solid scenery; native SDL keeps the exact ROM
+            // direction/speed table and falls back to direct pursuit when no
+            // terrain probe is available here.
+            if(e.state()==1u) {
+                const int dx=std::abs(int(game.player.raw[0x0a])-int(e.raw[0x0a]));
+                const int dy=std::abs(int(game.player.raw[0x08])-int(e.raw[0x08]));
+                if(dx<8 && dy<8) e.state()=2u;
+            } else if(e.state()==2u) {
+                const unsigned dir=direction8(game,e)&7u;
+                static constexpr std::array<int,8> vy{0,-0x60,-0x60,-0x60,0,0x60,0x60,0x60};
+                static constexpr std::array<int,8> vx{-0x60,-0x60,0,0x60,0x60,0x60,0,-0x60};
+                e.raw[0x20]=std::uint8_t(dir);put(e,11,vy[dir]);put(e,13,vx[dir]);
+                e.raw[0x17]=4u;e.state()=3u;
+            } else if(e.state()==3u && expired(e,0x17)) {
+                put(e,11,0);put(e,13,0);e.raw[0x17]=4u;e.state()=4u;
+            } else if(e.state()==4u && expired(e,0x17)) {
+                e.state()=2u;
+            }
+        } else if(e.type()==0x31u) {
+            // Fixed $5CDF/$5D3D. Variant byte +03 also selects sprite frame
+            // +05. State 0 rises at -$00A0 until the probe one cell right and
+            // one cell above touches solid terrain; state 1 descends at
+            // +$0100 until the probe one cell right/five below touches it.
+            auto solid=[&](int xo,int yo) {
+                if(terrain_probe) return terrain_probe(e,xo,yo);
+                const int y=int(std::int16_t(e.y_fixed()));
+                return e.state()==0u ? y<=0x0500 : y>=0x1300;
+            };
+            if(e.state()==0u && solid(0x0100,-0x0100)) {
+                put(e,11,0x0100);e.state()=1u;
+            } else if(e.state()==1u && solid(0x0100,0x0500)) {
+                put(e,11,-0x00a0);e.state()=0u;
             }
         } else if(e.type()==0x22u) {
             if(e.state()==1u) {

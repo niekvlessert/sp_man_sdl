@@ -137,6 +137,54 @@ int main(int argc,char** argv) {
         enemies.step_15hz(rom,game,8,0,false,nullptr);
         assert(game.enemies[0].state()==2u && game.enemies[0].raw[0x06]==3u);
     }
+    // Third regular batch: all seventeen $2F pursuers and ten $31 vertical
+    // obstacles, including the conditional $B1 record, instantiate exactly
+    // from the stage-2 ROM table.
+    unsigned pursuers2f=0,obstacles31=0;
+    for(const auto& record:stream.records()) {
+        if(record.type!=0x2fu && record.type!=0x31u) continue;
+        sm::GameState game;assert(sm::instantiate_stage0_spawn(rom,record,game,1));
+        const auto& e=game.enemies[0];
+        if(record.type==0x2fu) {
+            ++pursuers2f;assert(e.state()==1u);
+            assert(bool(e.raw[0x3d])==bool(record.payload[0]&0x80u));
+        } else {
+            ++obstacles31;assert(record.payload.size()==2u);
+            assert(e.state()==0u && e.raw[3]==record.payload[1] && e.raw[5]==(record.payload[1]&1u));
+            const auto vy=std::int16_t(unsigned(e.raw[11])|(unsigned(e.raw[12])<<8));
+            assert(vy==-0x00a0);
+        }
+    }
+    assert(pursuers2f==17u && obstacles31==10u);
+    {
+        sm::GameState game;sm::Stage0Enemies enemies;
+        sm::SpawnRecord r;r.type=r.raw_type=0x2fu;r.payload={0x10u};
+        assert(sm::instantiate_stage0_spawn(rom,r,game,1));
+        auto& e=game.enemies[0];e.set_x_fixed(0x1000u);e.set_y_fixed(0x0800u);
+        game.player.set_x_fixed(0x0c00u);game.player.set_y_fixed(0x0c00u);
+        enemies.step_15hz(rom,game,0,0,false,nullptr);assert(e.state()==2u);
+        enemies.step_15hz(rom,game,1,0,false,nullptr);assert(e.state()==3u && e.raw[0x17]==4u);
+        const auto vy=std::int16_t(unsigned(e.raw[11])|(unsigned(e.raw[12])<<8));
+        const auto vx=std::int16_t(unsigned(e.raw[13])|(unsigned(e.raw[14])<<8));
+        assert((vy==0 || std::abs(vy)==0x60) && (vx==0 || std::abs(vx)==0x60) && (vx||vy));
+        for(unsigned i=0;i<4u;++i) enemies.step_15hz(rom,game,2+i,0,false,nullptr);
+        assert(e.state()==4u && e.raw[0x17]==4u && e.raw[11]==0u && e.raw[12]==0u && e.raw[13]==0u && e.raw[14]==0u);
+        for(unsigned i=0;i<4u;++i) enemies.step_15hz(rom,game,6+i,0,false,nullptr);
+        assert(e.state()==2u);
+    }
+    {
+        sm::GameState game;sm::Stage0Enemies enemies;
+        sm::SpawnRecord r;r.type=r.raw_type=0x31u;r.payload={0x0au,1u};
+        assert(sm::instantiate_stage0_spawn(rom,r,game,1));auto& e=game.enemies[0];
+        auto probe=[](const sm::Entity64&,int,int){return true;};
+        enemies.step_15hz(rom,game,0,0,false,nullptr,probe);
+        assert(e.state()==1u);
+        auto vy=std::int16_t(unsigned(e.raw[11])|(unsigned(e.raw[12])<<8));assert(vy==0x0100);
+        enemies.step_15hz(rom,game,1,0,false,nullptr,probe);
+        assert(e.state()==0u);
+        vy=std::int16_t(unsigned(e.raw[11])|(unsigned(e.raw[12])<<8));assert(vy==-0x00a0);
+    }
+
     {
         sm::GameState game;game.difficulty=10u;
         sm::SpawnRecord r;r.type=r.raw_type=0x27u;r.payload={10u,2u};
@@ -178,5 +226,5 @@ int main(int argc,char** argv) {
         assert(fired);
         assert(std::find(sounds.begin(),sounds.end(),sm::PlaySound::EnemyShot)!=sounds.end());
     }
-    std::cout<<"Stage 2: ROM tile rings, turrets, $27/$2D and $2B/$2E/$2C launcher families PASS\n";
+    std::cout<<"Stage 2: ROM tile rings, turrets, launchers, $27/$2D/$2F/$31 PASS\n";
 }

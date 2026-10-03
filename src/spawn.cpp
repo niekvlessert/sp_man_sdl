@@ -781,7 +781,7 @@ bool instantiate_stage0_spawn(const Rom& rom, const SpawnRecord& r, GameState& g
     // type $64 from real gameplay, leaving only the scenery copy visible.
     const bool special64 = r.type == 0x64u && r.control_flag();
     if (r.control_flag() && !special26 && !special2b && !special64) return false;
-    if (r.type != 0x1eu && r.type != 0x1fu && r.type != 0x20u && r.type != 0x27u && r.type != 0x29u && r.type != 0x2bu && r.type != 0x2du && r.type != 0x2eu && r.type != 0x22u &&
+    if (r.type != 0x1eu && r.type != 0x1fu && r.type != 0x20u && r.type != 0x27u && r.type != 0x29u && r.type != 0x2bu && r.type != 0x2du && r.type != 0x2eu && r.type != 0x2fu && r.type != 0x31u && r.type != 0x22u &&
         r.type != 0x24u && r.type != 0x26u && r.type != 0x55u &&
         r.type != 0x56u && r.type != 0x47u && r.type != 0x64u) return false;
     if (r.payload.empty() || (r.type == 0x24u && r.payload.size() < 2u)) return false;
@@ -856,6 +856,17 @@ bool instantiate_stage0_spawn(const Rom& rom, const SpawnRecord& r, GameState& g
             e->set_y_fixed(std::uint16_t(e->y_fixed()+0x0400u));
             e->raw[0x20]=0u;
         }
+    } else if(r.type==0x2fu) {
+        // Bank05 $86A4. Payload bit 7 requests the ordinary destruction/drop
+        // flag; the low seven bits were already consumed by $6754 as position.
+        e->raw[0x3d]=(r.payload[0]&0x80u)?1u:0u;
+    } else if(r.type==0x31u) {
+        // Fixed $5CDF: second inline byte selects variant/frame, then the
+        // obstacle starts rising at signed Y velocity -$00A0 in state zero.
+        if(r.payload.size()<2u) {e->clear();return false;}
+        e->raw[0x03]=r.payload[1];e->raw[0x05]=r.payload[1]&1u;
+        e->raw[0x0b]=0x60u;e->raw[0x0c]=0xffu;
+        e->raw[0x0d]=0u;e->raw[0x0e]=0u;
     } else if(r.type==0x29u) {
         // Bank05 $82CA: stage-2 small turret, upside-down payload bit 7.
         e->raw[0x20]=(r.payload[0]>>7u)&1u;
@@ -907,7 +918,7 @@ bool instantiate_stage0_spawn(const Rom& rom, const SpawnRecord& r, GameState& g
     }
     // Type $64 must enter bank06:$A300 (state 0). Starting it at state 1
     // skips the ROM initializer that positions the tower at X=$2800/Y=$0C00.
-    e->state() = (r.type == 0x64u || r.type==0x47u || r.type==0x2eu) ? 0u : 1u;
+    e->state() = (r.type == 0x64u || r.type==0x47u || r.type==0x2eu || r.type==0x31u) ? 0u : 1u;
     return true;
 }
 }

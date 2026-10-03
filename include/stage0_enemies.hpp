@@ -1,6 +1,7 @@
 #pragma once
 #include "spawn.hpp"
 #include "play_sound.hpp"
+#include <functional>
 
 namespace sm {
 // Native opening-flight handlers, selected by the original $51 wave records.
@@ -11,6 +12,7 @@ bool stage0_sprite_overlap(const Rom& rom, const Entity64& a, const Entity64& b)
 bool step_stage0_blue_enemy(GameState& game,Entity64& enemy);
 class Stage0Enemies {
 public:
+    using TerrainProbe=std::function<bool(const Entity64&,int,int)>;
     void reset() noexcept { waves_={};stage_complete_=false; }
     bool spawn(const Rom& rom, const SpawnRecord& record, GameState& game,
                std::uint8_t direction=1);
@@ -20,7 +22,8 @@ public:
                          std::vector<PlaySound>* sounds=nullptr,std::uint8_t ca3b=0,std::uint8_t fine_x=0);
     bool stage_complete() const noexcept { return stage_complete_; }
     void step_15hz(const Rom& rom, GameState& game, unsigned tick, std::uint16_t trigger,
-                   bool include_gate=true, std::vector<PlaySound>* sounds=nullptr);
+                   bool include_gate=true, std::vector<PlaySound>* sounds=nullptr,
+                   const TerrainProbe& terrain_probe={});
     bool destroyed(const Entity64& enemy);
 private:
     bool stage_complete_=false;
