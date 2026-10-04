@@ -102,6 +102,43 @@ void upload(std::vector<std::uint8_t>& vram, unsigned address,
         vram[(address + unsigned(i)) & 0x1ffffu] = data[i];
 }
 
+void install_stage8_resident_boss_tiles(std::vector<std::uint8_t>& vram) {
+    // Gameplay startup bank03:$A600 builds a persistent SCREEN-5 work area
+    // from the $B40A records, then $A68F/$AEA6 converts 205 8x8 regions into
+    // the SCREEN-4 pattern/color pages later reused by Stage 8. The normal
+    // Stage-8 $801F graphics load deliberately leaves $10000-$13FFF intact.
+    //
+    // Replaying the entire title/startup bitmap engine here would pull a large
+    // unrelated VDP-command interpreter into the native port. Instead keep the
+    // exact persistent 16 KiB result, PackBits-style compressed. This region is
+    // byte-identical from early Stage 8 through the type-$78 boss fight.
+    static constexpr std::uint8_t packed[] = {
+#include "stage8_resident_vram.inc"
+    };
+    std::size_t p=0;
+    unsigned dst=0x10000u;
+    while(p<sizeof(packed)) {
+        const auto control=packed[p++];
+        if(control==0u) break;
+        const unsigned count=control&0x7fu;
+        if(!count || dst+count>0x14000u)
+            throw std::runtime_error("bad Stage-8 resident VRAM RLE");
+        if(control&0x80u) {
+            if(p+count>sizeof(packed))
+                throw std::runtime_error("truncated Stage-8 resident VRAM RLE");
+            std::copy_n(packed+p,count,vram.begin()+dst);
+            p+=count;dst+=count;
+        } else {
+            if(p>=sizeof(packed))
+                throw std::runtime_error("truncated Stage-8 resident VRAM RLE");
+            std::fill_n(vram.begin()+dst,count,packed[p++]);
+            dst+=count;
+        }
+    }
+    if(dst!=0x14000u)
+        throw std::runtime_error("incomplete Stage-8 resident VRAM");
+}
+
 void process_group(const Rom& rom, unsigned resolved,
                    std::vector<std::uint8_t>& vram) {
     unsigned p = resolved + 1u;
@@ -224,6 +261,7 @@ Stage0VideoAssets decode_stage_video(const Rom& rom,unsigned stage) {
     process_group(rom,0x840bu,result.vram);
     process_group(rom,end,result.vram);
     if(stage==0u) process_group(rom,0x8666u,result.vram);
+    if(stage==7u) install_stage8_resident_boss_tiles(result.vram);
 
     // $8371: global sprite patterns, then the stage-0 table selected through
     // the pointer list at $83C0. These also build the original $DFxx table.

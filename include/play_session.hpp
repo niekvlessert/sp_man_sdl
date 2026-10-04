@@ -68,6 +68,9 @@ public:
         if(stage_index_==6u)
             return std::any_of(game_.enemies.begin(),game_.enemies.end(),
                                [](const auto& e){return e.type()==0x43u;});
+        if(stage_index_==7u)
+            return std::any_of(game_.enemies.begin(),game_.enemies.end(),
+                               [](const auto& e){return e.type()==0x78u;});
         return false;
     }
     unsigned camera_pixels() const noexcept { return camera_half_pixels_ / 2; }
@@ -101,6 +104,7 @@ private:
     std::uint8_t boss_hit_timer_=0;   // original CE47
     std::uint8_t boss_palette_flags_=0; // original CE48: bit0 red, bit1 hit flash
     std::uint8_t boss_palette_kind_=0;  // 0, $56 vertical tower, or $64 terminal gate
+    bool stage8_boss_palette_active_=false; // type $78 installs its own global VDP palette
     bool scene_palette_active_=false;   // original CE60=1 / CE61=1
     std::uint8_t scene_palette_phase_=0; // original CE68, 0..9
     std::uint32_t scene_palette_color_=0xff000000u;

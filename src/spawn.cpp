@@ -224,7 +224,8 @@ bool decode_stage0_sprite_visual(const Rom& rom, const Screen4Snapshot& video,
     const auto type = entity.type();
     const bool global_base = type == 0x20u || type == 0x29u || type == 0x22u ||
                              type == 0x24u || type == 0x26u;
-    const bool supported_sprite = type == 0x1fu || type == 0x27u || type == 0x2du || global_base;
+    const bool supported_sprite = type == 0x1fu || type == 0x27u || type == 0x2du ||
+                                  type == 0x74u || global_base;
     if (!supported_sprite) return false;
 
     const auto type_table = rom.bank(7);
@@ -654,6 +655,65 @@ std::vector<Stage0TileVisual> decode_stage0_tile_visuals(const Rom& rom,
         return out;
     }
 
+    if (entity.type() == 0x46u) {
+        // Stage-8 $915D/$9054 energy-wall row. $90CF stamps +11 cells
+        // backwards from the actor's X cell. With C0D4=$03 the exact eight
+        // row patterns selected by $911E are CC,CD,CB,CB,CB,CB,CD,CC.
+        const unsigned width=std::min<unsigned>(entity.raw[0x11],32u);
+        if(!width) return out;
+        static constexpr std::array<std::uint8_t,8> tile{
+            0xccu,0xcdu,0xcbu,0xcbu,0xcbu,0xcbu,0xcdu,0xccu};
+        Stage0TileVisual v;
+        v.rows=1u;v.cols=std::uint8_t(width);
+        v.tile_x_offset=1-int(width);v.tile_y_offset=0;
+        v.x=v.tile_x_offset*8;v.y=0;
+        v.tiles.assign(width,tile[entity.raw[0x0f]&7u]);
+        out.push_back(std::move(v));
+        return out;
+    }
+
+    if (entity.type() == 0x78u) {
+        // Stage-8 boss, bank06 $AA1C->$7B65 with DE=$ACDE. +06 selects
+        // one of ten exact packed placement scripts. The first four matrices
+        // form the persistent shell; selectors 1..9 add the animated core/
+        // destruction matrices exported in type78_stamp_scripts.json.
+        const auto bank6=rom.bank(6);
+        const unsigned selector=std::min<unsigned>(entity.raw[0x06],9u);
+        const unsigned table=0xacdeu-0xa000u;
+        if(table+selector*2u+1u>=bank6.size()) return out;
+        const auto list_cpu=le16(bank6,table+selector*2u);
+        if(list_cpu<0xa000u || list_cpu>=0xc000u) return out;
+        unsigned p=unsigned(list_cpu-0xa000u);
+        if(p>=bank6.size()) return out;
+        const unsigned packed_len=bank6[p++];
+        if(packed_len<2u || p+packed_len-1u>bank6.size()) return out;
+        const unsigned end=p+packed_len-1u;
+        int place_y=0,place_x=0;bool need_position=true;
+        while(p<end) {
+            if(need_position) {
+                if(p+2u>end) break;
+                place_y=int(static_cast<std::int8_t>(bank6[p++]));
+                place_x=int(static_cast<std::int8_t>(bank6[p++]));
+                need_position=false;
+            }
+            if(p>=end) break;
+            const auto control=bank6[p++];
+            if(control==0xffu) break;
+            if(control==0xfeu) {need_position=true;continue;}
+            const unsigned count=control;
+            if(p+count>end) break;
+            for(unsigned i=0;i<count;++i) {
+                Stage0TileVisual v;
+                if(decode_stage0_tile_frame(rom,entity,bank6[p++],v)) {
+                    v.x+=place_x*8;v.y+=place_y*8;
+                    v.tile_x_offset+=place_x;v.tile_y_offset+=place_y;
+                    out.push_back(std::move(v));
+                }
+            }
+        }
+        return out;
+    }
+
     if (entity.type() == 0x56u) {
         // Type $56 uses the custom $BF29->$7B65 renderer.  $BFC0 is a
         // five-entry frame-pointer table indexed by object byte +06. Each
@@ -870,6 +930,22 @@ Stage0DamageResult apply_stage0_damage(const Rom& rom, Entity64& entity,
         entity.state()=2u;entity.raw[0x17]=0x28u;
         return Stage0DamageResult::Hit;
     }
+    // Stage-8 type $78 reaches the normal $7C6B subtraction only while the
+    // boss-specific gates +29==0 and +2B!=0 are open. A fatal subtraction
+    // does not replace the object with its table's $62 effect: $AC3F keeps
+    // type $78 alive and enters custom destruction state 6.
+    if(entity.active() && entity.type()==0x78u) {
+        if(damage==0u || entity.raw[0x29]!=0u || entity.raw[0x2b]==0u ||
+           (entity.raw[0x14]&0x80u)==0u) return Stage0DamageResult::Ignored;
+        const auto hp=entity.raw[0x16];entity.raw[0x04]=0u;
+        entity.raw[0x16]=std::uint8_t(hp-damage);
+        if(damage<=hp) return Stage0DamageResult::Hit;
+        entity.raw[0x14]&=0x7fu;
+        entity.raw[0x05]=0u;entity.raw[0x06]=0u;
+        entity.raw[0x29]=1u;entity.raw[0x22]=0u;
+        entity.state()=6u;
+        return Stage0DamageResult::Destroyed;
+    }
     if (!entity.active() || damage == 0 || (entity.raw[0x14] & 0x80u) == 0)
         return Stage0DamageResult::Ignored;
     const auto hp = entity.raw[0x16];
@@ -907,7 +983,7 @@ void append_stage0_damage_sounds(const Rom& rom,std::uint8_t original_type,
     if(damage==Stage0DamageResult::Ignored) return;
     // $7C44/$7C63 request the impact even on a fatal subtraction, before
     // $7CC3 requests the family-specific destruction sound.
-    sounds.push_back((original_type==0x14u || original_type==0x3eu || original_type==0x43u || original_type==0x64u || original_type==0x77u || original_type==0x7bu) ? PlaySound::BossHit : PlaySound::Hit);
+    sounds.push_back((original_type==0x14u || original_type==0x3eu || original_type==0x43u || original_type==0x64u || original_type==0x77u || original_type==0x78u || original_type==0x7bu) ? PlaySound::BossHit : PlaySound::Hit);
     if(damage!=Stage0DamageResult::Destroyed) return;
     const auto bank4=rom.bank(4);
     const auto sound_id=bank4[0x1e74u+unsigned(original_type)*3u+1u];
@@ -948,7 +1024,7 @@ bool instantiate_stage0_spawn(const Rom& rom, const SpawnRecord& r, GameState& g
     if (r.control_flag() && !special26 && !special2b && !special53 && !special3e && !special77 && !special64 && !special7a) return false;
     if (r.type != 0x14u && r.type != 0x19u && r.type != 0x1eu && r.type != 0x1fu && r.type != 0x20u && r.type != 0x27u && r.type != 0x29u && r.type != 0x2bu && r.type != 0x2du && r.type != 0x2eu && r.type != 0x2fu && r.type != 0x31u && r.type != 0x3cu && r.type != 0x3eu && r.type != 0x22u &&
         r.type != 0x24u && r.type != 0x26u && r.type != 0x53u && r.type != 0x55u &&
-        r.type != 0x56u && r.type != 0x47u && r.type != 0x43u && r.type != 0x64u && r.type != 0x77u && r.type != 0x7au && r.type != 0x7bu) return false;
+        r.type != 0x56u && r.type != 0x47u && r.type != 0x43u && r.type != 0x64u && r.type != 0x77u && r.type != 0x78u && r.type != 0x7au && r.type != 0x7bu) return false;
     if (r.payload.empty() || (r.type == 0x24u && r.payload.size() < 2u)) return false;
     auto* e = game.allocate_enemy();
     if (!e) return false;
@@ -1132,6 +1208,14 @@ bool instantiate_stage0_spawn(const Rom& rom, const SpawnRecord& r, GameState& g
         // it reaches the fixed $1900 fight anchor. HP is custom +02, not +16.
         e->set_x_fixed(0x2000u);e->set_y_fixed(0x0a00u);
         e->raw[0x17]=0x3cu;e->raw[0x06]=0u;e->flags15()|=1u;
+    } else if (r.type == 0x78u) {
+        // Stage-8 boss, bank06 $AA48. State 0 immediately installs the fixed
+        // $1F00/$0400 entrance anchor, animation counters and first $20 timer;
+        // expose that post-initializer state directly to the native scheduler.
+        e->set_x_fixed(0x1f00u);e->set_y_fixed(0x0400u);
+        e->raw[0x06]=0u;e->raw[0x17]=0x20u;e->raw[0x21]=1u;
+        e->raw[0x22]=0u;e->raw[0x23]=0x30u;e->raw[0x25]=0x15u;
+        e->state()=1u;
     } else if (r.type == 0x7bu) {
         // Stage-6 boss, bank06 $B513. The final mode-3 scroll brings the
         // common spawn position to the live $0700/$1400 entrance anchor;

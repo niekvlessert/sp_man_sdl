@@ -190,7 +190,7 @@ bool stage0_sprite_overlap(const Rom& rom,const Entity64& a,const Entity64& b) {
     // the pixels the player actually sees. In particular type $56 is the
     // destructible 64x80 upper section of the large vertical tower. Collide
     // against the exact nonzero tile cells used by the native compositor.
-    if(b.type()==0x14u || b.type()==0x26u || b.type()==0x3cu || b.type()==0x3fu || b.type()==0x56u || b.type()==0x64u || b.type()==0x6au || b.type()==0x77u || b.type()==0x7au) {
+    if(b.type()==0x14u || b.type()==0x26u || b.type()==0x3cu || b.type()==0x3fu || b.type()==0x56u || b.type()==0x64u || b.type()==0x6au || b.type()==0x77u || b.type()==0x78u || b.type()==0x7au) {
         for(const auto& v:decode_stage0_tile_visuals(rom,b))
             for(unsigned ty=0;ty<v.rows;++ty) for(unsigned tx=0;tx<v.cols;++tx) {
                 if(!v.tiles[ty*unsigned(v.cols)+tx]) continue;
@@ -299,7 +299,7 @@ void Stage0Enemies::move_60hz(GameState& game,unsigned frame) {
             if(--e.raw[0x3e]==0) e.clear();
             continue;
         }
-        if(e.active() && (flight(e.type()) || e.type()==0x16u || e.type()==0x19u || e.type()==0x1eu || e.type()==0x11u || e.type()==0x23u || e.type()==0x27u || e.type()==0x2au || e.type()==0x2cu || e.type()==0x2du || e.type()==0x2fu || e.type()==0x31u || e.type()==0x58u || e.type()==0x5cu || e.type()==0x68u || e.type()==0x70u || e.type()==0x40u || e.type()==0x0du)) {
+        if(e.active() && (flight(e.type()) || e.type()==0x16u || e.type()==0x19u || e.type()==0x1eu || e.type()==0x11u || e.type()==0x23u || e.type()==0x27u || e.type()==0x2au || e.type()==0x2cu || e.type()==0x2du || e.type()==0x2fu || e.type()==0x31u || e.type()==0x58u || e.type()==0x5cu || e.type()==0x68u || e.type()==0x70u || e.type()==0x74u || e.type()==0x40u || e.type()==0x0du)) {
         const int divisor=(e.type()==0x40u || e.type()==0x23u)?3:4,phase=int(frame%unsigned(divisor));
         auto delta=[&](int v){return v*(phase+1)/divisor-v*phase/divisor;};
         e.set_x_fixed(std::uint16_t(e.x_fixed()+delta(signed_word(e,13))));
@@ -436,7 +436,154 @@ void Stage0Enemies::step_gate_20hz(const Rom& rom,GameState& game,unsigned tick,
     };
 
     for(auto& e:game.enemies) if(e.active()) {
-        if(e.type()==0x43u) {
+        if(e.type()==0x78u) {
+            // Stage-8 boss, bank06 $AA1C-$ACDD. States 1/2 are the long
+            // horizontal entrance, states 3/4/5 form the attack loop, and
+            // states 6/7/8 are the custom destruction/camera handoff. The
+            // original handler is clocked at 20 Hz.
+            auto animate5=[&] { e.raw[0x06]=std::uint8_t((e.raw[0x06]+1u)%5u); };
+            auto secondary_visual=[&] {
+                // $AC65 runs only on CA02-even calls and cycles +20 0..3.
+                if((tick&1u)==0u) e.raw[0x20]=std::uint8_t((e.raw[0x20]+1u)&3u);
+            };
+            auto weak_cycle=[&] {
+                // $AB42/$AB60: +2B chooses one of six weak-point phases and
+                // +2A holds the phase for a difficulty-dependent interval.
+                if(e.state()<3u || e.state()>=6u) return;
+                if(e.raw[0x2a]) {--e.raw[0x2a];return;}
+                e.raw[0x2b]=std::uint8_t((e.raw[0x2b]+1u)%6u);
+                unsigned delay=6u;
+                if(e.raw[0x2b]==0u) delay=game.difficulty<6u?8u:0x40u;
+                else if(e.raw[0x2b]==3u) delay=game.difficulty<6u?0x40u:8u;
+                e.raw[0x2a]=std::uint8_t(delay-1u);
+            };
+            auto spawn_type74=[&] {
+                // $AB86->$9E0F. One in eight random selectors creates the
+                // boss's diagonal type-$74 projectile from the right edge.
+                const auto gate=rom_random(rom,game);
+                if((gate&0x0eu)!=0u) return;
+                auto* c=create(rom,game,0x74u);if(!c) return;
+                const auto r=rom_random(rom,game);
+                // $9E67 contains signed X magnitudes C0,80,40,00 and
+                // doubles the signed word before storing it at +0D/+0E.
+                static constexpr std::array<int,4> vx{-0x0080,-0x0100,0x0080,0x0000};
+                static constexpr std::array<std::uint8_t,4> low_y{0x00,0x02,0x04,0x06};
+                static constexpr std::array<std::uint8_t,4> high_y{0x10,0x12,0x14,0x16};
+                // Exact $9E73 table. $C9 is a real final magnitude byte;
+                // bit 0 of the random selector chooses its sign via $4612.
+                static constexpr std::array<int,8> vy{0x00,0x10,0x18,0x1a,0x20,0x24,0x28,0xc9};
+                const unsigned yi=((unsigned(r)<<1u)|(unsigned(r)>>7u))&3u;
+                const auto& yt=std::uint8_t(e.raw[0x08]+2u)>=6u?low_y:high_y;
+                c->set_x_fixed(0x1f00u);c->set_y_fixed(std::uint16_t(yt[yi])<<8u);
+                put(*c,13,vx[r&3u]);
+                const unsigned vi=((unsigned(r)>>1u)|(unsigned(r)<<7u))&7u;
+                int yv=vy[vi];if((r&1u)==0u) yv=-yv;put(*c,11,yv);
+                c->state()=0u;
+            };
+            auto oscillate_vertical=[&] {
+                auto a=e.raw[0x23];
+                if(a<0x60u) ++a;
+                else {e.raw[0x24]^=1u;a=0u;}
+                e.raw[0x23]=a;
+                return e.raw[0x24]?0x0020:-0x0020;
+            };
+            weak_cycle();
+            // $AC96 -> $ACD8/$6AEC. On CA02-even calls +18 walks
+            // 0,1,...,7,87,86,...,81,0. The low three bits select the
+            // eight-entry $ACC8 VDP-palette cycle; bit 7 marks the reverse
+            // half. Keep the phase in the object record exactly as the ROM.
+            if((tick&1u)==0u) {
+                auto a=e.raw[0x18];
+                if(a&0x80u) {
+                    a=std::uint8_t((a&0x7fu)-1u);
+                    if(a) a|=0x80u;
+                } else {
+                    ++a;
+                    if(a==8u) a=0x87u;
+                }
+                e.raw[0x18]=a;
+            }
+            if(e.state()>=3u && e.state()<=5u) spawn_type74();
+            if(e.state()==1u) {
+                animate5();
+                if(e.raw[0x22]!=0xd0u) {
+                    ++e.raw[0x22];e.raw[0x29]=1u;secondary_visual();
+                    e.set_x_fixed(std::uint16_t(e.x_fixed()-0x0020u));
+                } else {
+                    // The old $FFE0 vector is consumed once more on the
+                    // transition call, yielding the traced X=$04E0 anchor.
+                    e.raw[0x22]=0u;e.raw[0x29]=1u;
+                    e.set_x_fixed(std::uint16_t(e.x_fixed()-0x0020u));
+                    e.state()=2u;
+                }
+            } else if(e.state()==2u) {
+                animate5();
+                if(e.raw[0x22]!=0x40u) {
+                    ++e.raw[0x22];e.raw[0x29]=1u;secondary_visual();
+                    e.set_x_fixed(std::uint16_t(e.x_fixed()+0x0020u));
+                } else {
+                    e.raw[0x22]=0u;e.raw[0x29]=0u;e.state()=3u;
+                }
+            } else if(e.state()==3u) {
+                const int vy=oscillate_vertical();
+                animate5();secondary_visual();
+                if(expired(e,0x17)) {
+                    e.raw[0x28]=3u;e.state()=4u;
+                } else e.set_y_fixed(std::uint16_t(e.y_fixed()+vy));
+            } else if(e.state()==4u) {
+                animate5();secondary_visual();
+                e.raw[0x05]=std::uint8_t((e.raw[0x05]+1u)&3u);
+                if(e.raw[0x05]==0u && e.raw[0x28] && --e.raw[0x28]==0u) {
+                    e.raw[0x27]=0x20u;e.state()=5u;
+                }
+            } else if(e.state()==5u) {
+                animate5();secondary_visual();
+                if(e.raw[0x26]==0u) {
+                    // $AAF2 -> bank05:$915D constructs eight type-$46
+                    // secondary-pool actors. Their fixed offsets are +X 1
+                    // tile and +Y 4..11 tiles; +0F is the 0..7 row ordinal.
+                    // Native keeps them in the ordinary fixed array so the
+                    // existing D988 compositor/collision path can see them.
+                    for(unsigned ordinal=0;ordinal<8u;++ordinal) {
+                        if(auto* c=create(rom,game,0x46u)) {
+                            c->raw[0x03]=0u;c->raw[0x0f]=std::uint8_t(ordinal);
+                            c->set_x_fixed(std::uint16_t(e.x_fixed()+0x0100u));
+                            c->set_y_fixed(std::uint16_t(e.y_fixed()+(4u+ordinal)*0x0100u));
+                            c->raw[0x17]=0x14u;c->state()=0u;
+                        }
+                    }
+                    e.raw[0x26]=1u;
+                    static constexpr std::array<std::uint8_t,4> timer{0x20,0x40,0x60,0x20};
+                    const unsigned i=e.raw[0x21]&3u;
+                    e.raw[0x21]=std::uint8_t((i+1u)&3u);e.raw[0x17]=timer[i];
+                }
+                if(e.raw[0x27] && --e.raw[0x27]==0u) {
+                    e.raw[0x26]=0u;e.state()=3u;
+                }
+            } else if(e.state()==6u) {
+                secondary_visual();
+                // $AB03 increments +22 before testing $40. The final call
+                // zeroes movement first, so only 63 of 64 calls move X.
+                if(++e.raw[0x22]==0x40u) {
+                    e.raw[0x06]=5u;e.state()=7u;
+                } else e.set_x_fixed(std::uint16_t(e.x_fixed()-0x0020u));
+            } else if(e.state()==7u) {
+                secondary_visual();
+                if((tick&1u)==0u) {
+                    e.raw[0x06]=std::uint8_t((e.raw[0x06]+1u)%10u);
+                    if(e.raw[0x06]==9u) {e.state()=8u;e.raw[0x30]=0u;}
+                }
+            } else if(e.state()==8u) {
+                secondary_visual();
+                auto a=std::uint8_t(e.raw[0x25]+1u);
+                if(a==0x1eu) a=0x1bu;
+                e.raw[0x25]=a;
+                // $AB8F converges CA47/CA49 to the boss-relative target and
+                // writes CA0F at $ABCD. The live trace takes 18 20-Hz calls
+                // from state-8 entry at the fixed $0500 destruction anchor.
+                if(++e.raw[0x30]>=18u) stage_complete_=true;
+            }
+        } else if(e.type()==0x43u) {
             // Stage-7 Warp Machine, mapped handler $8E81-$8F71. This is a
             // genuine 20-Hz boss controller with custom HP in +02. +16 stays
             // zero in the ROM. State 0 is the 60-tick scrolling entrance,
@@ -860,6 +1007,42 @@ void Stage0Enemies::step_15hz(const Rom& rom,GameState& game,unsigned tick,std::
             e.raw[0x06]=std::uint8_t((e.raw[0x06]+1u)%6u);
             if(e.raw[0x06]==0u) e.clear();
             else if(e.raw[0x06]==1u && sounds) sounds->push_back(PlaySound::PlatformExplosion); // $33
+        } else if(e.type()==0x46u) {
+            // Bank05 $9054-$9156, normally stored in the original secondary
+            // $D460 pool. Stage 8 uses eight rows with +03=0 and +0F=0..7.
+            // Because C0D4=$03 during the boss fight, state 0 enters the
+            // four-tick grow setup immediately instead of waiting +17=$14.
+            auto update_stamp=[&] {
+                e.raw[0x11]=std::uint8_t(std::min<unsigned>(e.raw[0x12],e.raw[0x0a])+1u);
+            };
+            if(e.state()==0u) {
+                e.raw[0x17]=4u;e.raw[0x12]=1u;e.raw[0x02]=e.raw[0x03]?8u:0x20u;
+                e.state()=1u;
+            } else if(e.state()==1u) {
+                if((e.raw[0x17]&1u)==0u) update_stamp();
+                if(e.raw[0x17] && --e.raw[0x17]==0u) e.state()=2u;
+            } else if(e.state()==2u) {
+                e.raw[0x12]=std::uint8_t(e.raw[0x12]+4u);update_stamp();
+                if(e.raw[0x12]>=e.raw[0x02]) e.state()=3u;
+            } else {
+                const auto xh=std::uint8_t(e.raw[0x0a]-4u);
+                if(xh>=0x20u) {e.clear();continue;}
+                e.raw[0x0a]=xh;update_stamp();
+            }
+        } else if(e.type()==0x74u) {
+            // Bank05 $9E7C-$9EFA: Stage-8 boss diagonal projectile. Its
+            // launch vector is installed by $9E0F; the object holds it for a
+            // $20-tick visible flight, then spends ten ticks in its terrain
+            // interaction phase before the normal object-retire path.
+            if(e.state()==0u) {e.raw[0x17]=0x20u;e.state()=1u;}
+            else if(e.state()==1u) {
+                if(expired(e,0x17)) {
+                    e.raw[0x17]=0x0au;e.raw[0x18]=e.raw[0x0f];
+                    e.raw[0x15]=0x04u;e.state()=2u;
+                }
+            } else if(e.state()==2u) {
+                if(expired(e,0x17)) e.clear();
+            }
         } else if(e.type()==0x55u) {
             // Fixed $58F0-$59D0. Large carrier/assault craft used throughout
             // the vehicle section. +20 is the X trigger, +21 selects the

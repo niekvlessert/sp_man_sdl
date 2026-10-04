@@ -29,6 +29,35 @@ std::uint32_t stage_scene_palette9(unsigned phase) noexcept {
     const unsigned r=(level[phase%level.size()]*255u+3u)/7u;
     return 0xff000000u|(r<<16u);
 }
+std::uint32_t stage8_vdp_color(std::uint8_t rb,std::uint8_t g) noexcept {
+    auto scale=[](unsigned v){return (v*255u+3u)/7u;};
+    return 0xff000000u | (scale((rb>>4u)&7u)<<16u) |
+           (scale(g&7u)<<8u) | scale(rb&7u);
+}
+std::array<std::uint32_t,16> stage8_boss_palette(const Rom& rom) {
+    // Type-$78's boss palette is assembled from two ROM-resident scripts:
+    // common bank10:$83FD supplies 6/7/8/10/13/14/15; bank27:$BA6C
+    // supplies 0..5/9/11/12. The latter ends with FE rather than F0 because
+    // it is embedded in a larger command stream.
+    std::array<std::uint32_t,16> p{};
+    auto apply=[&](std::span<const std::uint8_t> bank,unsigned off,
+                   std::uint8_t terminator) {
+        while(off+1u<bank.size() && bank[off]!=terminator) {
+            const auto rb=bank[off++], selector=bank[off++];
+            const unsigned index=(selector>>4u)&15u;
+            p[index]=stage8_vdp_color(rb,selector&7u);
+        }
+    };
+    apply(rom.bank(10),0x83fdu-0x8000u,0xffu);
+    apply(rom.bank(27),0xba6cu-0xa000u,0xfeu);
+    return p;
+}
+std::uint32_t stage8_cycle_color(const Rom& rom,unsigned phase) {
+    // Bank06:$ACC8: eight raw VDP palette pairs consumed by $AC96.
+    const auto b=rom.bank(6);
+    const unsigned q=0x0cc8u+(phase&7u)*2u;
+    return stage8_vdp_color(b[q],b[q+1u]);
+}
 std::uint16_t word(std::span<const std::uint8_t> b, unsigned p) {
     return std::uint16_t(b[p]) | (std::uint16_t(b[p+1]) << 8);
 }
@@ -491,6 +520,7 @@ void PlaySession::reset(unsigned stage) {
     for(unsigned i:{1u,2u,3u,4u,9u,11u,12u}) tower_flash_palette_[i]=flash666;
     for(unsigned i:{0u,1u,2u,3u,4u,5u,9u}) vehicle_tower_flash_palette_[i]=flash666;
     boss_hit_timer_=0;boss_palette_flags_=0;boss_palette_kind_=0;
+    stage8_boss_palette_active_=false;
     // $8254 initial ship record, including 15-tick spawn protection.
     game_.player.type()=1; game_.player.flags15()=0x39;
     game_.player.raw[0x13]=3; game_.player.raw[0x14]=0x83; game_.player.raw[0x18]=15;
@@ -804,10 +834,41 @@ void PlaySession::step_60hz(PlayerInput input) {
     if((frame_%3u)==0u) {
         const bool death_wrap=std::any_of(game_.enemies.begin(),game_.enemies.end(),
             [](const auto& e){return e.type()==0x6au && e.state()==0u && e.raw[6]==7u;});
+        // $AC96 executes before the type-$78 state dispatch. Retain the
+        // pre-dispatch state so palette index 9 still receives its final
+        // state-4 write on the exact call that advances the boss to state 5.
+        std::uint8_t stage8_state_before=0xffu;
+        for(const auto& e:game_.enemies) if(e.type()==0x78u) {
+            stage8_state_before=e.state();break;
+        }
         previous_gate_actors_=game_.enemies;
         enemies_.step_gate_20hz(rom_,game_,frame_/3u,&sound_events_,
             std::uint8_t((background_.fast_ground_phase()+(background_.ca1c()>>8u))&7u),
             std::uint8_t(background_.ca1c()));
+        // Stage-8 type $78 begins every bank06:$AA1C handler call with
+        // A=$F8 / CALL $6C75. This boss therefore owns the SCREEN-4 raster
+        // anchor throughout its entrance/fight/destruction states. Without
+        // this, the large composed matrices are sampled almost a full screen
+        // away from their original VDP position.
+        for(const auto& e:game_.enemies) if(e.type()==0x78u) {
+            background_.apply_object_raster_anchor(e.x_fixed(),e.y_fixed(),0xf8u);
+            if(!stage8_boss_palette_active_) {
+                video_.palette=stage8_boss_palette(rom_);
+                stage8_boss_palette_active_=true;
+            }
+            // $AC96 calls $6AEC only on CA02-even frames. +18 has already
+            // been advanced by Stage0Enemies; its low three bits select
+            // $ACC8. Index 5 pulses for all boss states. Index 9 is written
+            // only while the pre-dispatch state is 0..4 and then remains at
+            // its last value through state 5 and the destruction sequence.
+            if(((frame_/3u)&1u)==0u) {
+                const unsigned phase=e.raw[0x18]&7u;
+                video_.palette[5]=stage8_cycle_color(rom_,phase);
+                if(stage8_state_before<5u)
+                    video_.palette[9]=stage8_cycle_color(rom_,phase+3u);
+            }
+            break;
+        }
         // Stage-7 $8F5F writes the 16-step pulse directly to VDP palette
         // register $0B on every 20-Hz fight/death tick. Keep all native
         // palette variants synchronized because the scenery streamer may
@@ -948,6 +1009,11 @@ void PlaySession::step_60hz(PlayerInput input) {
                 // $7CC3 deliberately preserves +3E from the destroyed
                 // source actor. Bank05:$9B38 consumes it as the persistent
                 // wreck frame selector; do not replace it with a lifetime.
+            } else if(enemy.type()==0x78u) {
+                // Stage-8's $AC3F fatal continuation deliberately keeps the
+                // $78 object alive through states 6/7/8. It never becomes
+                // the ordinary death-table $62 while the stage transition runs.
+                enemy.raw[0x3f]=0u;
             } else {
                 enemy.flags15()|=1;
                 // Native fallback only for replacement handlers that are
@@ -1112,6 +1178,7 @@ void PlaySession::begin_next_stage() {
     scene_palette_active_=false;scene_palette_phase_=0;
     scene_base_palette9_=video_.palette[9];scene_palette_color_=scene_base_palette9_;
     boss_hit_timer_=boss_palette_flags_=boss_palette_kind_=0;
+    stage8_boss_palette_active_=false;
     game_.enemies={};game_.tower_destroyed=game_.platform_chain_active=false;enemies_.reset();previous_gate_actors_={};
     shots_={};option_shots_={};missile_shot_.clear();presenter_.reset();
     prev_world_phase_valid_=false;camera_half_pixels_=3072u+background_.world_x()*2u;
@@ -1202,6 +1269,12 @@ std::vector<std::uint32_t> PlaySession::render() {
         }
         stamp_stage0_tile_objects_right_edge(rom_,background_,game_,right_edge);
         auto current_state=background_.presentation_state();
+        // Stage 8 boss raster mode has C0EB=$04. Live OpenMSX keeps VDP
+        // R18=$70 throughout type-$78, independent of C0BB; this presenter
+        // consumes only the horizontal low nibble, so force that nibble to 0.
+        if(stage_index_==7u && std::any_of(game_.enemies.begin(),game_.enemies.end(),
+            [](const auto& e){return e.type()==0x78u;}))
+            current_state.r18=0u;
         // Keep the original R18 fine-scroll in every D988/raster-backed mode.
         // The 512-wide compositor interpolates *between* these proven coarse
         // screen states. Neutralising R18 here made mode 2 move smoothly for

@@ -103,8 +103,15 @@ metadata/entrance, 30/5/20-tick state cadence, type-`$0D` relative launch and
 `space-manbow-stage7-boss-test` locks the Warp Machine `$43` entrance at
 `$2000/$0A00`, the `$1900` fight anchor, 20-Hz attack cadence, bouncing type-`$23`
 bubbles, the custom +02 `$FF` HP/borrow rule, weak-point palette pulse, destruction
-SFX/cleanup and the stage-7 to stage-8 handoff.
+SFX/cleanup and the stage-7 to stage-8 handoff. `space-manbow-stage8-boss-test`
+locks type `$78`'s nine-state controller, HP `$40` and `+29/+2B` vulnerability
+gating, type-`$74` projectile vectors, the eight-row type-`$46` energy wall,
+custom states 6–8 destruction and Stage-9 handoff. It also checks the persistent
+16-KiB Stage-8 SCREEN-4 pattern/color image produced by the original startup
+SCREEN-5 conversion (FNV-1a `217ED24F`). The live session now applies the
+boss's `$F8/$6C75` raster anchor, the C0EB=`$04` R18 behavior and the
+ROM-derived `$AC96/$ACC8` palette cycle.
 
 The next work for these stages is the remaining regular object/enemy/controller
-restoration and the stage-8/9 bosses, not basic stage loading, scenery decoding
-or the stage-5/6/7 bosses.
+restoration and the stage-9 boss, not basic stage loading, scenery decoding or
+the stage-5/6/7/8 bosses.
