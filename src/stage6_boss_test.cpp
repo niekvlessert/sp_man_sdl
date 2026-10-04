@@ -18,6 +18,9 @@ const sm::SpawnRecord& find_type(const sm::StageSpawnStream& stream,std::uint8_t
     assert(it!=stream.records().end());
     return *it;
 }
+std::uint16_t be(const sm::Entity64& e,unsigned p) {
+    return std::uint16_t((unsigned(e.raw[p])<<8u)|e.raw[p+1u]);
+}
 }
 
 int main(int argc,char** argv) {
@@ -27,6 +30,58 @@ int main(int argc,char** argv) {
     // Stage 6 boss: type $7B, bank06 $B513. The script record is the final
     // ordinary boss record immediately before the two $7C scene controllers.
     const auto s6=sm::StageSpawnStream::decode_stage(rom,5u);
+
+    // $7C boss escorts: two extended records create mirrored eight-segment
+    // chains. Validate the first ROM path integration tick byte-for-byte
+    // against the OpenMSX trace around trigger $502A.
+    for(unsigned variant=0;variant<2u;++variant) {
+        const auto it=std::find_if(s6.records().begin(),s6.records().end(),
+            [=](const auto& r){return r.type==0x7cu && r.payload.size()>=2u &&
+                                      r.payload[1]==variant;});
+        assert(it!=s6.records().end());
+        assert(it->trigger==0x502au && it->control==0x88u);
+        assert(it->payload.size()==4u && it->payload[0]==2u &&
+               it->payload[2]==2u && it->payload[3]==0x7cu);
+
+        sm::GameState chain_game;sm::Stage0Enemies chain_logic;
+        assert(chain_logic.spawn(rom,*it,chain_game,1u));
+        auto& parent=chain_game.enemies[0];
+        assert(parent.state()==0u && parent.raw[0x03]==variant);
+        chain_logic.step_15hz(rom,chain_game,0u,0u,false,nullptr);
+        assert(chain_game.active_enemy_count()==8u);
+        assert(parent.state()==1u && parent.raw[0x34]==0x80u &&
+               parent.raw[0x17]==7u && parent.y_fixed()==0x1700u);
+        assert(parent.x_fixed()==(variant?0x1900u:0x0500u));
+        for(unsigned n=1;n<8u;++n) {
+            const auto& child=chain_game.enemies[n];
+            assert(child.type()==0x7cu && child.state()==1u);
+            assert(child.x_fixed()==parent.x_fixed() && child.y_fixed()==0x1700u);
+            assert(child.raw[0x34]==parent.raw[0x2d]);
+            assert(child.raw[0x38]==n);
+        }
+
+        chain_logic.step_15hz(rom,chain_game,1u,0u,false,nullptr);
+        if(!variant) {
+            assert(be(parent,0x21)==0x0300u);
+            assert(be(chain_game.enemies[1],0x21)==0x0480u);
+            assert(be(chain_game.enemies[2],0x21)==0x0780u);
+            assert(be(chain_game.enemies[3],0x21)==0x0c00u);
+            assert(chain_game.enemies[1].x_fixed()==0x06bcu &&
+                   chain_game.enemies[1].y_fixed()==0x172bu);
+            assert(chain_game.enemies[2].x_fixed()==0x0873u &&
+                   chain_game.enemies[2].y_fixed()==0x1778u);
+        } else {
+            assert(be(parent,0x21)==0x0600u);
+            assert(be(chain_game.enemies[1],0x21)==0x0480u);
+            assert(be(chain_game.enemies[2],0x21)==0x0180u);
+            assert(be(chain_game.enemies[3],0x21)==0xfd00u);
+            assert(chain_game.enemies[1].x_fixed()==0x1abcu &&
+                   chain_game.enemies[1].y_fixed()==0x172bu);
+            assert(chain_game.enemies[2].x_fixed()==0x1c7au &&
+                   chain_game.enemies[2].y_fixed()==0x1735u);
+        }
+    }
+
     const auto& r6=find_type(s6,0x7bu);
     assert(r6.trigger==0x5029u && r6.control==5u);
     assert(r6.payload.size()==1u && r6.payload[0]==0xffu);
@@ -94,15 +149,20 @@ int main(int argc,char** argv) {
     // final scenery gate, switch to boss music, destroy through $6A, clean its
     // active beam and advance to Stage 7.
     sm::PlaySession route(rom);route.reset(5u);
-    sm::Entity64* live=nullptr;
-    for(unsigned f=0;f<26000u && !live;++f) {
+    sm::Entity64* live=nullptr;bool escorts=false;
+    for(unsigned f=0;f<26000u && (!live || !escorts);++f) {
         route.step_60hz({});
         auto& state=const_cast<sm::GameState&>(route.state());
         const auto it=std::find_if(state.enemies.begin(),state.enemies.end(),
             [](auto& e){return e.type()==0x7bu;});
         if(it!=state.enemies.end()) live=&*it;
+        unsigned n7c=0u,parents7c=0u;
+        for(const auto& e:state.enemies) if(e.type()==0x7cu) {
+            ++n7c;if(e.raw[0x34]&0x80u) ++parents7c;
+        }
+        escorts=n7c==16u && parents7c==2u;
     }
-    assert(live && route.boss_music_active());
+    assert(live && escorts && route.boss_music_active());
     for(unsigned f=0;f<600u && !route.at_fight_gate();++f) route.step_60hz({});
     assert(route.at_fight_gate());
 
@@ -116,6 +176,17 @@ int main(int argc,char** argv) {
     for(unsigned f=0;f<40u && live->type()!=0x6au;++f) route.step_60hz({});
     assert(live->type()==0x6au);
     for(const auto& e:route.state().enemies) assert(e.type()!=0x0du);
+
+    // CE76 cascade observed on the original: variant-0 chain enters $7CC3
+    // with the boss, variant-1 follows one video pass later.
+    auto count_type=[&](std::uint8_t type) {
+        return std::count_if(route.state().enemies.begin(),route.state().enemies.end(),
+                             [=](const auto& e){return e.type()==type;});
+    };
+    assert(count_type(0x62u)==8u && count_type(0x7cu)==8u);
+    route.step_60hz({});
+    assert(count_type(0x62u)==16u && count_type(0x7cu)==0u);
+
     for(unsigned f=0;f<500u && route.stage_index()==5u;++f) route.step_60hz({});
     assert(route.stage_index()==6u);
 

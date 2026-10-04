@@ -288,8 +288,22 @@ bool Stage0Enemies::destroyed(const Entity64& enemy) {
     if(w.bonus && w.killed==w.count) {w.killed=0;return true;}
     return false;
 }
-void Stage0Enemies::move_60hz(GameState& game,unsigned frame) {
+void Stage0Enemies::move_60hz(GameState& game,unsigned frame,
+                              std::vector<PlaySound>* sounds) {
     for(auto& e:game.enemies) {
+        // Stage-6 $7C death is driven by global CE76. The original scheduler
+        // reaches the left eight-record chain first and the right chain one
+        // video pass later. +3F=$D2 is a native one-frame defer marker for the
+        // second half only.
+        if(e.active() && e.type()==0x7cu && e.raw[0x3f]==0xd2u) {
+            e.raw[0x15]=0x2du;e.raw[0x14]&=0x7fu;
+            e.raw[0x01]=0u;e.raw[0x34]=0u;e.raw[0x38]=0u;
+            e.raw[0x05]=0u;e.raw[0x06]=0u;e.raw[0x17]=0u;
+            for(unsigned p=0x0bu;p<=0x0eu;++p) e.raw[p]=0u;
+            e.raw[0x3e]=0u;e.raw[0x3f]=0u;e.type()=0x62u;
+            if(sounds) sounds->push_back(PlaySound::HeavyVehicleExplosion);
+            continue;
+        }
 
         // +3E is ROM handler/script metadata, never a generic lifetime.
         // In particular type $1F explicitly writes $09 at bank06:$BC56 and
@@ -1807,6 +1821,133 @@ void Stage0Enemies::step_15hz(const Rom& rom,GameState& game,unsigned tick,std::
                         if(parent->raw[0x03]) --parent->raw[0x03];
                         e.state()=0u;
                     }
+                }
+            }
+        } else if(e.type()==0x7cu) {
+            // Stage-6 boss escort chain, bank06 $B76C-$BA27. A parent owns
+            // seven linked type-$7C segments. The parent follows a ROM path
+            // in phase/velocity/acceleration space; every child integrates
+            // those three words from its predecessor and converts phase into
+            // a fixed 1.75-cell sine/cosine link.
+            auto be=[](const Entity64& q,unsigned p) {
+                return std::uint16_t((unsigned(q.raw[p])<<8u)|q.raw[p+1u]);
+            };
+            auto set_be=[](Entity64& q,unsigned p,std::uint16_t v) {
+                q.raw[p]=std::uint8_t(v>>8u);q.raw[p+1u]=std::uint8_t(v);
+            };
+            auto find_id=[&](std::uint8_t id)->Entity64* {
+                if(!id) return nullptr;
+                for(auto& q:game.enemies) if(q.active() && q.raw[0x2d]==id) return &q;
+                return nullptr;
+            };
+            auto trig=[&](std::uint8_t a) {
+                const bool neg=(a&0x80u)!=0u;
+                unsigned q=a&0x7fu;
+                if(q&0x40u) q=(~q)&0x3fu;
+                const int v=rom.bank(4)[0x13adu+q];
+                return neg?-v:v;
+            };
+            auto link_delta=[&](std::uint8_t a) {
+                const int v=trig(a)*448;
+                return v>=0 ? v/256 : -((-v)/256);
+            };
+
+            if((e.raw[0x34]&0x80u)==0u && e.raw[0x3e]) {
+                e.raw[0x3e]=0u;
+                continue;
+            }
+            if(e.state()==0u) {
+                const bool right=(e.raw[0x03]&1u)!=0u;
+                e.raw[0x16]=0xffu;e.raw[0x05]=0x11u;e.raw[0x34]=0x80u;
+                e.set_y_fixed(0x1700u);e.set_x_fixed(right?0x1900u:0x0500u);
+                set_be(e,0x21u,0u);set_be(e,0x23u,0u);set_be(e,0x25u,0u);
+                const std::uint16_t path=right?0xb978u:0xb9d0u;
+                e.raw[0x27]=std::uint8_t(path);e.raw[0x28]=std::uint8_t(path>>8u);
+                e.raw[0x17]=0u;e.raw[0x35]=0u;e.raw[0x36]=0u;
+
+                std::array<Entity64*,7> child{};
+                std::uint8_t previous=e.raw[0x2d];
+                unsigned made=0u;
+                for(;made<child.size();++made) {
+                    auto* c=create(rom,game,0x7cu);if(!c) break;
+                    c->set_x_fixed(e.x_fixed());c->set_y_fixed(e.y_fixed());
+                    c->raw[0x16]=0xffu;c->raw[0x05]=0x11u;
+                    const auto ordinal=std::uint8_t(made+1u);
+                    if(ordinal&1u) {c->flags15()|=0x08u;--c->raw[0x05];}
+                    c->raw[0x34]=e.raw[0x2d];c->raw[0x35]=previous;
+                    c->raw[0x36]=0u;c->raw[0x38]=ordinal;c->raw[0x02]=ordinal;
+                    c->raw[0x3e]=1u; // newly allocated records run next object pass
+                    c->state()=1u;
+                    if(made==0u) e.raw[0x36]=c->raw[0x2d];
+                    else child[made-1u]->raw[0x36]=c->raw[0x2d];
+                    previous=c->raw[0x2d];child[made]=c;
+                    e.raw[0x02]=ordinal;
+                }
+                e.raw[0x17]=std::uint8_t(made);
+                e.state()=1u;
+            } else if(e.state()==1u) {
+                if(e.raw[0x16]==0u) {e.clear();continue;}
+
+                if(e.raw[0x34]&0x80u) {
+                    // $B8CB/$B949: three target/step pairs. The latter two
+                    // words are compared in +$8000 biased space.
+                    auto bank=rom.bank(6);
+                    std::uint16_t ptr=std::uint16_t(unsigned(e.raw[0x27])|
+                                                    (unsigned(e.raw[0x28])<<8u));
+                    auto move_toward=[](std::uint16_t cur,std::uint16_t target,
+                                        std::uint16_t step) {
+                        if(cur==target) return std::pair<std::uint16_t,bool>{cur,true};
+                        if(cur<target) {
+                            const unsigned d=unsigned(target)-cur;
+                            return std::pair<std::uint16_t,bool>{
+                                std::uint16_t(d<=step?target:cur+step),d<=step};
+                        }
+                        const unsigned d=unsigned(cur)-target;
+                        return std::pair<std::uint16_t,bool>{
+                            std::uint16_t(d<=step?target:cur-step),d<=step};
+                    };
+                    bool all=true;
+                    if(ptr>=0xa000u && ptr+11u<0xc000u) {
+                        unsigned p=unsigned(ptr-0xa000u);
+                        const auto le=[&](unsigned q) {
+                            return std::uint16_t(unsigned(bank[q])|
+                                                 (unsigned(bank[q+1u])<<8u));
+                        };
+                        auto [phase,dp]=move_toward(be(e,0x21u),le(p),le(p+2u));
+                        set_be(e,0x21u,phase);all&=dp;
+                        auto [vel,dv]=move_toward(std::uint16_t(be(e,0x25u)+0x8000u),
+                                                  le(p+4u),le(p+6u));
+                        set_be(e,0x25u,std::uint16_t(vel+0x8000u));all&=dv;
+                        auto [acc,da]=move_toward(std::uint16_t(be(e,0x23u)+0x8000u),
+                                                  le(p+8u),le(p+10u));
+                        set_be(e,0x23u,std::uint16_t(acc+0x8000u));all&=da;
+                        if(all) {
+                            ptr=std::uint16_t(ptr+12u);
+                            p=unsigned(ptr-0xa000u);
+                            if(ptr>=0xa000u && ptr+3u<0xc000u &&
+                               bank[p]==0xffu && bank[p+1u]==0xffu)
+                                ptr=std::uint16_t(unsigned(bank[p+2u])|
+                                                  (unsigned(bank[p+3u])<<8u));
+                            e.raw[0x27]=std::uint8_t(ptr);
+                            e.raw[0x28]=std::uint8_t(ptr>>8u);
+                        }
+                    }
+                } else {
+                    auto* prev=find_id(e.raw[0x35]);
+                    if(!prev) {e.clear();continue;}
+                    set_be(e,0x23u,be(*prev,0x23u));
+                    set_be(e,0x25u,std::uint16_t(be(*prev,0x25u)+be(e,0x23u)));
+                    set_be(e,0x21u,std::uint16_t(be(*prev,0x21u)+be(e,0x25u)));
+                    const auto a=e.raw[0x21];
+                    const int yo=link_delta(a);
+                    const int xo=link_delta(std::uint8_t(a+0x40u));
+                    e.set_y_fixed(std::uint16_t(int(std::int16_t(prev->y_fixed()))+yo));
+                    e.set_x_fixed(std::uint16_t(int(std::int16_t(prev->x_fixed()))+xo));
+                }
+
+                if(e.raw[0x36]==0u) {
+                    e.raw[0x05]=std::uint8_t(((e.raw[0x21]>>4u)+4u)&0x0fu);
+                    e.flags15()|=0x08u;
                 }
             }
         } else if(e.type()==0x7au) {

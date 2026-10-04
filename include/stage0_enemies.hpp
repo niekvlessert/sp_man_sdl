@@ -18,7 +18,8 @@ public:
     void clear_waves() noexcept { waves_={}; }
     bool spawn(const Rom& rom, const SpawnRecord& record, GameState& game,
                std::uint8_t direction=1);
-    void move_60hz(GameState& game,unsigned frame=0);
+    void move_60hz(GameState& game,unsigned frame=0,
+                   std::vector<PlaySound>* sounds=nullptr);
     // The terminal $64/$6A handler is clocked at 20 Hz in the original.
     void step_gate_20hz(const Rom& rom,GameState& game,unsigned tick,
                          std::vector<PlaySound>* sounds=nullptr,std::uint8_t ca3b=0,std::uint8_t fine_x=0);

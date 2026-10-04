@@ -797,7 +797,7 @@ void PlaySession::step_60hz(PlayerInput input) {
         }
     }
     game_.difficulty=std::uint8_t(combat_.upgrades().difficulty(rom_));
-    enemies_.move_60hz(game_,frame_);
+    enemies_.move_60hz(game_,frame_,&sound_events_);
     const auto trigger=std::uint16_t(stage_index_?background_.trigger_cursor():(camera_pixels()<3072?0x1000+camera_pixels()/8:background_.trigger_cursor()));
     for(auto spawn:spawns_.step_to_trigger(trigger,false,game_.difficulty)) {
         if(const auto command=decode_stage_scene_command(spawn);
@@ -981,8 +981,35 @@ void PlaySession::step_60hz(PlayerInput input) {
             if(original.type()==0x77u)
                 for(auto& child:game_.enemies) if(&child!=&enemy &&
                     (child.type()==0x76u || child.type()==0x5cu)) child.clear();
-            if(original.type()==0x7bu)
-                for(auto& child:game_.enemies) if(&child!=&enemy && child.type()==0x0du) child.clear();
+            if(original.type()==0x7bu) {
+                for(auto& child:game_.enemies)
+                    if(&child!=&enemy && child.type()==0x0du) child.clear();
+
+                // $B76C begins with the global CE76 boss-death latch. Live
+                // OpenMSX shows the variant-0 $7C chain entering $7CC3 in the
+                // same pass as $7B->$6A, then the variant-1 chain one video
+                // pass later. Preserve that left/right cascade rather than
+                // silently deleting the sixteen escort segments.
+                std::uint8_t left_id=0u,right_id=0u;
+                for(const auto& q:game_.enemies) if(q.type()==0x7cu &&
+                                                    (q.raw[0x34]&0x80u)) {
+                    if(q.raw[0x03]&1u) right_id=q.raw[0x2d];
+                    else left_id=q.raw[0x2d];
+                }
+                auto explode7c=[&](Entity64& q) {
+                    q.raw[0x15]=0x2du;q.raw[0x14]&=0x7fu;
+                    q.raw[0x01]=0u;q.raw[0x34]=0u;q.raw[0x38]=0u;
+                    q.raw[0x05]=0u;q.raw[0x06]=0u;q.raw[0x17]=0u;
+                    for(unsigned p=0x0bu;p<=0x0eu;++p) q.raw[p]=0u;
+                    q.raw[0x3e]=0u;q.raw[0x3f]=0u;q.type()=0x62u;
+                    sound_events_.push_back(PlaySound::HeavyVehicleExplosion);
+                };
+                for(auto& q:game_.enemies) if(q.type()==0x7cu) {
+                    const auto owner=(q.raw[0x34]&0x80u)?q.raw[0x2d]:q.raw[0x34];
+                    if(left_id && owner==left_id) explode7c(q);
+                    else if(right_id && owner==right_id) q.raw[0x3f]=0xd2u;
+                }
+            }
             if(original.type()==0x7au) {
                 // Original boss death raises CE52. The seven linked $3B
                 // segments disappear and each final-sector $3C receives the

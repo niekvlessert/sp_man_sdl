@@ -246,7 +246,8 @@ bool decode_stage0_sprite_visual(const Rom& rom, const Screen4Snapshot& video,
     const bool global_base = type == 0x20u || type == 0x29u || type == 0x22u ||
                              type == 0x24u || type == 0x26u;
     const bool supported_sprite = type == 0x1fu || type == 0x27u || type == 0x2du ||
-                                  type == 0x48u || type == 0x4fu || type == 0x74u || global_base;
+                                  type == 0x48u || type == 0x4fu || type == 0x74u ||
+                                  type == 0x7cu || global_base;
     if (!supported_sprite) return false;
 
     const auto type_table = rom.bank(7);
@@ -1139,15 +1140,16 @@ bool instantiate_stage0_spawn(const Rom& rom, const SpawnRecord& r, GameState& g
     const bool special3e = r.type == 0x3eu && r.control_flag();
     const bool special77 = r.type == 0x77u && r.control_flag();
     const bool special7a = r.type == 0x7au && r.control_flag();
+    const bool special7c = r.type == 0x7cu && r.control_flag();
     // The final stage-0 tower is also an extended record: trigger $5000,
     // control $88. Rejecting every flagged record except $26 silently dropped
     // type $64 from real gameplay, leaving only the scenery copy visible.
     const bool special64 = r.type == 0x64u && r.control_flag();
-    if (r.control_flag() && !special26 && !special2b && !special48 && !special4f && !special53 && !special54 && !special3e && !special77 && !special64 && !special7a) return false;
+    if (r.control_flag() && !special26 && !special2b && !special48 && !special4f && !special53 && !special54 && !special3e && !special77 && !special64 && !special7a && !special7c) return false;
     if (r.type != 0x14u && r.type != 0x19u && r.type != 0x1eu && r.type != 0x1fu && r.type != 0x20u && r.type != 0x27u && r.type != 0x29u && r.type != 0x2bu && r.type != 0x2du && r.type != 0x2eu && r.type != 0x2fu && r.type != 0x31u && r.type != 0x3cu && r.type != 0x3eu && r.type != 0x22u &&
         r.type != 0x24u && r.type != 0x26u && r.type != 0x41u && r.type != 0x48u && r.type != 0x49u && r.type != 0x4au && r.type != 0x4du && r.type != 0x4eu && r.type != 0x4fu && r.type != 0x50u &&
         r.type != 0x53u && r.type != 0x54u && r.type != 0x55u && r.type != 0x56u && r.type != 0x47u && r.type != 0x43u && r.type != 0x64u &&
-        r.type != 0x73u && r.type != 0x77u && r.type != 0x78u && r.type != 0x79u && r.type != 0x7au && r.type != 0x7bu) return false;
+        r.type != 0x73u && r.type != 0x77u && r.type != 0x78u && r.type != 0x79u && r.type != 0x7au && r.type != 0x7bu && r.type != 0x7cu) return false;
     if (r.payload.empty() || (r.type == 0x24u && r.payload.size() < 2u)) return false;
     auto* e = game.allocate_enemy();
     if (!e) return false;
@@ -1161,7 +1163,7 @@ bool instantiate_stage0_spawn(const Rom& rom, const SpawnRecord& r, GameState& g
     // Original $6754 initializer. The same payload byte is interpreted on a
     // different axis depending on C0D5, so it is NOT an absolute Y value.
     // Extended records expose their first inline byte after the count byte.
-    const unsigned payload_index = (special26 || special2b || special48 || special4f || special54 || special77 || special7a) ? 1u : 0u;
+    const unsigned payload_index = (special26 || special2b || special48 || special4f || special54 || special77 || special7a || special7c) ? 1u : 0u;
     if (r.payload.size() <= payload_index) { e->clear(); return false; }
     const std::uint8_t pos = r.payload[payload_index] & 0x7fu;
     std::uint8_t xh = 0x20u, yh = pos;
@@ -1470,6 +1472,18 @@ bool instantiate_stage0_spawn(const Rom& rom, const SpawnRecord& r, GameState& g
         e->raw[0x17]=0x38u;              // first $9755 attack delay
         e->raw[0x25]=0u;e->raw[0x26]=6u;e->raw[0x27]=1u;
         e->state()=1u;
+    } else if (r.type == 0x7cu) {
+        // Stage-6 boss escort chain, bank06 $B76C. Extended grammar:
+        //   02 <variant> 02 7C
+        // State zero installs the fixed anchor/path and creates seven linked
+        // type-$7C segments. Keep only the variant here; the ROM handler owns
+        // every other field.
+        if(r.payload.size()<4u || r.payload[0]!=2u ||
+           r.payload[2]!=2u || r.payload[3]!=0x7cu) {
+            e->clear();return false;
+        }
+        e->raw[0x03]=r.payload[1]&1u;
+        e->raw[0x34]=0x80u;
     } else if (r.type == 0x7bu) {
         // Stage-6 boss, bank06 $B513. The final mode-3 scroll brings the
         // common spawn position to the live $0700/$1400 entrance anchor;
@@ -1493,7 +1507,7 @@ bool instantiate_stage0_spawn(const Rom& rom, const SpawnRecord& r, GameState& g
     // Type $64 must enter bank06:$A300 (state 0). Starting it at state 1
     // skips the ROM initializer that positions the tower at X=$2800/Y=$0C00.
     if(!special48)
-        e->state() = (r.type == 0x14u || r.type == 0x43u || r.type == 0x64u || r.type==0x47u || r.type==0x2du || r.type==0x2eu || r.type==0x31u || r.type==0x3eu || r.type==0x4du || r.type==0x4eu || r.type==0x53u || r.type==0x77u || r.type==0x7au || r.type==0x7bu) ? 0u : 1u;
+        e->state() = (r.type == 0x14u || r.type == 0x43u || r.type == 0x64u || r.type==0x47u || r.type==0x2du || r.type==0x2eu || r.type==0x31u || r.type==0x3eu || r.type==0x4du || r.type==0x4eu || r.type==0x53u || r.type==0x77u || r.type==0x7au || r.type==0x7bu || r.type==0x7cu) ? 0u : 1u;
     return true;
 }
 }
