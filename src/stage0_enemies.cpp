@@ -1966,10 +1966,10 @@ void Stage0Enemies::step_15hz(const Rom& rom,GameState& game,unsigned tick,std::
             // Bank05 $8338: constant downward motion; $6C3A's horizontal
             // camera compensation is applied by scroll_stage0_objects.
             put(e,11,0x0040);
-        } else if(e.type()==0x2bu) {
-            // Bank05 $8367-$83A6. The extended launcher emits type-$16
-            // attackers. Two normal 16-tick gaps are followed by a 64-tick
-            // pause; ceiling/floor orientation is copied to child +20.
+        } else if(e.type()==0x2bu || e.type()==0x4fu) {
+            // Bank05 $8367-$83A6. Both launchers emit type-$16 attackers:
+            // two normal 16-tick gaps followed by a 64-tick pause, with the
+            // ceiling/floor orientation copied to child +20.
             if(expired(e,0x18)) {
                 e.raw[0x18]=0x10u;
                 if(auto* c=create(rom,game,0x16u)) {
@@ -1985,6 +1985,13 @@ void Stage0Enemies::step_15hz(const Rom& rom,GameState& game,unsigned tick,std::
                 if(++e.raw[0x21]>=3u) {
                     e.raw[0x21]=0u;e.raw[0x18]=0x40u;
                 }
+            }
+            if(e.type()==0x4fu && expired(e,0x17)) {
+                // $9658-$969F: type $4F overlays a three-way shot every
+                // $18 ticks. +26 is a native-only one-shot queue consumed by
+                // Stage0Combat; orientation selects {1,2,3} vs {13,14,15}.
+                e.raw[0x17]=0x18u;
+                e.raw[0x26]=1u;
             }
         } else if(e.type()==0x2cu) {
             // $69BF creates these children during the parent $2E handler, but

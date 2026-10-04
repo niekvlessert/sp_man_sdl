@@ -317,6 +317,16 @@ void Stage0Combat::step(const Rom& rom,GameState& game,unsigned frame,int dx,int
             const auto& headings=e.raw[0x20]?ceiling_headings:floor_headings;
             shot=fire_fixed_pattern(rom,muzzle,speed,headings,0) || shot;
         }
+        if(e.type()==0x4fu && e.raw[0x26]) {
+            // Bank05 $9666-$969F -> fixed $7300. Floor launcher uses headings
+            // {1,2,3}; ceiling launcher uses {13,14,15} from a +2-cell muzzle.
+            static constexpr std::array<std::uint8_t,3> floor{1u,2u,3u};
+            static constexpr std::array<std::uint8_t,3> ceiling{13u,14u,15u};
+            e.raw[0x26]=0u;
+            const unsigned speed=rom.bank(4)[0x11a8u+std::min<unsigned>(game.difficulty,15u)];
+            shot=fire_fixed_pattern(rom,e,speed,e.raw[0x20]?ceiling:floor,
+                                    e.raw[0x20]?2:0)||shot;
+        }
         if(e.type()==0x1au && e.raw[0x26]) {
             // Fixed $57DF -> $714A. Unlike ordinary aimed rounds, type $1A
             // has already selected CA26=$12/$16 from difficulty in its enemy

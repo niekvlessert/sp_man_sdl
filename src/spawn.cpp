@@ -246,7 +246,7 @@ bool decode_stage0_sprite_visual(const Rom& rom, const Screen4Snapshot& video,
     const bool global_base = type == 0x20u || type == 0x29u || type == 0x22u ||
                              type == 0x24u || type == 0x26u;
     const bool supported_sprite = type == 0x1fu || type == 0x27u || type == 0x2du ||
-                                  type == 0x48u || type == 0x74u || global_base;
+                                  type == 0x48u || type == 0x4fu || type == 0x74u || global_base;
     if (!supported_sprite) return false;
 
     const auto type_table = rom.bank(7);
@@ -1133,6 +1133,7 @@ bool instantiate_stage0_spawn(const Rom& rom, const SpawnRecord& r, GameState& g
     const bool special26 = r.type == 0x26u && r.control_flag();
     const bool special2b = r.type == 0x2bu && r.control_flag();
     const bool special48 = r.type == 0x48u && r.control_flag();
+    const bool special4f = r.type == 0x4fu && r.control_flag();
     const bool special53 = r.type == 0x53u && r.control_flag();
     const bool special54 = r.type == 0x54u && r.control_flag();
     const bool special3e = r.type == 0x3eu && r.control_flag();
@@ -1142,9 +1143,9 @@ bool instantiate_stage0_spawn(const Rom& rom, const SpawnRecord& r, GameState& g
     // control $88. Rejecting every flagged record except $26 silently dropped
     // type $64 from real gameplay, leaving only the scenery copy visible.
     const bool special64 = r.type == 0x64u && r.control_flag();
-    if (r.control_flag() && !special26 && !special2b && !special48 && !special53 && !special54 && !special3e && !special77 && !special64 && !special7a) return false;
+    if (r.control_flag() && !special26 && !special2b && !special48 && !special4f && !special53 && !special54 && !special3e && !special77 && !special64 && !special7a) return false;
     if (r.type != 0x14u && r.type != 0x19u && r.type != 0x1eu && r.type != 0x1fu && r.type != 0x20u && r.type != 0x27u && r.type != 0x29u && r.type != 0x2bu && r.type != 0x2du && r.type != 0x2eu && r.type != 0x2fu && r.type != 0x31u && r.type != 0x3cu && r.type != 0x3eu && r.type != 0x22u &&
-        r.type != 0x24u && r.type != 0x26u && r.type != 0x41u && r.type != 0x48u && r.type != 0x49u && r.type != 0x4au && r.type != 0x4du && r.type != 0x4eu && r.type != 0x50u &&
+        r.type != 0x24u && r.type != 0x26u && r.type != 0x41u && r.type != 0x48u && r.type != 0x49u && r.type != 0x4au && r.type != 0x4du && r.type != 0x4eu && r.type != 0x4fu && r.type != 0x50u &&
         r.type != 0x53u && r.type != 0x54u && r.type != 0x55u && r.type != 0x56u && r.type != 0x47u && r.type != 0x43u && r.type != 0x64u &&
         r.type != 0x73u && r.type != 0x77u && r.type != 0x78u && r.type != 0x79u && r.type != 0x7au && r.type != 0x7bu) return false;
     if (r.payload.empty() || (r.type == 0x24u && r.payload.size() < 2u)) return false;
@@ -1160,7 +1161,7 @@ bool instantiate_stage0_spawn(const Rom& rom, const SpawnRecord& r, GameState& g
     // Original $6754 initializer. The same payload byte is interpreted on a
     // different axis depending on C0D5, so it is NOT an absolute Y value.
     // Extended records expose their first inline byte after the count byte.
-    const unsigned payload_index = (special26 || special2b || special48 || special54 || special77 || special7a) ? 1u : 0u;
+    const unsigned payload_index = (special26 || special2b || special48 || special4f || special54 || special77 || special7a) ? 1u : 0u;
     if (r.payload.size() <= payload_index) { e->clear(); return false; }
     const std::uint8_t pos = r.payload[payload_index] & 0x7fu;
     std::uint8_t xh = 0x20u, yh = pos;
@@ -1203,16 +1204,24 @@ bool instantiate_stage0_spawn(const Rom& rom, const SpawnRecord& r, GameState& g
         // retarget cadence and +03 is an optional speed bias.
         e->raw[0x17]=0x0au;
         e->raw[0x03]=r.payload.size()>1u ? r.payload[1] : 0u;
-    } else if(r.type==0x2bu) {
-        // Bank05 $8341. Extended record grammar is
+    } else if(r.type==0x2bu || r.type==0x4fu) {
+        // Bank05 $8341 shared extended launcher initializer:
         //   03 <position/orientation> <interval> 02 16
-        // where the trailing descriptor creates type-$16 attackers.
-        if(r.payload.size()<5u) { e->clear(); return false; }
+        // Type $4F runs the same type-$16 child launcher and layers its own
+        // three-way firing cadence on top at $9658.
+        if(r.payload.size()<5u || r.payload[0]!=3u ||
+           r.payload[3]!=2u || r.payload[4]!=0x16u) {
+            e->clear(); return false;
+        }
         const auto position=r.payload[1];
         e->raw[0x20]=(position>>7u)&1u;
         e->raw[0x06]=e->raw[0x20];
         e->raw[0x18]=r.payload[2];
         e->raw[0x3e]=4u;
+        if(r.type==0x4fu) {
+            e->raw[0x17]=0x18u;
+            e->raw[0x3d]=1u;
+        }
     } else if(r.type==0x2du) {
         // Bank05 $8426-$844C initializer. The sole inline byte is the
         // surface/orientation coordinate: bit 7 selects the ceiling variant

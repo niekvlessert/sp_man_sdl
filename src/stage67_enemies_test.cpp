@@ -83,6 +83,44 @@ int main(int argc,char** argv) {
         assert(g.enemies[1].y_fixed()==0x155au);
     }
 
+    // $4F: Stage-7 extended launcher shares the $8341 type-$16 cadence
+    // with $2B and overlays a 24-tick three-way attack.
+    {
+        sm::GameState g;sm::Stage0Enemies logic;
+        const auto& r=first_type(s7,0x4fu);
+        assert(r.control_flag() && r.payload.size()==5u);
+        assert(r.payload[0]==3u && r.payload[1]==0x82u &&
+               r.payload[2]==0x1fu && r.payload[3]==2u && r.payload[4]==0x16u);
+        assert(logic.spawn(rom,r,g,1u));
+        auto& launcher=g.enemies[0];
+        assert(launcher.state()==1u && launcher.x_fixed()==0x2000u &&
+               launcher.y_fixed()==0x0200u);
+        assert(launcher.raw[0x20]==1u && launcher.raw[0x06]==1u &&
+               launcher.raw[0x17]==0x18u && launcher.raw[0x18]==0x1fu &&
+               launcher.raw[0x3d]==1u);
+
+        for(unsigned t=0;t<24u;++t) logic.step_15hz(rom,g,t,0,true,nullptr);
+        assert(launcher.raw[0x26]==1u && launcher.raw[0x17]==0x18u);
+
+        sm::Stage0Combat combat;combat.reset();
+        std::vector<sm::PlaySound> shot_sounds;
+        combat.step(rom,g,0u,0,0,shot_sounds);
+        assert(launcher.raw[0x26]==0u);
+        assert(std::count_if(combat.bullets().begin(),combat.bullets().end(),
+               [](const auto& b){return b.active();})==3u);
+        assert(std::find(shot_sounds.begin(),shot_sounds.end(),
+                         sm::PlaySound::EnemyShot)!=shot_sounds.end());
+
+        for(unsigned t=24u;t<31u;++t) logic.step_15hz(rom,g,t,0,true,nullptr);
+        auto child=std::find_if(g.enemies.begin(),g.enemies.end(),
+                                [](const auto& e){return e.type()==0x16u;});
+        assert(child!=g.enemies.end());
+        assert(child->raw[0x20]==1u);
+        assert(child->x_fixed()==std::uint16_t(launcher.x_fixed()+0x0200u));
+        assert(child->y_fixed()>=0x0400u);
+        assert(launcher.raw[0x21]==1u && launcher.raw[0x22]==1u);
+    }
+
     // $54: first Stage-7 descriptor is 04 80 13 00 02 1A. It waits at X=$15,
     // launches three $1A children eight logic ticks apart, and the top-side
     // child starts downward at +$60.
@@ -164,18 +202,24 @@ int main(int argc,char** argv) {
     }
     {
         sm::PlaySession s(rom);s.reset(6u);
-        bool launcher=false,child=false,horizontal=false;
+        bool launcher=false,child=false,horizontal=false,launcher4f=false,child16=false;
+        unsigned max4f=0u;
         for(unsigned f=0;f<9000u;++f) {
             s.step_60hz({});
+            unsigned n4f=0u;
             for(const auto& e:s.state().enemies) {
                 launcher|=e.type()==0x54u;
+                if(e.type()==0x4fu) {launcher4f=true;++n4f;}
+                child16|=e.type()==0x16u;
                 if(e.type()==0x1au) {
                     child=true;horizontal|=sw(e,13)!=0;
                 }
             }
+            max4f=std::max(max4f,n4f);
         }
         assert(launcher && child && horizontal);
+        assert(launcher4f && child16 && max4f>=2u);
     }
 
-    std::cout<<"Stages 6/7 enemies PASS: $4A/$4D/$48 formation and $54->$1A launcher family\n";
+    std::cout<<"Stages 6/7 enemies PASS: $4A/$4D/$48/$4F and $54->$1A launcher family\n";
 }
