@@ -299,7 +299,7 @@ void Stage0Enemies::move_60hz(GameState& game,unsigned frame) {
             if(--e.raw[0x3e]==0) e.clear();
             continue;
         }
-        if(e.active() && (flight(e.type()) || e.type()==0x16u || e.type()==0x19u || e.type()==0x1eu || e.type()==0x11u || e.type()==0x23u || e.type()==0x27u || e.type()==0x2au || e.type()==0x2cu || e.type()==0x2du || e.type()==0x2fu || e.type()==0x31u || e.type()==0x49u || e.type()==0x4eu || e.type()==0x58u || e.type()==0x5cu || e.type()==0x5eu || e.type()==0x66u || e.type()==0x68u || e.type()==0x70u || e.type()==0x74u || e.type()==0x40u || e.type()==0x0du)) {
+        if(e.active() && (flight(e.type()) || e.type()==0x16u || e.type()==0x19u || e.type()==0x1au || e.type()==0x1eu || e.type()==0x11u || e.type()==0x23u || e.type()==0x27u || e.type()==0x2au || e.type()==0x2cu || e.type()==0x2du || e.type()==0x2fu || e.type()==0x31u || e.type()==0x49u || e.type()==0x4au || e.type()==0x4du || e.type()==0x4eu || e.type()==0x58u || e.type()==0x5cu || e.type()==0x5eu || e.type()==0x66u || e.type()==0x68u || e.type()==0x70u || e.type()==0x74u || e.type()==0x40u || e.type()==0x0du)) {
         const int divisor=(e.type()==0x40u || e.type()==0x23u)?3:4,phase=int(frame%unsigned(divisor));
         auto delta=[&](int v){return v*(phase+1)/divisor-v*phase/divisor;};
         e.set_x_fixed(std::uint16_t(e.x_fixed()+delta(signed_word(e,13))));
@@ -1167,6 +1167,230 @@ void Stage0Enemies::step_15hz(const Rom& rom,GameState& game,unsigned tick,std::
                 }
             } else if(e.state()==2u) {
                 if(expired(e,0x17)) e.clear();
+            }
+        } else if(e.type()==0x48u) {
+            // Stage-6 linked six-body formation, bank05 $91AC-$92D7.
+            // Parent records have +34 bit 7. Children retain state zero and
+            // derive their exact orbit from the parent's phase every logic
+            // tick, just like $925D.
+            const bool parent=(e.raw[0x34]&0x80u)!=0u;
+            if(parent) {
+                if(e.raw[0x08]>=0xf0u && e.raw[0x08]<0xf8u) {
+                    const auto id=e.raw[0x2d];
+                    for(auto& c:game.enemies)
+                        if(c.type()==0x48u && c.raw[0x34]==id) c.clear();
+                    e.clear();continue;
+                }
+                if(e.state()==3u) {
+                    // $9221 retries allocation when the original 20-slot pool
+                    // could not provide all six linked records at spawn time.
+                    const auto id=e.raw[0x2d];
+                    unsigned have=0;
+                    std::array<Entity64*,6> link{};
+                    for(auto& c:game.enemies)
+                        if(c.type()==0x48u && c.raw[0x34]==id && c.raw[0x03]<6u) {
+                            link[c.raw[0x03]]=&c;have=std::max(have,unsigned(c.raw[0x03])+1u);
+                        }
+                    while(have<6u) {
+                        auto* c=create(rom,game,0x48u);if(!c) break;
+                        c->set_y_fixed(std::uint16_t(e.raw[0x08])<<8u);
+                        c->set_x_fixed(0x1c00u);
+                        c->raw[0x03]=std::uint8_t(have);
+                        c->raw[0x34]=id;c->raw[0x38]=std::uint8_t(have+1u);
+                        c->state()=0u;link[have++]=c;
+                    }
+                    e.raw[0x03]=std::uint8_t(have);
+                    e.raw[0x24]=std::uint8_t(6u-have);
+                    if(have) {
+                        e.raw[0x36]=link[0]?link[0]->raw[0x2d]:0u;
+                        for(unsigned i=0;i<have;++i) if(link[i]) {
+                            link[i]->raw[0x35]=(i==0u)?id:(link[i-1]?link[i-1]->raw[0x2d]:id);
+                            link[i]->raw[0x36]=(i+1u<have && link[i+1])?link[i+1]->raw[0x2d]:0u;
+                        }
+                    }
+                    if(have==6u) {e.raw[0x17]=1u;e.raw[0x18]=0u;e.state()=2u;}
+                }
+                if(e.state()==2u)
+                    e.raw[0x17]=std::uint8_t(e.raw[0x17]+e.raw[0x12]);
+            } else {
+                const auto parent_id=e.raw[0x34]&0x3fu;
+                Entity64* p=nullptr;
+                for(auto& q:game.enemies)
+                    if(q.type()==0x48u && (q.raw[0x34]&0x80u) && q.raw[0x2d]==parent_id) {
+                        p=&q;break;
+                    }
+                if(!p) {e.clear();continue;}
+                const unsigned ordinal=std::min<unsigned>(e.raw[0x03],5u);
+                static constexpr std::array<std::uint8_t,6> angle_add{0,0,0,0x40,0x40,0x40};
+                static constexpr std::array<std::uint8_t,6> radius{0x28,0x38,0x48,0x28,0x38,0x48};
+                auto trig=[&](std::uint8_t a) {
+                    const bool neg=(a&0x80u)!=0u;
+                    unsigned q=a&0x7fu;
+                    if(q&0x40u) q=(~q)&0x3fu;
+                    const int v=rom.bank(4)[0x13adu+q];
+                    return neg?-v:v;
+                };
+                auto scaled=[&](std::uint8_t a,unsigned r) {
+                    const int v=trig(a)*int(r);
+                    return v>=0 ? v/8 : -((-v)/8);
+                };
+                std::uint8_t a=std::uint8_t(p->raw[0x17]+angle_add[ordinal]);
+                if(std::uint8_t(a-p->raw[0x26]+0x40u)>=0x80u)
+                    a=std::uint8_t(a-0x80u);
+                const int yo=scaled(a,radius[ordinal]);
+                const int xo=scaled(std::uint8_t(a+0x40u),radius[ordinal]);
+                e.set_y_fixed(std::uint16_t(int(std::int16_t(p->y_fixed()))+yo));
+                e.set_x_fixed(std::uint16_t(int(std::int16_t(p->x_fixed()))+xo));
+                if(e.raw[0x08]>=0x18u) e.raw[0x08]=0x1du;
+            }
+        } else if(e.type()==0x54u) {
+            // Stage-7 launcher, bank05 $99E0-$9A36. The parent scrolls with
+            // the stage until X reaches its ROM trigger cell, then releases a
+            // type-$1A every eight logic ticks.
+            if(e.state()==1u) {
+                if(e.raw[0x0a]==e.raw[0x24]) {
+                    ++e.raw[0x17];e.state()=2u;
+                }
+            } else if(e.state()==2u && expired(e,0x17)) {
+                e.raw[0x17]=8u;
+                if(auto* c=create(rom,game,0x1au)) {
+                    c->set_y_fixed(e.y_fixed());c->set_x_fixed(e.x_fixed());
+                    c->raw[0x20]=e.raw[0x20];c->raw[0x21]=e.raw[0x21];
+                    c->raw[0x23]=e.raw[0x23];
+                    if(e.raw[0x23]==0u) ++c->raw[0x3d];
+                    c->state()=1u;
+                    if(++e.raw[0x23]>=e.raw[0x22]) e.clear();
+                }
+            }
+        } else if(e.type()==0x1au) {
+            // Stage-7 launcher child, fixed $5763-$58AB. State 1 chooses one
+            // of the four cardinal $60 velocities. State 2 toggles its sprite
+            // phase every tick and advances a ROM route script when terrain
+            // B6..C2 is reached.
+            auto load_velocity=[&] {
+                static constexpr std::array<std::pair<int,int>,4> v{{
+                    {0,0x60},{0,-0x60},{0x60,0},{-0x60,0}}};
+                const auto [vy,vx]=v[e.raw[0x24]&3u];
+                put(e,11,vy);put(e,13,vx);
+            };
+            if(e.state()==1u) {
+                e.raw[0x24]=e.raw[0x20]?2u:3u;
+                load_velocity();
+                ++e.raw[0x17];e.raw[0x23]&=1u;e.state()=2u;
+            } else if(e.state()==2u) {
+                e.raw[0x23]^=1u;
+                e.raw[0x05]=std::uint8_t((e.raw[0x24]&3u)*2u+e.raw[0x23]+e.raw[0x27]);
+
+                // Fixed $57DF-$5821: only the normal visual variant attacks.
+                // $755D returns signed high-cell player deltas in D/E; both
+                // absolute deltas must lie in [4,9]. A qualifying attempt
+                // installs the exact $10 cooldown and increments CE6B. The
+                // ROM's RRCA/RET C suppresses odd counts, so only every second
+                // qualifying attempt reaches $714A. +26 queues the explicit
+                // CA26 projectile speed for Stage0Combat.
+                if(e.raw[0x27]==0u && expired(e,0x17)) {
+                    const int dx=std::abs(int(game.player.raw[0x0a])-int(e.raw[0x0a]));
+                    const int dy=std::abs(int(game.player.raw[0x08])-int(e.raw[0x08]));
+                    if(dx>=4 && dx<10 && dy>=4 && dy<10) {
+                        e.raw[0x17]=0x10u;
+                        if(((++type1a_shot_counter_)&1u)==0u)
+                            e.raw[0x26]=std::uint8_t(game.difficulty<4u?0x12u:0x16u);
+                    }
+                }
+
+                if(++e.raw[0x25]>=10u) {
+                    e.raw[0x25]=0u;
+                    bool route=false;
+                    if(tile_probe) {
+                        const auto tile=tile_probe(e,0x0100,0x0100);
+                        route=tile>=0xb6u && tile<0xc3u;
+                    } else if(terrain_probe) {
+                        route=(terrain_probe(e,0x0100,0x0100)&1u)!=0u;
+                    }
+                    if(route) {
+                        // $8400 is in the permanent object-data bank (ROM
+                        // bank 7), not the bank-05 handler page.
+                        const auto b=rom.bank(7);
+                        const unsigned q=0x0400u+unsigned(e.raw[0x21])*2u;
+                        if(q+1u<b.size()) {
+                            const auto ptr=word(b,q);
+                            if(ptr>=0x8000u && ptr<0xa000u) {
+                                const unsigned p=unsigned(ptr-0x8000u)+e.raw[0x22];
+                                if(p<b.size() && b[p]!=0xffu) {
+                                    e.raw[0x24]=b[p]&3u;++e.raw[0x22];load_velocity();
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        } else if(e.type()==0x4au) {
+            // Stage-6 curved flyer, bank05 $937B-$9460. State 0 has already
+            // run through the common $6754 spawn path; native creation exposes
+            // the ROM's state-1 $14 entrance wait directly.
+            e.raw[0x3d]=(((tick^e.raw[0x2d])&3u)==0u)?1u:0u;
+            if(e.state()==1u) {
+                if(expired(e,0x17)) {
+                    e.state()=2u;
+                    put(e,11,0x0070);   // $93AB -> $6BF3
+                    put(e,15,0x0011);   // Y acceleration
+                    put(e,17,0x0016);   // X acceleration
+                    e.raw[0x2a]=0xffu;  // $93F9: no safe terrain sample yet
+                }
+            } else if(e.state()==2u) {
+                // $93DB-$93E0: animation flickers every object tick.
+                e.raw[0x05]^=1u;
+
+                // $759A/$93FE keeps the most recent non-solid 8.8 position and
+                // snaps back to it when the curved path enters solid scenery.
+                // The ROM stores these words high-byte first in +28..+2B.
+                auto save_safe=[&] {
+                    const auto x=e.x_fixed(),y=e.y_fixed();
+                    e.raw[0x28]=std::uint8_t(x>>8u);e.raw[0x29]=std::uint8_t(x);
+                    e.raw[0x2a]=std::uint8_t(y>>8u);e.raw[0x2b]=std::uint8_t(y);
+                };
+                auto restore_safe=[&] {
+                    if(e.raw[0x2a]==0xffu) return;
+                    e.set_x_fixed(std::uint16_t((unsigned(e.raw[0x28])<<8u)|e.raw[0x29]));
+                    e.set_y_fixed(std::uint16_t((unsigned(e.raw[0x2a])<<8u)|e.raw[0x2b]));
+                };
+                const bool solid=terrain_probe && (terrain_probe(e,0,0)&1u);
+                if(solid) restore_safe(); else save_safe();
+
+                // $6CAE: at |VY| >= $C0 or |VX| >= $A0, reverse only that
+                // axis' acceleration; $6A9A then adds both acceleration words.
+                int vy=signed_word(e,11),vx=signed_word(e,13);
+                int ay=signed_word(e,15),ax=signed_word(e,17);
+                if(std::abs(vy)>=0x00c0) {ay=-ay;put(e,15,ay);}
+                if(std::abs(vx)>=0x00a0) {ax=-ax;put(e,17,ax);}
+                put(e,11,vy+ay);put(e,13,vx+ax);
+            }
+        } else if(e.type()==0x4du) {
+            // Stage-6/7 damped world-anchor enemy, bank05 $9508-$95DC.
+            // +28/+29 and +2A/+2B are high/low X/Y anchor words. Camera
+            // compensation is applied in scroll_stage0_objects(), matching
+            // ROM $6D2C before this steering calculation.
+            auto get_anchor=[&](unsigned hi) {
+                return int(std::int16_t((unsigned(e.raw[hi])<<8u)|e.raw[hi+1u]));
+            };
+            auto set_anchor=[&](unsigned hi,std::uint16_t v) {
+                e.raw[hi]=std::uint8_t(v>>8u);e.raw[hi+1u]=std::uint8_t(v);
+            };
+            if(e.state()==0u) {
+                set_anchor(0x28u,e.x_fixed());set_anchor(0x2au,e.y_fixed());
+                e.state()=1u;
+            } else {
+                e.raw[0x03]&=3u;
+                const int x=int(std::int16_t(e.x_fixed()));
+                const int y=int(std::int16_t(e.y_fixed()));
+                const int dx=get_anchor(0x28u)-x;
+                const int dy=get_anchor(0x2au)-y;
+                auto half=[](int v) {
+                    return v>=0 ? v/2 : -(((-v)+1)/2);
+                };
+                put(e,13,half(signed_word(e,13))+(dx>>5));
+                put(e,11,half(signed_word(e,11))+(dy>>5));
+                if(e.raw[0x08]>=0x18u || e.raw[0x0a]>=0x24u) e.clear();
             }
         } else if(e.type()==0x41u) {
             // Stage-5 animated tile hazard, bank05 $8D2C-$8DA3.

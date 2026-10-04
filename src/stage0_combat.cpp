@@ -39,7 +39,8 @@ void Stage0Combat::spawned(Entity64& e) {
     // Bank05 $82CA/$82E4, every fourth small turret awards a pickup.
     if((e.type()==0x20 || e.type()==0x29 || e.type()==0x73) && (++turret_count_&3)==0) e.raw[0x3d]=1;
 }
-bool Stage0Combat::fire(const Rom& rom,const Entity64& source,const Entity64& target,unsigned difficulty,int yo,int xo) {
+bool Stage0Combat::fire(const Rom& rom,const Entity64& source,const Entity64& target,
+                        unsigned difficulty,int yo,int xo,int speed_override) {
     auto it=std::find_if(bullets_.begin(),bullets_.end(),[](auto& b){return !b.active();});
     if(it==bullets_.end()) return false;
     opening_bullets_[std::size_t(it-bullets_.begin())]=source.type()==0x10u || source.type()==0x12u || source.type()==0x15u || source.type()==0x18u;
@@ -50,7 +51,8 @@ bool Stage0Combat::fire(const Rom& rom,const Entity64& source,const Entity64& ta
     const int dy=int(std::uint8_t(target.y_fixed()/32))-int(std::uint8_t(b.y_fixed()/32));
     const auto bank=rom.bank(4);
     const unsigned angle=bank[0x13ed+(unsigned(std::abs(dy))&0xf0)+(unsigned(std::abs(dx))>>4)];
-    const unsigned speed=bank[0x11a8+difficulty]; // original $7197 / CA19
+    const unsigned speed=speed_override>=0 ? unsigned(speed_override) :
+        unsigned(bank[0x11a8+difficulty]); // $7197/CA19 unless caller already set CA26
     put(b,11,(dy<0?-1:1)*int(unsigned(bank[0x13ad+angle])*speed/32));
     put(b,13,(dx<0?-1:1)*int(unsigned(bank[0x13ad+63-angle])*speed/32));
     if(source.type()==0x1f || source.type()==0x1e) {
@@ -314,6 +316,13 @@ void Stage0Combat::step(const Rom& rom,GameState& game,unsigned frame,int dx,int
             const auto speed=rom.bank(4)[0x11a8u+std::min<unsigned>(game.difficulty,15u)];
             const auto& headings=e.raw[0x20]?ceiling_headings:floor_headings;
             shot=fire_fixed_pattern(rom,muzzle,speed,headings,0) || shot;
+        }
+        if(e.type()==0x1au && e.raw[0x26]) {
+            // Fixed $57DF -> $714A. Unlike ordinary aimed rounds, type $1A
+            // has already selected CA26=$12/$16 from difficulty in its enemy
+            // handler. Consume that queued speed exactly once.
+            const unsigned speed=e.raw[0x26];e.raw[0x26]=0u;
+            shot=fire(rom,e,game.player,game.difficulty,0,0,int(speed))||shot;
         }
         if(e.type()==0x1eu && step_stage0_blue_enemy(game,e)) {
                 for(auto offset:std::array<std::pair<int,int>,3>{{{-8,8},{16,0},{40,8}}})

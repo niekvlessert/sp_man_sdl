@@ -36,7 +36,8 @@ public:
     std::span<const Entity64> bullets() const {return bullets_;}
     bool opening_bullet(std::size_t slot) const noexcept { return opening_bullets_[slot]; }
 private:
-    bool fire(const Rom& rom,const Entity64& source,const Entity64& target,unsigned difficulty,int yoff=0,int xoff=0);
+    bool fire(const Rom& rom,const Entity64& source,const Entity64& target,unsigned difficulty,
+              int yoff=0,int xoff=0,int speed_override=-1);
     bool fire_type15_pair(const Entity64& source);
     bool fire_fixed_pattern(const Rom& rom,const Entity64& source,unsigned speed,
                             std::span<const std::uint8_t> headings,int y_cells);

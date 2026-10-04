@@ -14,7 +14,7 @@ class Stage0Enemies {
 public:
     using TerrainProbe=std::function<std::uint8_t(const Entity64&,int,int)>;
     using TileProbe=std::function<std::uint8_t(const Entity64&,int,int)>;
-    void reset() noexcept { waves_={};stage_complete_=false;stage3_parent_prev_x_={};stage3_parent_prev_y_={}; }
+    void reset() noexcept { waves_={};stage_complete_=false;type1a_shot_counter_=0;stage3_parent_prev_x_={};stage3_parent_prev_y_={}; }
     void clear_waves() noexcept { waves_={}; }
     bool spawn(const Rom& rom, const SpawnRecord& record, GameState& game,
                std::uint8_t direction=1);
@@ -29,6 +29,7 @@ public:
     bool destroyed(const Entity64& enemy);
 private:
     bool stage_complete_=false;
+    std::uint8_t type1a_shot_counter_=0; // CE6B parity used by fixed $57DF
     struct Wave {
         bool active=false,repeat=false,bonus=false;
         std::uint8_t x=0,y=0,count=0,remaining=0,interval=0,timer=0,

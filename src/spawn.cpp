@@ -111,8 +111,9 @@ void scroll_stage0_objects(GameState& game, int dx, int dy,const Rom* native_vis
         // Interactive pickups follow the camera through Stage0Combat, including
         // the pre-anchor part of the level where this scenery helper is idle.
         const bool handler_x_scroll=e.type()==0x2au || e.type()==0x53u;
+        const bool forced_full_scroll=e.type()==0x48u && (e.raw[0x34]&0x80u);
         if (!e.active() || e.type()==3 || e.type()==0x79u ||
-            ((e.flags15() & 0x04u) == 0u && !handler_x_scroll)) continue;
+            ((e.flags15() & 0x04u) == 0u && !handler_x_scroll && !forced_full_scroll)) continue;
         // Type $79 is the final-boss exception: its bank05 controller owns
         // the measured $2000->$1700 entrance/death X motion at 20 Hz. Applying
         // this generic camera scroll as well double-counts that motion.
@@ -127,7 +128,8 @@ void scroll_stage0_objects(GameState& game, int dx, int dy,const Rom* native_vis
         // The old generic -$0200 guard therefore removed its visible tracks
         // roughly fifteen tiles too early.
         int left_guard = e.type()==0x56u ? -0x3000 :
-            (e.type()==0x47u ? -0x2000 : (e.type()==0x24u ? -0x1100 : (e.type()==0x1fu ? -0x0800 : -0x0200)));
+            (e.type()==0x47u ? -0x2000 : (e.type()==0x24u ? -0x1100 :
+            (e.type()==0x48u ? -0x4000 : (e.type()==0x1fu ? -0x0800 : -0x0200))));
         if(native_visuals) {
             // SDL exposes the complete ROM artwork immediately, including the
             // full aircraft hull. Retain its pool record until that artwork,
@@ -140,6 +142,21 @@ void scroll_stage0_objects(GameState& game, int dx, int dy,const Rom* native_vis
             if(right_extent) left_guard=std::min(left_guard,-(right_extent+16)*32);
         }
         if (dx > 0 && nx < left_guard && e.type()!=0x53u) { e.clear(); continue; }
+        if(e.type()==0x4du && e.state()!=0u) {
+            // Bank05 $9517->$953C->$6D2C keeps the type-$4D world anchor in
+            // +28/+29 (X high/low) and +2A/+2B (Y high/low). It receives the
+            // same camera compensation as the live object before the damped
+            // steering correction is calculated.
+            auto anchor=[](const Entity64& q,unsigned hi) {
+                return std::int16_t((unsigned(q.raw[hi])<<8u)|q.raw[hi+1u]);
+            };
+            auto store_anchor=[](Entity64& q,unsigned hi,int value) {
+                const auto v=std::uint16_t(std::int16_t(value));
+                q.raw[hi]=std::uint8_t(v>>8u);q.raw[hi+1u]=std::uint8_t(v);
+            };
+            store_anchor(e,0x28u,int(anchor(e,0x28u))-dx);
+            store_anchor(e,0x2au,int(anchor(e,0x2au))-dy);
+        }
         e.set_x_fixed(std::uint16_t(std::int16_t(nx)));
         e.set_y_fixed(std::uint16_t(std::int16_t(ny)));
     }
@@ -229,7 +246,7 @@ bool decode_stage0_sprite_visual(const Rom& rom, const Screen4Snapshot& video,
     const bool global_base = type == 0x20u || type == 0x29u || type == 0x22u ||
                              type == 0x24u || type == 0x26u;
     const bool supported_sprite = type == 0x1fu || type == 0x27u || type == 0x2du ||
-                                  type == 0x74u || global_base;
+                                  type == 0x48u || type == 0x74u || global_base;
     if (!supported_sprite) return false;
 
     const auto type_table = rom.bank(7);
@@ -1115,7 +1132,9 @@ bool instantiate_stage0_spawn(const Rom& rom, const SpawnRecord& r, GameState& g
                               std::uint8_t spawn_direction) {
     const bool special26 = r.type == 0x26u && r.control_flag();
     const bool special2b = r.type == 0x2bu && r.control_flag();
+    const bool special48 = r.type == 0x48u && r.control_flag();
     const bool special53 = r.type == 0x53u && r.control_flag();
+    const bool special54 = r.type == 0x54u && r.control_flag();
     const bool special3e = r.type == 0x3eu && r.control_flag();
     const bool special77 = r.type == 0x77u && r.control_flag();
     const bool special7a = r.type == 0x7au && r.control_flag();
@@ -1123,10 +1142,10 @@ bool instantiate_stage0_spawn(const Rom& rom, const SpawnRecord& r, GameState& g
     // control $88. Rejecting every flagged record except $26 silently dropped
     // type $64 from real gameplay, leaving only the scenery copy visible.
     const bool special64 = r.type == 0x64u && r.control_flag();
-    if (r.control_flag() && !special26 && !special2b && !special53 && !special3e && !special77 && !special64 && !special7a) return false;
+    if (r.control_flag() && !special26 && !special2b && !special48 && !special53 && !special54 && !special3e && !special77 && !special64 && !special7a) return false;
     if (r.type != 0x14u && r.type != 0x19u && r.type != 0x1eu && r.type != 0x1fu && r.type != 0x20u && r.type != 0x27u && r.type != 0x29u && r.type != 0x2bu && r.type != 0x2du && r.type != 0x2eu && r.type != 0x2fu && r.type != 0x31u && r.type != 0x3cu && r.type != 0x3eu && r.type != 0x22u &&
-        r.type != 0x24u && r.type != 0x26u && r.type != 0x41u && r.type != 0x49u && r.type != 0x4eu && r.type != 0x50u &&
-        r.type != 0x53u && r.type != 0x55u && r.type != 0x56u && r.type != 0x47u && r.type != 0x43u && r.type != 0x64u &&
+        r.type != 0x24u && r.type != 0x26u && r.type != 0x41u && r.type != 0x48u && r.type != 0x49u && r.type != 0x4au && r.type != 0x4du && r.type != 0x4eu && r.type != 0x50u &&
+        r.type != 0x53u && r.type != 0x54u && r.type != 0x55u && r.type != 0x56u && r.type != 0x47u && r.type != 0x43u && r.type != 0x64u &&
         r.type != 0x73u && r.type != 0x77u && r.type != 0x78u && r.type != 0x79u && r.type != 0x7au && r.type != 0x7bu) return false;
     if (r.payload.empty() || (r.type == 0x24u && r.payload.size() < 2u)) return false;
     auto* e = game.allocate_enemy();
@@ -1141,7 +1160,7 @@ bool instantiate_stage0_spawn(const Rom& rom, const SpawnRecord& r, GameState& g
     // Original $6754 initializer. The same payload byte is interpreted on a
     // different axis depending on C0D5, so it is NOT an absolute Y value.
     // Extended records expose their first inline byte after the count byte.
-    const unsigned payload_index = (special26 || special2b || special77 || special7a) ? 1u : 0u;
+    const unsigned payload_index = (special26 || special2b || special48 || special54 || special77 || special7a) ? 1u : 0u;
     if (r.payload.size() <= payload_index) { e->clear(); return false; }
     const std::uint8_t pos = r.payload[payload_index] & 0x7fu;
     std::uint8_t xh = 0x20u, yh = pos;
@@ -1261,6 +1280,55 @@ bool instantiate_stage0_spawn(const Rom& rom, const SpawnRecord& r, GameState& g
         e->raw[0x20]=r.payload[1]&7u;
         e->raw[0x17]=first[e->raw[0x20]];
         e->raw[0x18]=1u;e->raw[0x21]=0u;e->raw[0x06]=0u;
+    } else if(r.type==0x48u) {
+        // Stage-6 linked formation, bank05 $91C9-$92D7. Extended grammar:
+        //   03 <position> <orbit-mode> 02 48
+        // The parent is an invisible phase/centre record (+34 bit 7) and owns
+        // six type-$48 children. Each child stores parent slot-id in +34 and
+        // ordinal 1..6 in +38; +35/+36 form the ROM's doubly-linked chain.
+        if(r.payload.size()<5u || r.payload[0]!=3u ||
+           r.payload[3]!=2u || r.payload[4]!=0x48u) {
+            e->clear();return false;
+        }
+        e->flags15()=0x26u; // ($B5 & $04) | $22 at $91C9
+        e->raw[0x08]=std::uint8_t(e->raw[0x08]+3u);
+        e->raw[0x06]=r.payload[2]&0x7fu;
+        const bool wide=(e->raw[0x06]&7u)==1u;
+        e->raw[0x26]=wide?0xa0u:0x20u;
+        e->raw[0x12]=wide?0xfeu:0x02u;
+        e->raw[0x17]=1u;e->raw[0x18]=0u;e->raw[0x34]=0x80u;
+        e->raw[0x03]=0u;e->raw[0x35]=0u;e->raw[0x36]=0u;
+
+        const auto parent_id=e->raw[0x2d];
+        std::array<Entity64*,6> child{};
+        unsigned made=0;
+        for(;made<child.size();++made) {
+            auto* c=game.allocate_enemy();if(!c) break;
+            c->clear();c->type()=0x48u;
+            const auto cm=decode_spawn_type_metadata(rom,0x48u);
+            for(unsigned j=0;j<4u;++j) c->raw[0x13u+j]=cm.bytes[j];
+            for(unsigned j=0;j<game.enemies.size();++j)
+                if(&game.enemies[j]==c) c->raw[0x2d]=std::uint8_t(j+1u);
+            c->set_y_fixed(std::uint16_t(e->raw[0x08])<<8u);
+            c->set_x_fixed(0x1c00u);
+            c->raw[0x03]=std::uint8_t(made);
+            c->raw[0x34]=parent_id;
+            c->raw[0x38]=std::uint8_t(made+1u);
+            c->state()=0u;
+            child[made]=c;
+        }
+        e->raw[0x03]=std::uint8_t(made);
+        if(made) {
+            e->raw[0x36]=child[0]->raw[0x2d];
+            for(unsigned i=0;i<made;++i) {
+                child[i]->raw[0x35]=(i==0u)?parent_id:child[i-1u]->raw[0x2d];
+                child[i]->raw[0x36]=(i+1u<made)?child[i+1u]->raw[0x2d]:0u;
+            }
+        }
+        // Full six-child creation enters ROM state 2. A short pool enters
+        // state 3 and retries until all six links exist.
+        e->state()=(made==6u)?2u:3u;
+        e->raw[0x24]=std::uint8_t(6u-made);
     } else if(r.type==0x49u) {
         // Bank05 $92E4. Unlike the generic $6754 placement, the two inline
         // bytes are explicit Y/orientation and X cells.
@@ -1272,6 +1340,15 @@ bool instantiate_stage0_spawn(const Rom& rom, const SpawnRecord& r, GameState& g
         e->raw[0x0b]=e->raw[0x21]?0xc0u:0x40u;
         e->raw[0x0c]=e->raw[0x21]?0xffu:0x00u;
         e->raw[0x17]=0x40u;e->raw[0x3d]=1u;
+    } else if(r.type==0x4au) {
+        // Bank05 $937B. Common $6754 already placed the actor; state 0 in the
+        // ROM only advances to state 1 and installs the $14 entrance timer.
+        e->raw[0x17]=0x14u;
+        e->raw[0x2a]=0xffu; // no saved safe terrain position yet
+    } else if(r.type==0x4du) {
+        // Bank05 $9508. Keep state 0 so the first logic tick can latch the
+        // exact post-scroll screen/world anchor into +28..+2B.
+        e->state()=0u;
     } else if(r.type==0x50u) {
         // Fixed $5AA2. Payload[0] is the signed vertical accumulator seed
         // plus direction bit; payload[1] is X plus the speed-family bit.
@@ -1306,6 +1383,22 @@ bool instantiate_stage0_spawn(const Rom& rom, const SpawnRecord& r, GameState& g
         if(r.payload.size()<4u || r.payload[0]!=2u || r.payload[3]!=0x2au) {e->clear();return false;}
         e->set_x_fixed(0x2000u);e->set_y_fixed(0xfc00u);
         e->raw[0x34]=0x80u;
+    } else if (r.type == 0x54u) {
+        // Stage-7 vertical launcher, bank05 $999A. Extended grammar:
+        //   04 <top/bottom> <packed count/trigger> <route> 02 1A
+        if(r.payload.size()<6u || r.payload[0]!=4u ||
+           r.payload[4]!=2u || r.payload[5]!=0x1au) {
+            e->clear();return false;
+        }
+        const auto side=r.payload[1], packed=r.payload[2];
+        e->raw[0x20]=(side&0x80u)?1u:0u;
+        e->set_y_fixed(std::uint16_t(e->raw[0x20]?1u:0x15u)<<8u);
+        e->set_x_fixed(0x2000u);
+        e->raw[0x22]=packed&0x0fu;
+        static constexpr std::array<std::uint8_t,4> trigger{0x1du,0x15u,0x0du,0x05u};
+        e->raw[0x24]=trigger[(packed>>4u)&3u];
+        e->raw[0x21]=r.payload[3];
+        e->raw[0x17]=0u;e->raw[0x23]=0u;
     } else if (r.type == 0x55u) {
         // Fixed $58F0/$5911. First inline byte is the deck Y used by $6754
         // and is retained at +22. The second byte is the horizontal trigger;
@@ -1390,7 +1483,8 @@ bool instantiate_stage0_spawn(const Rom& rom, const SpawnRecord& r, GameState& g
     }
     // Type $64 must enter bank06:$A300 (state 0). Starting it at state 1
     // skips the ROM initializer that positions the tower at X=$2800/Y=$0C00.
-    e->state() = (r.type == 0x14u || r.type == 0x43u || r.type == 0x64u || r.type==0x47u || r.type==0x2du || r.type==0x2eu || r.type==0x31u || r.type==0x3eu || r.type==0x4eu || r.type==0x53u || r.type==0x77u || r.type==0x7au || r.type==0x7bu) ? 0u : 1u;
+    if(!special48)
+        e->state() = (r.type == 0x14u || r.type == 0x43u || r.type == 0x64u || r.type==0x47u || r.type==0x2du || r.type==0x2eu || r.type==0x31u || r.type==0x3eu || r.type==0x4du || r.type==0x4eu || r.type==0x53u || r.type==0x77u || r.type==0x7au || r.type==0x7bu) ? 0u : 1u;
     return true;
 }
 }
