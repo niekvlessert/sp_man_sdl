@@ -35,6 +35,8 @@ int main(int argc,char** argv) try {
         audio.set_stage(2);assert(audio.current_stage_==2u);assert(audio.music_.empty());
         audio.seek(30); // missing stage-3 export is intentionally silent, never modulo-zero
         audio.set_stage(3);assert(audio.current_stage_==3u);assert(audio.music_.empty());
+        audio.set_stage(8);assert(audio.current_stage_==8u);assert(audio.music_.empty());
+        audio.seek(30);
         audio.set_stage(0);assert(audio.music_playing_);
         const auto stage0_head=audio.music_.front();
         audio.set_boss_music(true);assert(audio.boss_music_active_);assert(audio.music_.front()==audio.boss_music_.front());

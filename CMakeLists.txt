@@ -69,3 +69,6 @@ target_link_libraries(space-manbow-stage2-test PRIVATE smcore)
 
 add_executable(space-manbow-stage34-test src/stage34_test.cpp)
 target_link_libraries(space-manbow-stage34-test PRIVATE smcore)
+
+add_executable(space-manbow-stage59-test src/stage59_test.cpp)
+target_link_libraries(space-manbow-stage59-test PRIVATE smcore)

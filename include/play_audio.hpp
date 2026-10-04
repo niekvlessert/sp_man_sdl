@@ -27,7 +27,7 @@ private:
     SDL_AudioDeviceID device_=0;
     SDL_AudioSpec format_{};
     std::vector<Sint16> music_;
-    std::array<std::vector<Sint16>,4> stage_music_;
+    std::array<std::vector<Sint16>,9> stage_music_;
     std::vector<Sint16> boss_music_;
     unsigned current_stage_=0;
     bool boss_music_active_=false;

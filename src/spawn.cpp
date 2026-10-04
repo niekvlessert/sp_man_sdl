@@ -22,10 +22,19 @@ StageSpawnStream StageSpawnStream::decode_stage0(const Rom& rom, bool include_pr
 StageSpawnStream StageSpawnStream::decode_stage(const Rom& rom,unsigned stage) {
     if(stage>=9u) throw std::out_of_range("stage spawn index");
     StageSpawnStream out;
-    const auto bank = rom.bank(2);
+    // The stage spawn script is one contiguous CPU window: bank02 at
+    // $8000-$9FFF followed by bank03 at $A000-$BFFF. Stage 6 starts at
+    // $9F9A and crosses the bank boundary; stages 7-9 start in bank03.
+    // Treating every pointer as a bank02 offset made stage 6 terminate on a
+    // bogus length and rejected stages 7-9 outright.
+    const auto bank2=rom.bank(2),bank3=rom.bank(3);
+    std::vector<std::uint8_t> bank;
+    bank.reserve(bank2.size()+bank3.size());
+    bank.insert(bank.end(),bank2.begin(),bank2.end());
+    bank.insert(bank.end(),bank3.begin(),bank3.end());
     const auto cpu = le16(bank, kStagePointerTable+stage*2u);
-    if (cpu < 0x8000u || cpu >= 0xa000u)
-        throw std::runtime_error("stage-0 spawn pointer outside bank 02 window");
+    if (cpu < 0x8000u || cpu >= 0xc000u)
+        throw std::runtime_error("stage spawn pointer outside bank 02/03 window");
     unsigned p = cpu - 0x8000u;
     const unsigned end = std::min<unsigned>(unsigned(bank.size()), p + kCopiedBytes);
     while (p < end && bank[p] != 0) {

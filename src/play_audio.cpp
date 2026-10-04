@@ -12,9 +12,9 @@ PlayAudio::PlayAudio(const std::filesystem::path& directory) {
     try {
         stage_music_[0]=load(directory/"stage0.wav");
         stage_music_[1]=load(directory/"stage1.wav");
-        // Stage 3/4 gameplay can already be selected before their native
-        // music exports exist. Keep those slots explicit and silent instead
-        // of accidentally continuing the previous stage's track.
+        // Later stages can already be selected before all native music
+        // exports exist. Keep those slots explicit and silent instead of
+        // accidentally continuing the previous stage's track.
         for(unsigned stage=2;stage<stage_music_.size();++stage) {
             const auto path=directory/("stage"+std::to_string(stage)+".wav");
             if(std::filesystem::exists(path)) stage_music_[stage]=load(path);

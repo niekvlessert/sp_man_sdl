@@ -11,15 +11,18 @@ cmake --build build -j4
 Arrows move the ship. Z or Space fires once per press, matching the basic
 weapon's input edge. Key 0 starts fresh with the original base speed and weapons. Keys 1–9 jump to 10–90% of the stage-0 route and equip the maximum test loadout.
 M changes option positions, F10 mutes audio, P pauses, R restarts, Escape exits.
-Cmd-2/3/4 on macOS (Ctrl-2/3/4 on Windows or Linux) starts stages 2/3/4; Cmd/Ctrl-1
-returns to stage 1. Keys 0–9 then jump within the selected stage.
+Cmd-1 through Cmd-9 on macOS (Ctrl-1 through Ctrl-9 on Windows/Linux) directly select stages 1–9.
+Keys 0–9 then jump within the selected stage.
 W toggles between maximum reusable upgrades (including speed) and no upgrades.
 These changes are retained by rewind/replay. Stage 2's scenery, regular enemy
 families, controllers and boss have their current ROM-traced native restoration;
 see `notes/stage2_rom_audit_2026-10-03.md`. Stages 3 and 4 now have selectable
 ROM-stream baselines (including stage 4's vertical mode-6 section); their new
 enemy families are intentionally still unported. See
-`notes/stage3_stage4_baseline_2026-10-04.md`.
+`notes/stage3_stage4_baseline_2026-10-04.md`. Stages 5–9 are likewise directly
+selectable with ROM-stream baselines; stage 6 includes its original diagonal
+mode-5 and mode-3 scenery paths. Their stage-specific enemies/controllers remain
+future ROM-traced ports; see `notes/stage5_stage9_baseline_2026-10-04.md`.
 Cmd-T on macOS / Ctrl-T on Windows or Linux toggles 500% turbo, including audio.
 Page Up pauses and rewinds 100 simulation frames (clamped at the start).
 Page Down pauses and advances 100 frames, replaying recorded input where available;

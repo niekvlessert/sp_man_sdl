@@ -591,7 +591,14 @@ void Stage0BackgroundStream::stream_phase() {
             write_horizontal(source_, kColOffset[yphase], -1, kRowPhase[yphase]);
             advance = 15; break;
         }
-        case 6: {
+        case 5:
+            // Bank09 $7E3F. Down-left diagonal counterpart of mode 1:
+            // DE passed to $7E55 is {D=yphase-$1C,E=$18}; $7E55 itself
+            // selects definition phase yphase*4. This writes the entering
+            // bottom row while the camera moves +Y/-X.
+            write_horizontal(source_,int(yphase)-28,24,yphase*4u);
+            advance=15;break;
+        case 6: case 7: {
             // Bank09 $7ECE->$7EFC. Stage 4 switches to a pure upward
             // streamer at X=$03F8: eight metatiles (32 tiles) are written
             // into the row immediately above the viewport. The source advances

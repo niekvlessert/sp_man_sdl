@@ -109,7 +109,7 @@ int main(int argc,char** argv) {
     for(unsigned i=0;i<120u;++i) {p3.step_60hz({});p4.step_60hz({});}
     assert(!p3.render().empty() && !p4.render().empty());
     bool rejected=false;
-    try {p4.reset(4);} catch(const std::invalid_argument&) {rejected=true;}
+    try {p4.reset(9);} catch(const std::invalid_argument&) {rejected=true;}
     assert(rejected);
 
     std::cout<<"Stages 3/4 baseline PASS: ROM streams, stage reset, mode-6 vertical section and spawn catalogs\n";

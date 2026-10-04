@@ -44,10 +44,10 @@ ROM-traced enemy pass.
 
 ## Audio
 
-The audio runtime now has explicit stage slots 0–3. Stage 3/4 music files have
-not yet been exported, so those stages are silent instead of incorrectly
-continuing the previous stage's music. If `assets/audio/stage2.wav` or
-`stage3.wav` are added later, they are loaded automatically.
+The audio runtime now has explicit stage slots 0–8. Music files beyond stage 2 have
+not yet all been exported, so missing later tracks are silent instead of incorrectly
+continuing the previous stage's music. Any later `assets/audio/stageN.wav` file is
+loaded automatically when present.
 
 ## Regression
 

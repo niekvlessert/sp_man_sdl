@@ -120,7 +120,7 @@ int main(int argc,char** argv) try {
 #else
                         const bool stage_key=(event.key.keysym.mod & KMOD_CTRL)!=0;
 #endif
-                        if(stage_key && event.key.keysym.sym>=SDLK_1 && event.key.keysym.sym<=SDLK_4)
+                        if(stage_key && event.key.keysym.sym>=SDLK_1 && event.key.keysym.sym<=SDLK_9)
                             timeline.reset(unsigned(event.key.keysym.sym-SDLK_1));
                         else timeline.jump(unsigned(event.key.keysym.sym-SDLK_0));
                         audio_stage=session_ptr().stage_index();

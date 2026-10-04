@@ -453,7 +453,7 @@ PlaySession::PlaySession(const Rom& rom)
     reset();
 }
 void PlaySession::reset(unsigned stage) {
-    if(stage>3) throw std::invalid_argument("available stage index must be 0..3");
+    if(stage>8) throw std::invalid_argument("available stage index must be 0..8");
     bomb_palette_bias_=0;bomb_palette_ticks_=0;
     stage_index_=0;stage_start_frame_=0;previous_gate_actors_={};music_playing_=true;
     sound_events_.clear();
