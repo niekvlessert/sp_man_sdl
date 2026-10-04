@@ -824,7 +824,7 @@ void PlaySession::step_60hz(PlayerInput input) {
         }
         spawn.raw_type&=0x7fu;
         enemies_.spawn(rom_,spawn,game_,(stage_index_==0 && camera_pixels()<3072)?1:background_.spawn_direction());
-        for(auto& e:game_.enemies) if((e.type()==0x20 || e.type()==0x29) && !e.raw[0x3a]) {
+        for(auto& e:game_.enemies) if((e.type()==0x20 || e.type()==0x29 || e.type()==0x73) && !e.raw[0x3a]) {
             e.raw[0x3a]=1;combat_.spawned(e);
         }
     }

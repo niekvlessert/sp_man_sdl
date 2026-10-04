@@ -87,3 +87,6 @@ target_link_libraries(space-manbow-stage8-boss-test PRIVATE smcore)
 
 add_executable(space-manbow-stage9-boss-test src/stage9_boss_test.cpp)
 target_link_libraries(space-manbow-stage9-boss-test PRIVATE smcore)
+
+add_executable(space-manbow-late-level-enemies-test src/late_level_enemies_test.cpp)
+target_link_libraries(space-manbow-late-level-enemies-test PRIVATE smcore)

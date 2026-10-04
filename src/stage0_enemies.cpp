@@ -299,7 +299,7 @@ void Stage0Enemies::move_60hz(GameState& game,unsigned frame) {
             if(--e.raw[0x3e]==0) e.clear();
             continue;
         }
-        if(e.active() && (flight(e.type()) || e.type()==0x16u || e.type()==0x19u || e.type()==0x1eu || e.type()==0x11u || e.type()==0x23u || e.type()==0x27u || e.type()==0x2au || e.type()==0x2cu || e.type()==0x2du || e.type()==0x2fu || e.type()==0x31u || e.type()==0x58u || e.type()==0x5cu || e.type()==0x5eu || e.type()==0x66u || e.type()==0x68u || e.type()==0x70u || e.type()==0x74u || e.type()==0x40u || e.type()==0x0du)) {
+        if(e.active() && (flight(e.type()) || e.type()==0x16u || e.type()==0x19u || e.type()==0x1eu || e.type()==0x11u || e.type()==0x23u || e.type()==0x27u || e.type()==0x2au || e.type()==0x2cu || e.type()==0x2du || e.type()==0x2fu || e.type()==0x31u || e.type()==0x49u || e.type()==0x4eu || e.type()==0x58u || e.type()==0x5cu || e.type()==0x5eu || e.type()==0x66u || e.type()==0x68u || e.type()==0x70u || e.type()==0x74u || e.type()==0x40u || e.type()==0x0du)) {
         const int divisor=(e.type()==0x40u || e.type()==0x23u)?3:4,phase=int(frame%unsigned(divisor));
         auto delta=[&](int v){return v*(phase+1)/divisor-v*phase/divisor;};
         e.set_x_fixed(std::uint16_t(e.x_fixed()+delta(signed_word(e,13))));
@@ -1167,6 +1167,84 @@ void Stage0Enemies::step_15hz(const Rom& rom,GameState& game,unsigned tick,std::
                 }
             } else if(e.state()==2u) {
                 if(expired(e,0x17)) e.clear();
+            }
+        } else if(e.type()==0x41u) {
+            // Stage-5 animated tile hazard, bank05 $8D2C-$8DA3.
+            static constexpr std::array<std::uint8_t,8> mid{8,8,32,16,8,16,40,1};
+            static constexpr std::array<std::uint8_t,8> tail{16,32,16,32,8,8,4,2};
+            const unsigned program=e.raw[0x20]&7u;
+            if(e.state()==1u) {
+                if(expired(e,0x17)) {
+                    const auto phase=e.raw[0x21]++;
+                    e.raw[0x06]=std::uint8_t(phase+8u);
+                    if(e.raw[0x06]==0x0cu) {
+                        e.raw[0x06]=0u;e.raw[0x21]=0u;e.state()=2u;
+                    }
+                }
+            } else if(e.state()==2u && expired(e,0x18)) {
+                e.raw[0x06]=std::uint8_t((e.raw[0x06]+1u)&7u);
+                if(e.raw[0x06]==4u) e.raw[0x18]=mid[program];
+                if(e.raw[0x06]==0u) {
+                    e.raw[0x17]=tail[program];e.state()=1u;
+                }
+            }
+        } else if(e.type()==0x49u) {
+            // Stage-5 vertical patrol, bank05 $92E4-$936D. It bounces from
+            // level geometry, pauses for a random 0..15 timer, then resumes
+            // with the exact opposite 8.8 Y velocity.
+            e.raw[0x05]=std::uint8_t(tick&1u);
+            if(e.state()==1u) {
+                const bool hit=terrain_probe &&
+                    terrain_probe(e,0x0100,e.raw[0x21]?0:0x0200)!=0u;
+                if(hit) {
+                    e.raw[0x22]=e.raw[0x0b];e.raw[0x23]=e.raw[0x0c];
+                    put(e,11,0);
+                    e.raw[0x17]=std::uint8_t(rom_random(rom,game)&0x0fu);
+                    e.state()=2u;
+                }
+            } else if(e.state()==2u && expired(e,0x17)) {
+                e.raw[0x0b]=e.raw[0x22];e.raw[0x0c]=e.raw[0x23];
+                put(e,11,-signed_word(e,11));
+                e.raw[0x21]^=1u;e.state()=1u;
+            }
+        } else if(e.type()==0x50u) {
+            // Stage-8 vertical mover, fixed $5AA2-$5AFC. +21/+22 is the
+            // signed step; +23/+24 is its 8.8 accumulator and directly feeds
+            // the visible Y high byte.
+            const int acc=std::int16_t(std::uint16_t(e.raw[0x23])|
+                                      (std::uint16_t(e.raw[0x24])<<8u));
+            const int vel=std::int16_t(std::uint16_t(e.raw[0x21])|
+                                      (std::uint16_t(e.raw[0x22])<<8u));
+            const auto next=std::uint16_t(acc+vel);
+            e.raw[0x23]=std::uint8_t(next);e.raw[0x24]=std::uint8_t(next>>8u);
+            e.raw[0x08]=e.raw[0x24];
+            e.raw[0x05]=e.raw[0x06]=(e.raw[0x23]&0x80u)?0u:1u;
+            const auto yh=static_cast<std::int8_t>(e.raw[0x08]);
+            if(yh>=0x18) e.clear();
+        } else if(e.type()==0x4eu) {
+            // Stage-9 falling enemy, bank05 $9477 via $9655. State 0 chooses
+            // one of eight ROM start cells and a 1..4 animation delay.
+            static constexpr std::array<std::pair<std::uint8_t,std::uint8_t>,8> pos{{
+                {4,1},{2,5},{2,8},{2,11},{4,15},{8,21},{4,13},{6,17}}};
+            if(e.state()==0u) {
+                const auto r=rom_random(rom,game);
+                const auto [y,x0]=pos[r&7u];
+                e.set_y_fixed(std::uint16_t(y)<<8u);
+                e.set_x_fixed(std::uint16_t(std::uint8_t(x0+((r&1u)?0u:1u)))<<8u);
+                e.raw[0x20]=e.raw[0x17]=std::uint8_t(((r>>3u)&3u)+1u);
+                e.state()=1u;
+            } else if(e.state()==1u && expired(e,0x17)) {
+                e.raw[0x17]=e.raw[0x20];
+                e.raw[0x05]=std::uint8_t((e.raw[0x05]+1u)%6u);
+                if(e.raw[0x05]==0u) {
+                    e.raw[0x05]=6u;put(e,11,0x0040);put(e,15,0x0010);
+                    e.raw[0x14]|=0x80u;
+                    e.set_y_fixed(std::uint16_t(e.y_fixed()+0x0200u));
+                    e.state()=2u;
+                }
+            } else if(e.state()==2u) {
+                put(e,11,signed_word(e,11)+signed_word(e,15));
+                if(e.raw[0x05]!=7u) ++e.raw[0x05];
             }
         } else if(e.type()==0x55u) {
             // Fixed $58F0-$59D0. Large carrier/assault craft used throughout

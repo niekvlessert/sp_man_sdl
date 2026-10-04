@@ -199,7 +199,7 @@ void step_stage0_object_logic_15hz(GameState& game) noexcept {
         if (!e.active()) continue;
         if (e.type() == 0x56u && e.state() == 1u)
             e.raw[0x06] = std::uint8_t((e.raw[0x06] + 1u) & 3u); // $BF3F/$6AC2, B=4
-        if ((e.type() == 0x20u || e.type()==0x29u) && e.state() == 1u &&
+        if ((e.type() == 0x20u || e.type()==0x29u || e.type()==0x73u) && e.state() == 1u &&
             ((unsigned(game.logic_phase) + i + 1u) & 7u) == 0u) {
             // Bank-05 $8304-$8326: CA02+slot-id staggers this relatively
             // expensive player-vector update over eight object-logic ticks.
@@ -659,6 +659,46 @@ std::vector<Stage0TileVisual> decode_stage0_tile_visuals(const Rom& rom,
         return out;
     }
 
+    if (entity.type() == 0x41u) {
+        // Stage-5 animated tile hazard. Bank05 $8D2C renders through the
+        // explicit $8DBC placement-table rather than the generic type table.
+        const auto bank5=rom.bank(5);
+        const unsigned selector=std::min<unsigned>(entity.raw[0x06],11u);
+        const unsigned table=0x8dbcu-0x8000u;
+        if(table+selector*2u+1u>=bank5.size()) return out;
+        const auto list_cpu=le16(bank5,table+selector*2u);
+        if(list_cpu<0x8000u || list_cpu>=0xa000u) return out;
+        unsigned p=unsigned(list_cpu-0x8000u);
+        if(p>=bank5.size()) return out;
+        const unsigned packed_len=bank5[p++];
+        if(packed_len<2u || p+packed_len-1u>bank5.size()) return out;
+        const unsigned end=p+packed_len-1u;
+        int place_y=0,place_x=0;bool need_position=true;
+        while(p<end) {
+            if(need_position) {
+                if(p+2u>end) break;
+                place_y=int(static_cast<std::int8_t>(bank5[p++]));
+                place_x=int(static_cast<std::int8_t>(bank5[p++]));
+                need_position=false;
+            }
+            if(p>=end) break;
+            const auto control=bank5[p++];
+            if(control==0xffu) break;
+            if(control==0xfeu) {need_position=true;continue;}
+            const unsigned count=control;
+            if(p+count>end) break;
+            for(unsigned i=0;i<count;++i) {
+                Stage0TileVisual v;
+                if(decode_stage0_tile_frame(rom,entity,bank5[p++],v)) {
+                    v.x+=place_x*8;v.y+=place_y*8;
+                    v.tile_x_offset+=place_x;v.tile_y_offset+=place_y;
+                    out.push_back(std::move(v));
+                }
+            }
+        }
+        return out;
+    }
+
     if (entity.type() == 0x46u) {
         // Stage-8 $915D/$9054 energy-wall row. $90CF stamps +11 cells
         // backwards from the actor's X cell. With C0D4=$03 the exact eight
@@ -1085,8 +1125,9 @@ bool instantiate_stage0_spawn(const Rom& rom, const SpawnRecord& r, GameState& g
     const bool special64 = r.type == 0x64u && r.control_flag();
     if (r.control_flag() && !special26 && !special2b && !special53 && !special3e && !special77 && !special64 && !special7a) return false;
     if (r.type != 0x14u && r.type != 0x19u && r.type != 0x1eu && r.type != 0x1fu && r.type != 0x20u && r.type != 0x27u && r.type != 0x29u && r.type != 0x2bu && r.type != 0x2du && r.type != 0x2eu && r.type != 0x2fu && r.type != 0x31u && r.type != 0x3cu && r.type != 0x3eu && r.type != 0x22u &&
-        r.type != 0x24u && r.type != 0x26u && r.type != 0x53u && r.type != 0x55u &&
-        r.type != 0x56u && r.type != 0x47u && r.type != 0x43u && r.type != 0x64u && r.type != 0x77u && r.type != 0x78u && r.type != 0x79u && r.type != 0x7au && r.type != 0x7bu) return false;
+        r.type != 0x24u && r.type != 0x26u && r.type != 0x41u && r.type != 0x49u && r.type != 0x4eu && r.type != 0x50u &&
+        r.type != 0x53u && r.type != 0x55u && r.type != 0x56u && r.type != 0x47u && r.type != 0x43u && r.type != 0x64u &&
+        r.type != 0x73u && r.type != 0x77u && r.type != 0x78u && r.type != 0x79u && r.type != 0x7au && r.type != 0x7bu) return false;
     if (r.payload.empty() || (r.type == 0x24u && r.payload.size() < 2u)) return false;
     auto* e = game.allocate_enemy();
     if (!e) return false;
@@ -1206,11 +1247,50 @@ bool instantiate_stage0_spawn(const Rom& rom, const SpawnRecord& r, GameState& g
         // becomes the tile-frame/controller selector at +06.
         if(r.payload.size()<2u) {e->clear();return false;}
         e->raw[0x06]=r.payload[1];
-    } else if(r.type==0x29u) {
-        // Bank05 $82CA: stage-2 small turret, upside-down payload bit 7.
+    } else if(r.type==0x29u || r.type==0x73u) {
+        // Bank05 $82CA. Type $73 dispatches through JP $82CA as well, so
+        // both turret families use the same orientation/frame/timer init.
         e->raw[0x20]=(r.payload[0]>>7u)&1u;
         e->raw[0x06]=e->raw[0x20]?4u:0u;
         e->raw[0x17]=0x20u;
+    } else if(r.type==0x41u) {
+        // Bank05 $8D2C. $6754 consumes payload[0]; the second byte selects
+        // one of eight timing programs for the animated tile hazard.
+        if(r.payload.size()<2u) {e->clear();return false;}
+        static constexpr std::array<std::uint8_t,8> first{8,24,8,1,1,1,1,2};
+        e->raw[0x20]=r.payload[1]&7u;
+        e->raw[0x17]=first[e->raw[0x20]];
+        e->raw[0x18]=1u;e->raw[0x21]=0u;e->raw[0x06]=0u;
+    } else if(r.type==0x49u) {
+        // Bank05 $92E4. Unlike the generic $6754 placement, the two inline
+        // bytes are explicit Y/orientation and X cells.
+        if(r.payload.size()<2u) {e->clear();return false;}
+        const auto y=r.payload[0];
+        e->set_y_fixed(std::uint16_t(y&0x7fu)<<8u);
+        e->set_x_fixed(std::uint16_t(r.payload[1])<<8u);
+        e->raw[0x21]=(y>>7u)&1u;
+        e->raw[0x0b]=e->raw[0x21]?0xc0u:0x40u;
+        e->raw[0x0c]=e->raw[0x21]?0xffu:0x00u;
+        e->raw[0x17]=0x40u;e->raw[0x3d]=1u;
+    } else if(r.type==0x50u) {
+        // Fixed $5AA2. Payload[0] is the signed vertical accumulator seed
+        // plus direction bit; payload[1] is X plus the speed-family bit.
+        if(r.payload.size()<2u) {e->clear();return false;}
+        auto seed=r.payload[0]&0x7fu;if(seed==0u) seed=0xfcu;
+        unsigned selector=(r.payload[0]>>7u)&1u;
+        if(r.payload[1]&0x80u) selector+=2u;
+        static constexpr std::array<std::int16_t,4> speed{
+            0x0040,-0x0040,0x0020,-0x0020};
+        const auto v=speed[selector&3u];
+        e->raw[0x21]=std::uint8_t(v);e->raw[0x22]=std::uint8_t(std::uint16_t(v)>>8u);
+        e->raw[0x23]=0u;e->raw[0x24]=seed;
+        e->set_y_fixed(std::uint16_t(seed)<<8u);
+        e->set_x_fixed(std::uint16_t(r.payload[1]&0x7fu)<<8u);
+    } else if(r.type==0x4eu) {
+        // Bank05 $9655 -> $9477. The inline byte is consumed by the stream
+        // grammar but the ROM state-0 constructor chooses its live position
+        // from the PRNG table at $94AC.
+        e->state()=0u;
     } else if(r.type==0x22u) {
         // Bank06 $BD0F init: threshold cursor starts at zero and +3E=$0B.
         e->raw[0x20]=0;e->raw[0x3e]=0x0b;
@@ -1310,7 +1390,7 @@ bool instantiate_stage0_spawn(const Rom& rom, const SpawnRecord& r, GameState& g
     }
     // Type $64 must enter bank06:$A300 (state 0). Starting it at state 1
     // skips the ROM initializer that positions the tower at X=$2800/Y=$0C00.
-    e->state() = (r.type == 0x14u || r.type == 0x43u || r.type == 0x64u || r.type==0x47u || r.type==0x2du || r.type==0x2eu || r.type==0x31u || r.type==0x3eu || r.type==0x53u || r.type==0x77u || r.type==0x7au || r.type==0x7bu) ? 0u : 1u;
+    e->state() = (r.type == 0x14u || r.type == 0x43u || r.type == 0x64u || r.type==0x47u || r.type==0x2du || r.type==0x2eu || r.type==0x31u || r.type==0x3eu || r.type==0x4eu || r.type==0x53u || r.type==0x77u || r.type==0x7au || r.type==0x7bu) ? 0u : 1u;
     return true;
 }
 }

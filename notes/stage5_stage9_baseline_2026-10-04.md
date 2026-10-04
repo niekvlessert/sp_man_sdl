@@ -120,6 +120,22 @@ OpenMSX A/B also confirms the `$1700/$0800` fight anchor, the exact selector-2
 presentation. The native port stops at the verified final-boss ending latch;
 full credits/ending-sequence reproduction remains separate work.
 
+A first late-level regular-enemy batch is now native and covered by
+`space-manbow-late-level-enemies-test`:
+
+- Stage 5 type `$41`: the `$8D2C` timed tile-hazard controller plus its
+  explicit `$8DBC` multi-matrix compositor.
+- Stage 5 type `$49`: the `$92E4` vertical patrol with terrain-triggered
+  pause, saved velocity and exact direction reversal.
+- Stage 6 type `$73`: the ROM's direct `JP $82CA` reuse of the aimed turret
+  family, including tile rendering, staggered aim, firing and fourth-turret
+  pickup accounting.
+- Stage 8 type `$50`: the fixed `$5AA2` signed vertical accumulator and
+  four-entry speed table.
+- Stage 9 type `$4E`: the `$9655 -> $9477` PRNG start table, timed animation,
+  vulnerability handoff and accelerating fall.
+
 The next work for these stages is the remaining regular object/enemy/controller
-restoration and, separately, the post-boss ending/credits sequence; the
-stage-5/6/7/8/9 bosses themselves now have native regression coverage.
+restoration—especially the more involved Stage-6 `$4A/$4D/$48` and Stage-7
+`$54` controller families—and, separately, the post-boss ending/credits
+sequence. The stage-5/6/7/8/9 bosses themselves have native regression coverage.
