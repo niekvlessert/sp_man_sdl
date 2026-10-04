@@ -248,7 +248,7 @@ void draw_tile_actor(const Rom& rom,const Screen4Snapshot& video,const Entity64&
     if(pickup_only) { if(e.type()!=3) return; }
     else if(e.type()==0x64u && e.state()==0u) return;
     else if(e.type()!=0x1eu && e.type()!=0x1fu && e.type()!=0x20u && e.type()!=0x29u && e.type()!=0x22u && e.type()!=0x2eu && e.type()!=0x24u && e.type()!=0x26u &&
-            e.type()!=0x3eu && e.type()!=0x3fu && e.type()!=0x55u && e.type()!=0x47u && e.type()!=0x56u && e.type()!=0x64u && e.type()!=0x6au && e.type()!=0x6bu && e.type()!=0x3du) return;
+            e.type()!=0x14u && e.type()!=0x3eu && e.type()!=0x3fu && e.type()!=0x55u && e.type()!=0x47u && e.type()!=0x56u && e.type()!=0x64u && e.type()!=0x6au && e.type()!=0x6bu && e.type()!=0x77u && e.type()!=0x3du) return;
     // Do not cull large cannon tile actors by anchor position. Their matrix can
     // still overlap the left edge after the anchor itself has crossed x=0;
     // per-tile clipping below keeps the visible half on screen, matching the ROM.
@@ -866,6 +866,19 @@ void PlaySession::step_60hz(PlayerInput input) {
         if(enemy.type()==0x64u && enemy.raw[0x16]<=0x0fu) enemy.raw[0x3c]=1u;
         append_stage0_damage_sounds(rom_,original.type(),damage,sound_events_);
         if(damage==Stage0DamageResult::Destroyed) {
+            if(original.type()==0x76u && original.raw[0x34]) {
+                // Stage-5 armour uses the normal +34/+37 linkage mechanism.
+                // $6E98 removes a destroyed child from its immediate parent's
+                // live-child count; the $77 core stays closed until it reaches 0.
+                const auto parent_id=std::uint8_t(original.raw[0x34]&0x7fu);
+                for(auto& parent:game_.enemies)
+                    if(&parent!=&enemy && parent.active() &&
+                       parent.raw[0x2d]==parent_id &&
+                       (parent.type()==0x76u || parent.type()==0x77u)) {
+                        if(parent.raw[0x37]) --parent.raw[0x37];
+                        break;
+                    }
+            }
             // Type-$64 death immediately invalidates its type-$40 attack pool.
             // Clearing them here (the same frame as sound $4D/TowerExplosion)
             // prevents player fire from killing those rockets during the eight
@@ -880,6 +893,11 @@ void PlaySession::step_60hz(PlayerInput input) {
                     if(&child!=&enemy && child.type()==0x3fu && child.raw[0x34]==original.raw[0x2d])
                         child.clear();
             }
+            if(original.type()==0x14u)
+                for(auto& child:game_.enemies) if(&child!=&enemy && child.type()==0x58u) child.clear();
+            if(original.type()==0x77u)
+                for(auto& child:game_.enemies) if(&child!=&enemy &&
+                    (child.type()==0x76u || child.type()==0x5cu)) child.clear();
             if(original.type()==0x7au) {
                 // Original boss death raises CE52. The seven linked $3B
                 // segments disappear and each final-sector $3C receives the
@@ -1055,7 +1073,7 @@ void PlaySession::step_60hz(PlayerInput input) {
     // final tick. Stage 2's $7A boss uses the same replacement/death path as
     // the stage-1 gate boss, so do not artificially restrict completion to
     // stage index 0.
-    if(stage_index_<=2u && enemies_.stage_complete()) begin_next_stage();
+    if(stage_index_<8u && enemies_.stage_complete()) begin_next_stage();
 
 }
 void PlaySession::begin_next_stage() {

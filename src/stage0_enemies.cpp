@@ -190,7 +190,7 @@ bool stage0_sprite_overlap(const Rom& rom,const Entity64& a,const Entity64& b) {
     // the pixels the player actually sees. In particular type $56 is the
     // destructible 64x80 upper section of the large vertical tower. Collide
     // against the exact nonzero tile cells used by the native compositor.
-    if(b.type()==0x26u || b.type()==0x3cu || b.type()==0x3fu || b.type()==0x56u || b.type()==0x64u || b.type()==0x6au || b.type()==0x7au) {
+    if(b.type()==0x14u || b.type()==0x26u || b.type()==0x3cu || b.type()==0x3fu || b.type()==0x56u || b.type()==0x64u || b.type()==0x6au || b.type()==0x77u || b.type()==0x7au) {
         for(const auto& v:decode_stage0_tile_visuals(rom,b))
             for(unsigned ty=0;ty<v.rows;++ty) for(unsigned tx=0;tx<v.cols;++tx) {
                 if(!v.tiles[ty*unsigned(v.cols)+tx]) continue;
@@ -200,7 +200,7 @@ bool stage0_sprite_overlap(const Rom& rom,const Entity64& a,const Entity64& b) {
         // Type $64 also has the animated round core on the sprite plane. The
         // original damage target is the complete boss object, so keep testing
         // its ROM sprite boxes after the composed tile cells missed.
-        if(b.type()!=0x64u && b.type()!=0x7au) return false;
+        if(b.type()!=0x14u && b.type()!=0x64u && b.type()!=0x77u && b.type()!=0x7au) return false;
     }
     const auto bbox=boxes(rom,b);
     for(const auto& x:abox) for(const auto& y:bbox) if(overlaps(x,y)) return true;
@@ -299,7 +299,7 @@ void Stage0Enemies::move_60hz(GameState& game,unsigned frame) {
             if(--e.raw[0x3e]==0) e.clear();
             continue;
         }
-        if(e.active() && (flight(e.type()) || e.type()==0x16u || e.type()==0x19u || e.type()==0x1eu || e.type()==0x11u || e.type()==0x27u || e.type()==0x2au || e.type()==0x2cu || e.type()==0x2du || e.type()==0x2fu || e.type()==0x31u || e.type()==0x68u || e.type()==0x70u || e.type()==0x40u)) {
+        if(e.active() && (flight(e.type()) || e.type()==0x16u || e.type()==0x19u || e.type()==0x1eu || e.type()==0x11u || e.type()==0x27u || e.type()==0x2au || e.type()==0x2cu || e.type()==0x2du || e.type()==0x2fu || e.type()==0x31u || e.type()==0x58u || e.type()==0x5cu || e.type()==0x68u || e.type()==0x70u || e.type()==0x40u)) {
         const int divisor=e.type()==0x40u?3:4,phase=int(frame%unsigned(divisor));
         auto delta=[&](int v){return v*(phase+1)/divisor-v*phase/divisor;};
         e.set_x_fixed(std::uint16_t(e.x_fixed()+delta(signed_word(e,13))));
@@ -322,8 +322,251 @@ void Stage0Enemies::move_60hz(GameState& game,unsigned frame) {
 }
 void Stage0Enemies::step_gate_20hz(const Rom& rom,GameState& game,unsigned tick,
                                    std::vector<PlaySound>* sounds,std::uint8_t ca3b,std::uint8_t fine_x) {
+    // Stage-4 boss $14 ($AE0A) and Stage-5 boss $77 ($B0CC) use the same
+    // 20-Hz object service as the terminal gate. Their camera-relative
+    // entrance motion is supplied by the normal stage scroll; once the
+    // background gate closes, only the explicit boss vectors below move them.
+    static constexpr std::array<std::pair<std::uint8_t,std::uint8_t>,4> s4_part_a{{
+        {0x0a,4},{0x0b,2},{0x0c,2},{0x0b,2}}};
+    static constexpr std::array<std::uint8_t,4> s4_part_b{{3,4,5,4}};
+    static constexpr std::array<std::uint8_t,4> s4_part_c{{0,0x0d,0x0e,0x0d}};
+    static constexpr std::array<std::pair<std::uint8_t,std::uint8_t>,9> s4_motion{{
+        {3,0x10},{4,0x20},{3,0x20},{4,0x20},{5,0x30},
+        {2,0x30},{6,0x30},{2,0x30},{3,0x10}}};
+    static constexpr std::array<std::pair<std::uint8_t,std::uint8_t>,3> s4_attack{{
+        {8,0x18},{10,0x28},{12,0x48}}};
+    static constexpr std::array<std::uint8_t,5> s4_burst_timer{{0x13,0x27,0x33,0x18,0x17}};
+
+    struct Stage5Part { std::int8_t dx,dy; std::uint8_t frame,pattern,rx,ry; };
+    static constexpr std::array<Stage5Part,12> s5_parts{{
+        {-4, 3,0,0x09,1,1}, {10, 3,1,0x08,1,1},
+        { 0,-6,2,0x0b,9,3}, { 4,-6,2,0x07,8,3},
+        { 8,-6,2,0x0c,9,3}, { 0, 7,2,0x0e,9,3},
+        { 4, 9,2,0x06,8,3}, { 8, 7,2,0x0f,9,3},
+        { 0, 4,2,0x0d,10,2},{ 0,-9,2,0x0a,10,2},
+        { 3, 4,2,0x0d,10,2},{ 3,-9,2,0x0a,10,2}}};
+    struct Stage5Waypoint { std::uint8_t speed,y,x; };
+    static constexpr std::array<Stage5Waypoint,15> s5_waypoints{{
+        {0x04,0x38,0x60},{0x08,0x20,0xb8},{0x0c,0x68,0xb8},
+        {0x10,0x68,0x18},{0x14,0x20,0x18},
+        {0x08,0x08,0xb8},{0x08,0x60,0xb8},{0x08,0x60,0x08},
+        {0x08,0x08,0x08},{0x08,0x08,0xb8},{0x08,0x60,0x08},
+        {0x08,0x08,0x08},{0x08,0x60,0xb8},{0x08,0x60,0x08},
+        {0x08,0x08,0x08}}};
+    static constexpr std::array<std::array<std::int8_t,4>,8> s5_shot{{
+        {{-8,-8,-6,-6}},{{-8,32,0,-8}},{{-8,64,6,-6}},{{32,72,8,0}},
+        {{64,64,6,6}},{{72,32,0,8}},{{64,-8,-6,6}},{{32,-16,-8,0}}}};
+    static constexpr std::array<std::uint8_t,8> s5_shot_frame{{6,0,3,9,8,2,5,11}};
+
+    auto update_s4_parts=[&](Entity64& boss) {
+        if(boss.raw[0x24]) --boss.raw[0x24];
+        else {
+            unsigned i=boss.raw[0x25]&3u;
+            boss.raw[0x26]=s4_part_a[i].first;boss.raw[0x24]=s4_part_a[i].second;
+            boss.raw[0x25]=std::uint8_t((i+1u)&3u);
+        }
+        if((tick&3u)==0u) {
+            unsigned i=boss.raw[0x27]&3u;
+            boss.raw[0x28]=s4_part_b[i];boss.raw[0x27]=std::uint8_t((i+1u)&3u);
+        }
+        if((boss.raw[0x2a]++&3u)==0u) {
+            unsigned i=boss.raw[0x2b]&3u;
+            boss.raw[0x2c]=s4_part_c[i];boss.raw[0x2b]=std::uint8_t((i+1u)&3u);
+        }
+        if((tick&1u)==0u) ++boss.raw[0x29];
+    };
+    auto load_s4_motion=[&](Entity64& boss) {
+        unsigned i=boss.raw[0x23];
+        if(i>=s4_motion.size()) i=0u;
+        boss.raw[0x21]=s4_motion[i].first;boss.raw[0x22]=s4_motion[i].second;
+        boss.raw[0x23]=std::uint8_t(i+1u);
+    };
+    auto load_s4_attack=[&](Entity64& boss) {
+        unsigned i=boss.raw[0x0f];
+        if(i>=s4_attack.size()) i=0u;
+        boss.raw[0x10]=s4_attack[i].first;boss.raw[0x11]=s4_attack[i].second;
+        boss.raw[0x0f]=std::uint8_t((i+1u)%s4_attack.size());
+        boss.raw[0x17]=0x20u;
+    };
+    auto spawn_s4_shot=[&](Entity64& boss) {
+        if(auto* c=create(rom,game,0x58u)) {
+            // $B04E alternates the two launch rails. Live ROM traces place
+            // them at X=$0F00, Y=$0A00/$1600 while the boss sits at $1440.
+            const bool lower=(boss.raw[0x29]&1u)!=0u;
+            c->set_x_fixed(0x0f00u);c->set_y_fixed(lower?0x1600u:0x0a00u);
+            c->raw[0x20]=lower?1u:0u;c->state()=0u;
+        }
+    };
+    auto create_s5_part=[&](Entity64& parent,unsigned index) -> Entity64* {
+        if(index>=s5_parts.size()) return nullptr;
+        auto* c=create(rom,game,0x76u);if(!c) return nullptr;
+        const auto& p=s5_parts[index];
+        // $B39D materializes the eight root records around the fixed
+        // $1000/$0600 fight anchor, not around the parent's entrance X=$1F.
+        // The four descriptor children have equally fixed live coordinates.
+        if(index>=8u) {
+            static constexpr std::array<std::pair<std::uint16_t,std::uint16_t>,4> pos{{
+                {0x0c00u,0x0d00u},{0x0c00u,0x0000u},
+                {0x1d00u,0x0d00u},{0x1d00u,0x0000u}}};
+            c->set_x_fixed(pos[index-8u].first);c->set_y_fixed(pos[index-8u].second);
+        } else {
+            c->set_x_fixed(std::uint16_t(int(0x1000)+int(p.dx)*0x0100));
+            c->set_y_fixed(std::uint16_t(int(0x0600)+int(p.dy)*0x0100));
+        }
+        c->raw[0x05]=p.frame;c->raw[0x06]=p.pattern;
+        c->raw[0x13]=p.rx;c->raw[0x14]=std::uint8_t(p.ry|0x80u);
+        c->raw[0x15]|=1u; // native renderer visibility; original common $6E44 owns this
+        // The two controller roots carry bit 7 in +34 in the live pool;
+        // linkage always uses the low seven bits as the parent slot id.
+        c->raw[0x34]=std::uint8_t(parent.raw[0x2d] | ((parent.type()==0x77u && index<2u)?0x80u:0u));
+        c->state()=0u;
+        return c;
+    };
+    auto spawn_s5_shot=[&](Entity64& boss,unsigned attack) {
+        if(auto* c=create(rom,game,0x5cu)) {
+            const auto& q=s5_shot[attack&7u];
+            c->raw[0x03]=std::uint8_t(attack&7u);
+            c->raw[0x05]=c->raw[0x06]=s5_shot_frame[attack&7u];
+            c->set_y_fixed(std::uint16_t(boss.y_fixed()+int(q[0])*32));
+            c->set_x_fixed(std::uint16_t(boss.x_fixed()+int(q[1])*32));
+            put(*c,13,signed_word(boss,13)/2+int(q[2])*32);
+            put(*c,11,signed_word(boss,11)/2+int(q[3])*32);
+            c->state()=1u;
+        }
+    };
+
     for(auto& e:game.enemies) if(e.active()) {
-        if(e.type()==0x64u || e.type()==0x6au) {
+        if(e.type()==0x14u) {
+            // Bank06 $AE0A-$B065. State 1 is the 80-tick entrance while the
+            // stage stream carries the boss from X=$28 to the fight gate.
+            if(e.state()==0u) {
+                e.set_x_fixed(0x2800u);e.set_y_fixed(0x0900u);
+                e.raw[0x18]=0x13u;e.raw[0x24]=4u;e.raw[0x25]=1u;
+                e.raw[0x26]=0x0au;e.raw[0x27]=1u;e.raw[0x3f]=1u;
+                e.state()=1u;
+            } else if(e.state()==1u) {
+                e.raw[0x21]=1u;
+                // $AF37 phase 1 is X=-$40. The 80th tick switches state
+                // before applying another step, leaving the exact live
+                // entrance anchor X=$1440.
+                if(++e.raw[0x20]==0x50u) {
+                    e.raw[0x21]=0u;e.raw[0x22]=0u;e.raw[0x23]=0u;e.raw[0x0f]=0u;
+                    load_s4_attack(e);e.state()=2u;
+                } else e.set_x_fixed(std::uint16_t(e.x_fixed()-0x0040u));
+            } else if(e.state()==2u) {
+                update_s4_parts(e);
+                if(e.raw[0x22]) --e.raw[0x22]; else load_s4_motion(e);
+                static constexpr std::array<std::array<int,2>,7> motion{{
+                    {{0,0}},{{0,-0x40}},{{0,0x40}},{{0x60,0}},
+                    {{-0x60,0}},{{0x40,-0x40}},{{-0x40,-0x40}}}};
+                const auto& v=motion[std::min<unsigned>(e.raw[0x21],6u)];
+                e.set_y_fixed(std::uint16_t(e.y_fixed()+v[0]));
+                e.set_x_fixed(std::uint16_t(e.x_fixed()+v[1]));
+                if(e.raw[0x18]) --e.raw[0x18];
+                else {
+                    const unsigned i=e.raw[0x12]%s4_burst_timer.size();
+                    e.raw[0x18]=s4_burst_timer[i];e.raw[0x12]=std::uint8_t((i+1u)%s4_burst_timer.size());
+                }
+                if(e.raw[0x11] && --e.raw[0x11]==0u) {
+                    load_s4_attack(e);e.state()=3u;
+                }
+            } else if(e.state()==3u) {
+                update_s4_parts(e);
+                if(e.raw[0x10]) {--e.raw[0x10];spawn_s4_shot(e);}
+                else if(e.raw[0x17]>1u) --e.raw[0x17];
+                else {e.raw[0x17]=1u;e.state()=2u;}
+            }
+        } else if(e.type()==0x58u) {
+            // $B066: the Stage-4 attack object chooses a slightly randomized
+            // heading at birth, then keeps that vector after its nine-tick arm.
+            if(e.state()==0u) {
+                const int jitter=(int(rom_random(rom,game)&7u)-3)*3;
+                global_angle_velocity(rom,e,(int(target_global_angle(rom,e,game.player))+jitter)&255u,0x0au);
+                e.raw[0x17]=9u;e.state()=1u;
+            } else if(e.state()==1u && expired(e,0x17)) e.state()=2u;
+        } else if(e.type()==0x77u) {
+            // Bank06 $B0CC-$B365. The eight direct $76 armour pieces are
+            // linked by +34/+37; only after all eight are gone does the core
+            // arm, become vulnerable and begin the ROM waypoint/shot cycle.
+            if(e.state()==0u) {
+                e.set_x_fixed(0x1f00u);e.set_y_fixed(0x0600u);e.raw[0x06]=0u;
+                e.raw[0x37]=e.raw[0x3b]=0u;e.raw[0x34]=0x80u;e.state()=1u;
+            } else if(e.state()==1u) {
+                for(unsigned i=0;i<8u;++i) if(create_s5_part(e,i)) ++e.raw[0x37];
+                e.raw[0x3b]=e.raw[0x37];e.state()=2u;
+            } else if(e.state()==2u) {
+                e.state()=3u;
+            } else if(e.state()==3u) {
+                if(e.raw[0x37]==0u) {e.state()=4u;e.raw[0x17]=0x10u;}
+            } else if(e.state()==4u) {
+                if(e.raw[0x17]>1u) --e.raw[0x17];
+                else {
+                    e.raw[0x17]=0u;e.raw[0x14]|=0x80u;e.raw[0x15]|=0x10u;
+                    e.raw[0x03]=0x0au;e.raw[0x18]=0x32u;e.raw[0x02]=0u;
+                    e.raw[0x20]=0u;e.raw[0x25]=3u;e.state()=5u;
+                }
+            } else if(e.state()==5u) {
+                // $6A13 consumes the previous tick vector.
+                e.set_x_fixed(std::uint16_t(e.x_fixed()+signed_word(e,13)));
+                e.set_y_fixed(std::uint16_t(e.y_fixed()+signed_word(e,11)));
+
+                unsigned wi=std::min<unsigned>(e.raw[0x20],s5_waypoints.size()-1u);
+                auto wp=s5_waypoints[wi];
+                const auto tx=std::uint16_t(unsigned(wp.x)*32u);
+                const auto ty=std::uint16_t(unsigned(wp.y)*32u);
+                e.raw[0x23]=wp.y;e.raw[0x24]=wp.x;
+                const int dx=std::abs(int(std::int16_t(tx-e.x_fixed())));
+                const int dy=std::abs(int(std::int16_t(ty-e.y_fixed())));
+                if(dx+dy<=0x0400) {
+                    ++wi;if(wi>=s5_waypoints.size()) wi=5u;
+                    e.raw[0x20]=std::uint8_t(wi);wp=s5_waypoints[wi];
+                }
+                Entity64 target;target.clear();
+                target.set_x_fixed(std::uint16_t(unsigned(wp.x)*32u));
+                target.set_y_fixed(std::uint16_t(unsigned(wp.y)*32u));
+                global_angle_velocity(rom,e,target_global_angle(rom,e,target),wp.speed);
+
+                if(e.raw[0x25]) --e.raw[0x25];
+                else {e.raw[0x25]=3u;e.raw[0x06]=std::uint8_t((e.raw[0x06]+1u)%6u);}
+
+                bool fire=false;
+                for(unsigned n=0;n<3u && e.raw[0x18];++n)
+                    if(--e.raw[0x18]==0u) {fire=true;break;}
+                if(fire) {
+                    const unsigned attack=e.raw[0x02]&7u;
+                    spawn_s5_shot(e,attack);e.raw[0x02]=std::uint8_t((attack+1u)&7u);
+                    const auto phase=e.raw[0x03];
+                    e.raw[0x18]=phase&0x7fu;
+                    if(phase&0x80u) {
+                        auto next=std::uint8_t(phase+1u);
+                        e.raw[0x03]=next>=0x88u?7u:next;
+                    } else {
+                        auto next=std::uint8_t(phase-1u);
+                        e.raw[0x03]=next?next:0x82u;
+                    }
+                }
+            }
+        } else if(e.type()==0x76u) {
+            // $B423. Pieces with frame selectors 0/1 are small controllers
+            // that each create two linked armour pieces; the remaining six
+            // direct parts and the four grandchildren stay in passive state 2.
+            if(e.state()==0u) {
+                if(e.raw[0x05]<2u) {
+                    e.raw[0x37]=0u;
+                    const unsigned base=8u+unsigned(e.raw[0x05])*2u;
+                    if(create_s5_part(e,base)) ++e.raw[0x37];
+                    if(create_s5_part(e,base+1u)) ++e.raw[0x37];
+                    e.raw[0x3b]=e.raw[0x37];e.raw[0x15]&=std::uint8_t(~0x10u);
+                    e.state()=1u;
+                } else e.state()=2u;
+            } else if(e.state()==1u && e.raw[0x37]==0u) {
+                const auto parent=std::uint8_t(e.raw[0x34]&0x7fu);
+                for(auto& p:game.enemies) if(p.active() && p.raw[0x2d]==parent) {
+                    if(p.raw[0x37]) --p.raw[0x37];break;
+                }
+                e.clear();
+            }
+        } else if(e.type()==0x64u || e.type()==0x6au) {
             const bool finishing=e.type()==0x6au && e.state()==1u && e.raw[0x17]<=1u;
             const bool death_wrap=e.type()==0x6au && e.state()==0u && e.raw[6]==7u;
             step_stage0_gate_object(rom,game,e,sounds);

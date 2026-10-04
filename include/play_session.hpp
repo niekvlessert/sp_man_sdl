@@ -56,6 +56,12 @@ public:
         if(stage_index_==2u)
             return std::any_of(game_.enemies.begin(),game_.enemies.end(),
                                [](const auto& e){return e.type()==0x3eu || e.type()==0x6au;});
+        if(stage_index_==3u)
+            return std::any_of(game_.enemies.begin(),game_.enemies.end(),
+                               [](const auto& e){return e.type()==0x14u || e.type()==0x6au;});
+        if(stage_index_==4u)
+            return std::any_of(game_.enemies.begin(),game_.enemies.end(),
+                               [](const auto& e){return e.type()==0x77u || e.type()==0x6au;});
         return false;
     }
     unsigned camera_pixels() const noexcept { return camera_half_pixels_ / 2; }

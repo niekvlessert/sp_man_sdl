@@ -42,9 +42,12 @@ The ROM spawn catalog contains 61 records:
 - `$14` ×1, `$17` ×7, `$19` ×33, `$2D` ×1
 - `$37` ×1, `$38` ×7, `$39` ×10, `$5F` ×1
 
-Shared `$19/$2D` behavior is already available. The stage-4-specific
-`$14/$17/$37/$38/$39` handlers are deliberately left for a later
-ROM-traced enemy pass.
+Shared `$19/$2D` behavior is already available. The stage-4 `$14` boss is now
+ported from bank06 `$AE0A-$B0C0`: its `$F0`-HP controller enters from X=`$2800`
+to the live X=`$1440` fight anchor, cycles the original motion/animation tables,
+and emits the linked type-`$58` attack objects from the `$0F00` top/bottom launch
+rails. Fatal damage uses the ROM `$14->$6A` replacement and advances to stage 5.
+The regular stage-4-specific `$17/$37/$38/$39` families remain for later passes.
 
 ## Audio
 
@@ -57,4 +60,6 @@ loaded automatically when present.
 
 `space-manbow-stage34-test` locks the stage reset behavior, ROM spawn counts,
 stage-3 early cave anchors, the complete sampled stage-4 route including mode 6,
-and both stage gate boundaries.
+and both stage gate boundaries. `space-manbow-stage45-boss-test` additionally locks
+the `$14` metadata, the exact 80-tick `$2800->$1440` entrance, type-`$58` launch
+rails, boss damage/death cleanup and the stage-4 to stage-5 handoff.

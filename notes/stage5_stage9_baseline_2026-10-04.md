@@ -34,6 +34,14 @@ trigger `$131F`. Eight independent unmodified-OpenMSX ring captures from
 `$AEF1` through `$B2C2` match byte-for-byte; the final gate ring hash also
 matches.
 
+The stage-5 `$77` boss is now restored from bank06 `$B0CC-$B4A2`. The `$99`-HP
+parent constructs the original twelve-object type-`$76` armour tree: eight root
+records from `$B3DB` plus the four linked descriptor children, with their live
+OpenMSX positions/frame/link bytes reproduced exactly. The core remains closed
+until its eight root links are gone, then arms, becomes vulnerable and enters the
+ROM waypoint/type-`$5C` attack cycle. Fatal core damage clears the linked pool,
+runs the shared `$6A` destruction countdown and advances to stage 6.
+
 ## Stage 6
 
 Stage 6 required the missing ROM mode-5 streamer. Bank09 `$7E3F` is the
@@ -75,5 +83,10 @@ indices can construct a `PlaySession`, step at 60 Hz and render a frame.
 - the bank02/bank03 spawn catalogs,
 - and public direct reset/render for stage indices 4..8.
 
-The next work for these stages is object/enemy/controller restoration, not basic
-stage loading or scenery decoding.
+`space-manbow-stage45-boss-test` also locks the stage-5 `$77` metadata and
+extended descriptor, all twelve original `$76` pool records (positions, frames
+and parent links), armour-to-core vulnerability handoff, linked cleanup and the
+stage-5 to stage-6 transition.
+
+The next work for these stages is the remaining regular object/enemy/controller
+restoration, not basic stage loading, scenery decoding or the stage-5 boss.

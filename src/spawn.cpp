@@ -557,6 +557,48 @@ std::vector<Stage0TileVisual> decode_stage0_tile_visuals(const Rom& rom,
         return out;
     }
 
+    if (entity.type() == 0x14u || entity.type() == 0x77u) {
+        // Stage-4/5 bosses are composed tile actors rendered through $7B65
+        // from bank06. Type $14 has one placement script at $B03C; type $77
+        // has six scripts selected by +06 through the pointer table at $B455.
+        const auto bank6=rom.bank(6);
+        const unsigned selector=entity.type()==0x14u ? 0u : std::min<unsigned>(entity.raw[0x06],5u);
+        const unsigned table_cpu=entity.type()==0x14u ? 0xb03cu : 0xb455u;
+        const unsigned table=table_cpu-0xa000u;
+        if(table+selector*2u+1u>=bank6.size()) return out;
+        const auto list_cpu=le16(bank6,table+selector*2u);
+        if(list_cpu<0xa000u || list_cpu>=0xc000u) return out;
+        unsigned p=unsigned(list_cpu-0xa000u);
+        if(p>=bank6.size()) return out;
+        const unsigned packed_len=bank6[p++];
+        if(packed_len<2u || p+packed_len-1u>bank6.size()) return out;
+        const unsigned end=p+packed_len-1u;
+        int place_y=0,place_x=0;bool need_position=true;
+        while(p<end) {
+            if(need_position) {
+                if(p+2u>end) break;
+                place_y=int(static_cast<std::int8_t>(bank6[p++]));
+                place_x=int(static_cast<std::int8_t>(bank6[p++]));
+                need_position=false;
+            }
+            if(p>=end) break;
+            const auto control=bank6[p++];
+            if(control==0xffu) break;
+            if(control==0xfeu) {need_position=true;continue;}
+            const unsigned count=control;
+            if(p+count>end) break;
+            for(unsigned i=0;i<count;++i) {
+                Stage0TileVisual v;
+                if(decode_stage0_tile_frame(rom,entity,bank6[p++],v)) {
+                    v.x+=place_x*8;v.y+=place_y*8;
+                    v.tile_x_offset+=place_x;v.tile_y_offset+=place_y;
+                    out.push_back(std::move(v));
+                }
+            }
+        }
+        return out;
+    }
+
     if (entity.type() == 0x3eu) {
         // Stage-3 boss shell, bank06 $A647->$7B65 with DE=$A7C3.
         // +06 selects one of eight packed placement lists. Each list stamps
@@ -853,7 +895,7 @@ void append_stage0_damage_sounds(const Rom& rom,std::uint8_t original_type,
     if(damage==Stage0DamageResult::Ignored) return;
     // $7C44/$7C63 request the impact even on a fatal subtraction, before
     // $7CC3 requests the family-specific destruction sound.
-    sounds.push_back(original_type==0x64u ? PlaySound::BossHit : PlaySound::Hit);
+    sounds.push_back((original_type==0x14u || original_type==0x3eu || original_type==0x64u || original_type==0x77u) ? PlaySound::BossHit : PlaySound::Hit);
     if(damage!=Stage0DamageResult::Destroyed) return;
     const auto bank4=rom.bank(4);
     const auto sound_id=bank4[0x1e74u+unsigned(original_type)*3u+1u];
@@ -885,15 +927,16 @@ bool instantiate_stage0_spawn(const Rom& rom, const SpawnRecord& r, GameState& g
     const bool special2b = r.type == 0x2bu && r.control_flag();
     const bool special53 = r.type == 0x53u && r.control_flag();
     const bool special3e = r.type == 0x3eu && r.control_flag();
+    const bool special77 = r.type == 0x77u && r.control_flag();
     const bool special7a = r.type == 0x7au && r.control_flag();
     // The final stage-0 tower is also an extended record: trigger $5000,
     // control $88. Rejecting every flagged record except $26 silently dropped
     // type $64 from real gameplay, leaving only the scenery copy visible.
     const bool special64 = r.type == 0x64u && r.control_flag();
-    if (r.control_flag() && !special26 && !special2b && !special53 && !special3e && !special64 && !special7a) return false;
-    if (r.type != 0x19u && r.type != 0x1eu && r.type != 0x1fu && r.type != 0x20u && r.type != 0x27u && r.type != 0x29u && r.type != 0x2bu && r.type != 0x2du && r.type != 0x2eu && r.type != 0x2fu && r.type != 0x31u && r.type != 0x3cu && r.type != 0x3eu && r.type != 0x22u &&
+    if (r.control_flag() && !special26 && !special2b && !special53 && !special3e && !special77 && !special64 && !special7a) return false;
+    if (r.type != 0x14u && r.type != 0x19u && r.type != 0x1eu && r.type != 0x1fu && r.type != 0x20u && r.type != 0x27u && r.type != 0x29u && r.type != 0x2bu && r.type != 0x2du && r.type != 0x2eu && r.type != 0x2fu && r.type != 0x31u && r.type != 0x3cu && r.type != 0x3eu && r.type != 0x22u &&
         r.type != 0x24u && r.type != 0x26u && r.type != 0x53u && r.type != 0x55u &&
-        r.type != 0x56u && r.type != 0x47u && r.type != 0x64u && r.type != 0x7au) return false;
+        r.type != 0x56u && r.type != 0x47u && r.type != 0x64u && r.type != 0x77u && r.type != 0x7au) return false;
     if (r.payload.empty() || (r.type == 0x24u && r.payload.size() < 2u)) return false;
     auto* e = game.allocate_enemy();
     if (!e) return false;
@@ -907,7 +950,7 @@ bool instantiate_stage0_spawn(const Rom& rom, const SpawnRecord& r, GameState& g
     // Original $6754 initializer. The same payload byte is interpreted on a
     // different axis depending on C0D5, so it is NOT an absolute Y value.
     // Extended records expose their first inline byte after the count byte.
-    const unsigned payload_index = (special26 || special2b || special7a) ? 1u : 0u;
+    const unsigned payload_index = (special26 || special2b || special77 || special7a) ? 1u : 0u;
     if (r.payload.size() <= payload_index) { e->clear(); return false; }
     const std::uint8_t pos = r.payload[payload_index] & 0x7fu;
     std::uint8_t xh = 0x20u, yh = pos;
@@ -996,6 +1039,11 @@ bool instantiate_stage0_spawn(const Rom& rom, const SpawnRecord& r, GameState& g
         e->raw[0x03]=r.payload[1];e->raw[0x05]=r.payload[1]&1u;
         e->raw[0x0b]=0x60u;e->raw[0x0c]=0xffu;
         e->raw[0x0d]=0u;e->raw[0x0e]=0u;
+    } else if(r.type==0x14u) {
+        // Stage-4 boss. $AE2A installs the real fixed entrance anchor; keep
+        // the spawn object dormant until the bank06 handler's state-0 init.
+        e->set_x_fixed(0x2800u);e->set_y_fixed(0x0900u);
+        e->raw[0x3f]=1u;
     } else if(r.type==0x3eu) {
         // Stage-3 boss controller, bank06 $A647. The extended record at
         // trigger $2000 is `3E 86 02 FF`; its inline bytes are not a normal
@@ -1056,6 +1104,16 @@ bool instantiate_stage0_spawn(const Rom& rom, const SpawnRecord& r, GameState& g
         e->raw[0x2e] = 0x01;
         e->raw[0x2f] = 0x01;
         e->raw[0x3f] = 0x01;
+    } else if (r.type == 0x77u) {
+        // Stage-5 boss controller. Extended descriptor:
+        //   02 05 85 02 76 02 76
+        // State zero creates the linked $76 armour tree and replaces these
+        // provisional coordinates with the original $1F00/$0600 anchor.
+        if(r.payload.size()<7u || r.payload[0]!=2u || r.payload[3]!=2u ||
+           r.payload[4]!=0x76u || r.payload[5]!=2u || r.payload[6]!=0x76u) {
+            e->clear();return false;
+        }
+        e->set_x_fixed(0);e->set_y_fixed(0);e->raw[0x34]=0x80u;
     } else if (r.type == 0x7au) {
         // Bank06 $A000: extended descriptor 02 08 02 3B. $6754 consumes
         // the position byte after the count and the handler creates seven
@@ -1072,7 +1130,7 @@ bool instantiate_stage0_spawn(const Rom& rom, const SpawnRecord& r, GameState& g
     }
     // Type $64 must enter bank06:$A300 (state 0). Starting it at state 1
     // skips the ROM initializer that positions the tower at X=$2800/Y=$0C00.
-    e->state() = (r.type == 0x64u || r.type==0x47u || r.type==0x2du || r.type==0x2eu || r.type==0x31u || r.type==0x3eu || r.type==0x53u || r.type==0x7au) ? 0u : 1u;
+    e->state() = (r.type == 0x14u || r.type == 0x64u || r.type==0x47u || r.type==0x2du || r.type==0x2eu || r.type==0x31u || r.type==0x3eu || r.type==0x53u || r.type==0x77u || r.type==0x7au) ? 0u : 1u;
     return true;
 }
 }

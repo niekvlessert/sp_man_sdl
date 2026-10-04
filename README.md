@@ -18,12 +18,12 @@ These changes are retained by rewind/replay. Stage 2's scenery, regular enemy
 families, controllers and boss have their current ROM-traced native restoration;
 see `notes/stage2_rom_audit_2026-10-03.md`. Stages 3 and 4 have selectable
 ROM-stream baselines (including stage 4's vertical mode-6 section). Stage 3's
-`$3E/$3F` boss is now ROM-traced natively, including linked-body scheduling,
-weak-point attacks, projectiles, palette, SFX and death/transition. Other new
-enemy families remain unported; see `notes/stage3_stage4_baseline_2026-10-04.md`.
-Stages 5–9 are likewise directly
-selectable with ROM-stream baselines; stage 6 includes its original diagonal
-mode-5 and mode-3 scenery paths. Their stage-specific enemies/controllers remain
+`$3E/$3F` boss and stage 4's `$14/$58` boss are now ROM-traced natively,
+including linked/attack scheduling and death/next-stage flow. Other new enemy
+families remain unported; see `notes/stage3_stage4_baseline_2026-10-04.md`.
+Stages 5–9 are likewise directly selectable with ROM-stream baselines; stage 5's
+`$77/$76/$5C` boss tree is restored and stage 6 includes its original diagonal
+mode-5 and mode-3 scenery paths. Other stage-specific enemies/controllers remain
 future ROM-traced ports; see `notes/stage5_stage9_baseline_2026-10-04.md`.
 Cmd-T on macOS / Ctrl-T on Windows or Linux toggles 500% turbo, including audio.
 Page Up pauses and rewinds 100 simulation frames (clamped at the start).
