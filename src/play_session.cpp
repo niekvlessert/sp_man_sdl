@@ -1272,8 +1272,10 @@ std::vector<std::uint32_t> PlaySession::render() {
         // Stage 8 boss raster mode has C0EB=$04. Live OpenMSX keeps VDP
         // R18=$70 throughout type-$78, independent of C0BB; this presenter
         // consumes only the horizontal low nibble, so force that nibble to 0.
-        if(stage_index_==7u && std::any_of(game_.enemies.begin(),game_.enemies.end(),
-            [](const auto& e){return e.type()==0x78u;}))
+        if((stage_index_==7u && std::any_of(game_.enemies.begin(),game_.enemies.end(),
+                [](const auto& e){return e.type()==0x78u;})) ||
+           (stage_index_==8u && std::any_of(game_.enemies.begin(),game_.enemies.end(),
+                [](const auto& e){return e.type()==0x79u;})))
             current_state.r18=0u;
         // Keep the original R18 fine-scroll in every D988/raster-backed mode.
         // The 512-wide compositor interpolates *between* these proven coarse

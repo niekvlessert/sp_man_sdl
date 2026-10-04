@@ -299,7 +299,7 @@ void Stage0Enemies::move_60hz(GameState& game,unsigned frame) {
             if(--e.raw[0x3e]==0) e.clear();
             continue;
         }
-        if(e.active() && (flight(e.type()) || e.type()==0x16u || e.type()==0x19u || e.type()==0x1eu || e.type()==0x11u || e.type()==0x23u || e.type()==0x27u || e.type()==0x2au || e.type()==0x2cu || e.type()==0x2du || e.type()==0x2fu || e.type()==0x31u || e.type()==0x58u || e.type()==0x5cu || e.type()==0x68u || e.type()==0x70u || e.type()==0x74u || e.type()==0x40u || e.type()==0x0du)) {
+        if(e.active() && (flight(e.type()) || e.type()==0x16u || e.type()==0x19u || e.type()==0x1eu || e.type()==0x11u || e.type()==0x23u || e.type()==0x27u || e.type()==0x2au || e.type()==0x2cu || e.type()==0x2du || e.type()==0x2fu || e.type()==0x31u || e.type()==0x58u || e.type()==0x5cu || e.type()==0x5eu || e.type()==0x66u || e.type()==0x68u || e.type()==0x70u || e.type()==0x74u || e.type()==0x40u || e.type()==0x0du)) {
         const int divisor=(e.type()==0x40u || e.type()==0x23u)?3:4,phase=int(frame%unsigned(divisor));
         auto delta=[&](int v){return v*(phase+1)/divisor-v*phase/divisor;};
         e.set_x_fixed(std::uint16_t(e.x_fixed()+delta(signed_word(e,13))));
@@ -436,7 +436,132 @@ void Stage0Enemies::step_gate_20hz(const Rom& rom,GameState& game,unsigned tick,
     };
 
     for(auto& e:game.enemies) if(e.active()) {
-        if(e.type()==0x78u) {
+        if(e.type()==0x79u) {
+            // Final boss, bank05 $96AC-$9804. The visible fight is one state
+            // with a ROM-scripted 0/1/2 body animation and five repeating
+            // attack records. Fatal damage during body selector 1 enters the
+            // dedicated 3..7 destruction strip, then the ending latch.
+            static constexpr std::array<std::pair<std::uint8_t,std::uint8_t>,10> anim_lo{{
+                {0x20u,2u},{0x04u,0u},{0x28u,1u},{0x04u,0u},{0x30u,2u},
+                {0x08u,0u},{0x18u,2u},{0x04u,0u},{0x22u,1u},{0x04u,0u}}};
+            static constexpr std::array<std::pair<std::uint8_t,std::uint8_t>,10> anim_hi{{
+                {0x20u,2u},{0x04u,0u},{0x08u,1u},{0x04u,0u},{0x30u,2u},
+                {0x08u,0u},{0x18u,2u},{0x04u,0u},{0x20u,1u},{0x04u,0u}}};
+            static constexpr std::array<std::pair<std::uint8_t,std::uint8_t>,5> attack{{
+                {0x06u,0x38u},{0x87u,0x4cu},{0x08u,0x4eu},
+                {0x85u,0x3cu},{0x85u,0x28u}}};
+
+            auto spawn_type66=[&] {
+                auto* c=create(rom,game,0x66u);if(!c) return;
+                // $9C60->$6929 with BC=$0102: child high coordinates are
+                // parent +X1/+Y2 cells; low fractions start cleared.
+                c->set_x_fixed(std::uint16_t(std::uint8_t(e.raw[0x0a]+1u))<<8u);
+                c->set_y_fixed(std::uint16_t(std::uint8_t(e.raw[0x08]+2u))<<8u);
+                c->state()=0u;
+            };
+            auto animate=[&] {
+                if(e.raw[0x20]==0u) {
+                    const auto& table=game.difficulty<4u?anim_lo:anim_hi;
+                    unsigned i=e.raw[0x21];
+                    if(i>=table.size()) i=0u;
+                    e.raw[0x21]=std::uint8_t(i+1u);
+                    e.raw[0x20]=table[i].first;e.raw[0x06]=table[i].second;
+                    if(e.raw[0x06]==1u) spawn_type66();
+                }
+                --e.raw[0x20];
+            };
+            auto load_attack=[&] {
+                unsigned i=e.raw[0x27];
+                if(i>=attack.size()) i=0u; // $FF at $975F restarts the list.
+                const auto [count,delay]=attack[i];
+                e.raw[0x27]=std::uint8_t(i+1u);
+                e.raw[0x25]=count&0x80u;e.raw[0x26]=count&0x7fu;
+                e.raw[0x17]=delay;
+            };
+            auto spawn_type5e=[&] {
+                auto* c=create(rom,game,0x5eu);if(!c) return;
+                // $B6C9->$6929 uses FA07 or F509 as signed cell offsets.
+                const int dx=e.raw[0x25]?-11:-6;
+                const int dy=e.raw[0x25]?9:7;
+                c->set_x_fixed(std::uint16_t(std::uint8_t(int(e.raw[0x0a])+dx))<<8u);
+                c->set_y_fixed(std::uint16_t(std::uint8_t(int(e.raw[0x08])+dy))<<8u);
+                c->state()=0u;
+            };
+
+            // The ordinary camera/object service keeps sliding the boss left
+            // by $20 until the traced fixed fight/death anchor X=$1700.
+            if(e.x_fixed()>0x1700u)
+                e.set_x_fixed(std::uint16_t(std::max<int>(0x1700,int(e.x_fixed())-0x20)));
+
+            if(e.state()==1u) {
+                animate();
+                // $96DB only opens $7C63 for compositor selector one.
+                if(e.raw[0x06]==1u) e.raw[0x14]|=0x80u;
+                else e.raw[0x14]&=0x7fu;
+
+                if(e.raw[0x17]!=1u) --e.raw[0x17];
+                else if((tick&3u)==0u) {
+                    if(e.raw[0x26] && --e.raw[0x26]!=0u) spawn_type5e();
+                    else load_attack();
+                }
+            } else if(e.state()==2u) {
+                // $9701: selectors 3,4,5,6 are externally visible; on the
+                // next call selector 7 enters the 32-tick final hold.
+                e.raw[0x06]=std::uint8_t((e.raw[0x06]+1u)&7u);
+                if(e.raw[0x06]==7u) {
+                    for(auto& c:game.enemies)
+                        if(c.type()==0x5eu || c.type()==0x66u) c.clear();
+                    e.raw[0x17]=0x20u;e.state()=3u;
+                }
+            } else if(e.state()==3u) {
+                if(expired(e,0x17)) {
+                    // Natural ROM path writes CA0F at $9715. Stage index 8
+                    // has no checkpoint 9: the outer controller branches to
+                    // its ending state instead of loading another level.
+                    stage_complete_=true;
+                    e.clear();
+                }
+            }
+        } else if(e.type()==0x5eu) {
+            // Final-boss spread shot, bank06 $B6DE. The original picks a
+            // random direction, stores a 12-count phase timer and raises HP
+            // with difficulty. Keep the measured vector family deterministic
+            // through the same ROM PRNG used by the rest of native gameplay.
+            if(e.state()==0u) {
+                static constexpr std::array<std::pair<int,int>,8> vector{{
+                    {-57,-94},{-49,-82},{-93,-59},{-108,-27},
+                    {-108,27},{-93,59},{-49,82},{-57,94}}};
+                const auto [vx,vy]=vector[rom_random(rom,game)&7u];
+                put(e,13,vx);put(e,11,vy);put(e,15,0);put(e,17,0);
+                e.raw[0x17]=0x0cu;
+                if(game.difficulty<4u) {e.raw[0x16]=2u;e.raw[0x18]=4u;}
+                else if(game.difficulty<8u) {e.raw[0x16]=8u;e.raw[0x18]=6u;}
+                else {e.raw[0x16]=0x0eu;e.raw[0x18]=7u;}
+                e.state()=1u;
+            } else if(e.state()==1u) {
+                // $B748 only services the phase timer when CA02&7 == 0.
+                // frame=3*tick at this scheduler, so the same condition is
+                // tick&7 == 0.
+                if((tick&7u)==0u && expired(e,0x17)) e.state()=2u;
+            } else if(e.state()==2u) {
+                if(expired(e,0x18)) {
+                    e.raw[0x18]=2u;
+                    if(++e.raw[0x05]>=3u) e.clear();
+                }
+            }
+        } else if(e.type()==0x66u) {
+            // $9C60-created final-boss obstacle. State 0 installs VX=-$80,
+            // AX=-$10 and the half-cell Y fraction. State 1 accelerates left
+            // once per 20-Hz handler tick; move_60hz provides smooth motion.
+            if(e.state()==0u) {
+                e.set_y_fixed(std::uint16_t((e.y_fixed()&0xff00u)|0x0080u));
+                put(e,13,-0x0080);put(e,17,-0x0010);
+                e.raw[0x16]=game.difficulty<5u?4u:0x0cu;
+                e.state()=1u;
+            } else if(e.state()==1u) {
+                put(e,13,signed_word(e,13)+signed_word(e,17));
+            }
+        } else if(e.type()==0x78u) {
             // Stage-8 boss, bank06 $AA1C-$ACDD. States 1/2 are the long
             // horizontal entrance, states 3/4/5 form the attack loop, and
             // states 6/7/8 are the custom destruction/camera handoff. The

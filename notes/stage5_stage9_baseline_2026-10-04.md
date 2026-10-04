@@ -110,8 +110,16 @@ custom states 6–8 destruction and Stage-9 handoff. It also checks the persiste
 16-KiB Stage-8 SCREEN-4 pattern/color image produced by the original startup
 SCREEN-5 conversion (FNV-1a `217ED24F`). The live session now applies the
 boss's `$F8/$6C75` raster anchor, the C0EB=`$04` R18 behavior and the
-ROM-derived `$AC96/$ACC8` palette cycle.
+ROM-derived `$AC96/$ACC8` palette cycle. `space-manbow-stage9-boss-test`
+locks the final type-`$79` spawn/metadata, the `$979B/$97B0` body-animation
+scripts, the five-record `$9755` attack loop, type-`$5E` spread shots and
+type-`$66` accelerating obstacle, selector-1-only damage window, HP `$30`,
+the 3→4→5→6→7 destruction sequence and the 32-tick final ending latch.
+OpenMSX A/B also confirms the `$1700/$0800` fight anchor, the exact selector-2
+4x7 name-table stamp, the Stage-9 palette and C0EB=`$04`/R18=`$70` raster
+presentation. The native port stops at the verified final-boss ending latch;
+full credits/ending-sequence reproduction remains separate work.
 
 The next work for these stages is the remaining regular object/enemy/controller
-restoration and the stage-9 boss, not basic stage loading, scenery decoding or
-the stage-5/6/7/8 bosses.
+restoration and, separately, the post-boss ending/credits sequence; the
+stage-5/6/7/8/9 bosses themselves now have native regression coverage.

@@ -111,7 +111,11 @@ void scroll_stage0_objects(GameState& game, int dx, int dy,const Rom* native_vis
         // Interactive pickups follow the camera through Stage0Combat, including
         // the pre-anchor part of the level where this scenery helper is idle.
         const bool handler_x_scroll=e.type()==0x2au || e.type()==0x53u;
-        if (!e.active() || e.type()==3 || ((e.flags15() & 0x04u) == 0u && !handler_x_scroll)) continue;
+        if (!e.active() || e.type()==3 || e.type()==0x79u ||
+            ((e.flags15() & 0x04u) == 0u && !handler_x_scroll)) continue;
+        // Type $79 is the final-boss exception: its bank05 controller owns
+        // the measured $2000->$1700 entrance/death X motion at 20 Hz. Applying
+        // this generic camera scroll as well double-counts that motion.
         const auto ox = std::int16_t(e.x_fixed());
         const auto oy = std::int16_t(e.y_fixed());
         const int nx = int(ox) - dx;
@@ -672,6 +676,47 @@ std::vector<Stage0TileVisual> decode_stage0_tile_visuals(const Rom& rom,
         return out;
     }
 
+    if (entity.type() == 0x79u) {
+        // Final boss, bank05 $96AC->$7B65 with DE=$97C5. The eight pointer
+        // entries select one compact placement list each; selectors 0/1/2
+        // are fight frames and 3..7 are the destruction sequence.
+        const auto bank5=rom.bank(5);
+        const unsigned selector=std::min<unsigned>(entity.raw[0x06],7u);
+        const unsigned table=0x97c5u-0x8000u;
+        if(table+selector*2u+1u>=bank5.size()) return out;
+        const auto list_cpu=le16(bank5,table+selector*2u);
+        if(list_cpu<0x8000u || list_cpu>=0xa000u) return out;
+        unsigned p=unsigned(list_cpu-0x8000u);
+        if(p>=bank5.size()) return out;
+        const unsigned packed_len=bank5[p++];
+        if(packed_len<2u || p+packed_len-1u>bank5.size()) return out;
+        const unsigned end=p+packed_len-1u;
+        int place_y=0,place_x=0;bool need_position=true;
+        while(p<end) {
+            if(need_position) {
+                if(p+2u>end) break;
+                place_y=int(static_cast<std::int8_t>(bank5[p++]));
+                place_x=int(static_cast<std::int8_t>(bank5[p++]));
+                need_position=false;
+            }
+            if(p>=end) break;
+            const auto control=bank5[p++];
+            if(control==0xffu) break;
+            if(control==0xfeu) {need_position=true;continue;}
+            const unsigned count=control;
+            if(p+count>end) break;
+            for(unsigned i=0;i<count;++i) {
+                Stage0TileVisual v;
+                if(decode_stage0_tile_frame(rom,entity,bank5[p++],v)) {
+                    v.x+=place_x*8;v.y+=place_y*8;
+                    v.tile_x_offset+=place_x;v.tile_y_offset+=place_y;
+                    out.push_back(std::move(v));
+                }
+            }
+        }
+        return out;
+    }
+
     if (entity.type() == 0x78u) {
         // Stage-8 boss, bank06 $AA1C->$7B65 with DE=$ACDE. +06 selects
         // one of ten exact packed placement scripts. The first four matrices
@@ -946,6 +991,23 @@ Stage0DamageResult apply_stage0_damage(const Rom& rom, Entity64& entity,
         entity.state()=6u;
         return Stage0DamageResult::Destroyed;
     }
+    // Final boss $79 opens the ordinary $7C63 damage service only while
+    // compositor selector +06 is one. Non-fatal hits close bit 7 again;
+    // fatal borrow keeps type $79 alive, raises CE76 in the ROM and enters
+    // the dedicated 3..7 destruction animation instead of becoming $62.
+    if(entity.active() && entity.type()==0x79u) {
+        if(damage==0u || entity.state()!=1u || entity.raw[0x06]!=1u ||
+           (entity.raw[0x14]&0x80u)==0u) return Stage0DamageResult::Ignored;
+        const auto hp=entity.raw[0x16];entity.raw[0x04]=0u;
+        entity.raw[0x16]=std::uint8_t(hp-damage);
+        if(damage<=hp) {
+            entity.raw[0x14]&=0x7fu;
+            return Stage0DamageResult::Hit;
+        }
+        entity.raw[0x06]=3u;
+        entity.state()=2u;
+        return Stage0DamageResult::Destroyed;
+    }
     if (!entity.active() || damage == 0 || (entity.raw[0x14] & 0x80u) == 0)
         return Stage0DamageResult::Ignored;
     const auto hp = entity.raw[0x16];
@@ -983,7 +1045,7 @@ void append_stage0_damage_sounds(const Rom& rom,std::uint8_t original_type,
     if(damage==Stage0DamageResult::Ignored) return;
     // $7C44/$7C63 request the impact even on a fatal subtraction, before
     // $7CC3 requests the family-specific destruction sound.
-    sounds.push_back((original_type==0x14u || original_type==0x3eu || original_type==0x43u || original_type==0x64u || original_type==0x77u || original_type==0x78u || original_type==0x7bu) ? PlaySound::BossHit : PlaySound::Hit);
+    sounds.push_back((original_type==0x14u || original_type==0x3eu || original_type==0x43u || original_type==0x64u || original_type==0x77u || original_type==0x78u || original_type==0x79u || original_type==0x7bu) ? PlaySound::BossHit : PlaySound::Hit);
     if(damage!=Stage0DamageResult::Destroyed) return;
     const auto bank4=rom.bank(4);
     const auto sound_id=bank4[0x1e74u+unsigned(original_type)*3u+1u];
@@ -1024,7 +1086,7 @@ bool instantiate_stage0_spawn(const Rom& rom, const SpawnRecord& r, GameState& g
     if (r.control_flag() && !special26 && !special2b && !special53 && !special3e && !special77 && !special64 && !special7a) return false;
     if (r.type != 0x14u && r.type != 0x19u && r.type != 0x1eu && r.type != 0x1fu && r.type != 0x20u && r.type != 0x27u && r.type != 0x29u && r.type != 0x2bu && r.type != 0x2du && r.type != 0x2eu && r.type != 0x2fu && r.type != 0x31u && r.type != 0x3cu && r.type != 0x3eu && r.type != 0x22u &&
         r.type != 0x24u && r.type != 0x26u && r.type != 0x53u && r.type != 0x55u &&
-        r.type != 0x56u && r.type != 0x47u && r.type != 0x43u && r.type != 0x64u && r.type != 0x77u && r.type != 0x78u && r.type != 0x7au && r.type != 0x7bu) return false;
+        r.type != 0x56u && r.type != 0x47u && r.type != 0x43u && r.type != 0x64u && r.type != 0x77u && r.type != 0x78u && r.type != 0x79u && r.type != 0x7au && r.type != 0x7bu) return false;
     if (r.payload.empty() || (r.type == 0x24u && r.payload.size() < 2u)) return false;
     auto* e = game.allocate_enemy();
     if (!e) return false;
@@ -1215,6 +1277,16 @@ bool instantiate_stage0_spawn(const Rom& rom, const SpawnRecord& r, GameState& g
         e->set_x_fixed(0x1f00u);e->set_y_fixed(0x0400u);
         e->raw[0x06]=0u;e->raw[0x17]=0x20u;e->raw[0x21]=1u;
         e->raw[0x22]=0u;e->raw[0x23]=0x30u;e->raw[0x25]=0x15u;
+        e->state()=1u;
+    } else if (r.type == 0x79u) {
+        // Final boss, bank05 $96AC. $6754 starts it at the right edge from
+        // payload $08. $976B loads the first animation record and $972D the
+        // first attack record before the externally visible state-1 loop.
+        e->set_x_fixed(0x2000u);e->set_y_fixed(0x0800u);
+        e->raw[0x06]=2u;                 // first $979B animation selector
+        e->raw[0x20]=0x20u;e->raw[0x21]=1u;
+        e->raw[0x17]=0x38u;              // first $9755 attack delay
+        e->raw[0x25]=0u;e->raw[0x26]=6u;e->raw[0x27]=1u;
         e->state()=1u;
     } else if (r.type == 0x7bu) {
         // Stage-6 boss, bank06 $B513. The final mode-3 scroll brings the
