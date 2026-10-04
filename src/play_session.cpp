@@ -898,6 +898,8 @@ void PlaySession::step_60hz(PlayerInput input) {
             if(original.type()==0x77u)
                 for(auto& child:game_.enemies) if(&child!=&enemy &&
                     (child.type()==0x76u || child.type()==0x5cu)) child.clear();
+            if(original.type()==0x7bu)
+                for(auto& child:game_.enemies) if(&child!=&enemy && child.type()==0x0du) child.clear();
             if(original.type()==0x7au) {
                 // Original boss death raises CE52. The seven linked $3B
                 // segments disappear and each final-sector $3C receives the

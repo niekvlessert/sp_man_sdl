@@ -895,7 +895,7 @@ void append_stage0_damage_sounds(const Rom& rom,std::uint8_t original_type,
     if(damage==Stage0DamageResult::Ignored) return;
     // $7C44/$7C63 request the impact even on a fatal subtraction, before
     // $7CC3 requests the family-specific destruction sound.
-    sounds.push_back((original_type==0x14u || original_type==0x3eu || original_type==0x64u || original_type==0x77u) ? PlaySound::BossHit : PlaySound::Hit);
+    sounds.push_back((original_type==0x14u || original_type==0x3eu || original_type==0x64u || original_type==0x77u || original_type==0x7bu) ? PlaySound::BossHit : PlaySound::Hit);
     if(damage!=Stage0DamageResult::Destroyed) return;
     const auto bank4=rom.bank(4);
     const auto sound_id=bank4[0x1e74u+unsigned(original_type)*3u+1u];
@@ -936,7 +936,7 @@ bool instantiate_stage0_spawn(const Rom& rom, const SpawnRecord& r, GameState& g
     if (r.control_flag() && !special26 && !special2b && !special53 && !special3e && !special77 && !special64 && !special7a) return false;
     if (r.type != 0x14u && r.type != 0x19u && r.type != 0x1eu && r.type != 0x1fu && r.type != 0x20u && r.type != 0x27u && r.type != 0x29u && r.type != 0x2bu && r.type != 0x2du && r.type != 0x2eu && r.type != 0x2fu && r.type != 0x31u && r.type != 0x3cu && r.type != 0x3eu && r.type != 0x22u &&
         r.type != 0x24u && r.type != 0x26u && r.type != 0x53u && r.type != 0x55u &&
-        r.type != 0x56u && r.type != 0x47u && r.type != 0x64u && r.type != 0x77u && r.type != 0x7au) return false;
+        r.type != 0x56u && r.type != 0x47u && r.type != 0x64u && r.type != 0x77u && r.type != 0x7au && r.type != 0x7bu) return false;
     if (r.payload.empty() || (r.type == 0x24u && r.payload.size() < 2u)) return false;
     auto* e = game.allocate_enemy();
     if (!e) return false;
@@ -1114,6 +1114,12 @@ bool instantiate_stage0_spawn(const Rom& rom, const SpawnRecord& r, GameState& g
             e->clear();return false;
         }
         e->set_x_fixed(0);e->set_y_fixed(0);e->raw[0x34]=0x80u;
+    } else if (r.type == 0x7bu) {
+        // Stage-6 boss, bank06 $B513. The final mode-3 scroll brings the
+        // common spawn position to the live $0700/$1400 entrance anchor;
+        // keep that anchor explicit so direct stage selection is identical.
+        e->set_x_fixed(0x0700u);e->set_y_fixed(0x1400u);
+        e->flags15()|=1u;
     } else if (r.type == 0x7au) {
         // Bank06 $A000: extended descriptor 02 08 02 3B. $6754 consumes
         // the position byte after the count and the handler creates seven
@@ -1130,7 +1136,7 @@ bool instantiate_stage0_spawn(const Rom& rom, const SpawnRecord& r, GameState& g
     }
     // Type $64 must enter bank06:$A300 (state 0). Starting it at state 1
     // skips the ROM initializer that positions the tower at X=$2800/Y=$0C00.
-    e->state() = (r.type == 0x14u || r.type == 0x64u || r.type==0x47u || r.type==0x2du || r.type==0x2eu || r.type==0x31u || r.type==0x3eu || r.type==0x53u || r.type==0x77u || r.type==0x7au) ? 0u : 1u;
+    e->state() = (r.type == 0x14u || r.type == 0x64u || r.type==0x47u || r.type==0x2du || r.type==0x2eu || r.type==0x31u || r.type==0x3eu || r.type==0x53u || r.type==0x77u || r.type==0x7au || r.type==0x7bu) ? 0u : 1u;
     return true;
 }
 }

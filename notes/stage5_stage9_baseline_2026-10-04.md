@@ -55,6 +55,17 @@ independent ring anchors from `$B39A` through `$B765` match byte-for-byte.
 The base route ends at `$B769`, trigger `$5034`, world X=`$0938`,
 Y=`$0468`.
 
+The stage-6 boss is now restored from bank06 `$B513-$B66F`. Type `$7B` carries
+`$A0` HP and enters at `$0700/$1400`; its seven-state 15-Hz controller opens in
+two five-tick steps, launches the original type-`$0D` beam sequence, closes and
+returns to the 30-tick wait. `$0D` uses the traced `$FF80` vertical vector and
+is limited to one live beam exactly as `$B638` does. ROM SFX `$2E/$2F` for the
+open/close phases are exported as `stage6_open.wav`/`stage6_close.wav`; launch
+uses the existing ROM `$17` clip. Fatal damage clears the live beam, runs the
+shared `$6A` destruction countdown and advances to stage 7. The two separate
+stage-end `$7C` scene controllers remain a later environment/controller port;
+they are not children of `$7B`.
+
 ## Stages 7–9
 
 Their base scenery streams are enabled and independently checked against the
@@ -86,7 +97,9 @@ indices can construct a `PlaySession`, step at 60 Hz and render a frame.
 `space-manbow-stage45-boss-test` also locks the stage-5 `$77` metadata and
 extended descriptor, all twelve original `$76` pool records (positions, frames
 and parent links), armour-to-core vulnerability handoff, linked cleanup and the
-stage-5 to stage-6 transition.
+stage-5 to stage-6 transition. `space-manbow-stage6-boss-test` locks the `$7B`
+metadata/entrance, 30/5/20-tick state cadence, type-`$0D` relative launch and
+`$FF80` motion vector, boss SFX, fatal cleanup and the stage-6 to stage-7 handoff.
 
 The next work for these stages is the remaining regular object/enemy/controller
-restoration, not basic stage loading, scenery decoding or the stage-5 boss.
+restoration, not basic stage loading, scenery decoding or the stage-5/6 bosses.

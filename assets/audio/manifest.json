@@ -225,6 +225,20 @@
       "channels": 1,
       "seconds": 1.9969160997732427,
       "sha256": "1a236f65418c5bde0f51dfc13d4c86266fbc2d27a71c43c6cfd255fa1e820741"
+    },
+    {
+      "name": "stage6_open",
+      "rate": 44100,
+      "channels": 1,
+      "seconds": 1.9969160997732427,
+      "sha256": "9499f382a92e28b9b9a8e4524d83ee4d20909da3d93a0ab6b8fae4b5a62349ea"
+    },
+    {
+      "name": "stage6_close",
+      "rate": 44100,
+      "channels": 1,
+      "seconds": 1.9969160997732427,
+      "sha256": "652a460c3f16c4b67dafca39674d0686aabc90c5f9dbaa935f76a703c38cb581"
     }
   ]
 }

@@ -22,9 +22,10 @@ ROM-stream baselines (including stage 4's vertical mode-6 section). Stage 3's
 including linked/attack scheduling and death/next-stage flow. Other new enemy
 families remain unported; see `notes/stage3_stage4_baseline_2026-10-04.md`.
 Stages 5–9 are likewise directly selectable with ROM-stream baselines; stage 5's
-`$77/$76/$5C` boss tree is restored and stage 6 includes its original diagonal
-mode-5 and mode-3 scenery paths. Other stage-specific enemies/controllers remain
-future ROM-traced ports; see `notes/stage5_stage9_baseline_2026-10-04.md`.
+`$77/$76/$5C` boss tree and stage 6's `$7B/$0D` boss cycle are restored, and
+stage 6 includes its original diagonal mode-5 and mode-3 scenery paths. Other
+stage-specific enemies/controllers remain future ROM-traced ports; see
+`notes/stage5_stage9_baseline_2026-10-04.md`.
 Cmd-T on macOS / Ctrl-T on Windows or Linux toggles 500% turbo, including audio.
 Page Up pauses and rewinds 100 simulation frames (clamped at the start).
 Page Down pauses and advances 100 frames, replaying recorded input where available;

@@ -299,7 +299,7 @@ void Stage0Enemies::move_60hz(GameState& game,unsigned frame) {
             if(--e.raw[0x3e]==0) e.clear();
             continue;
         }
-        if(e.active() && (flight(e.type()) || e.type()==0x16u || e.type()==0x19u || e.type()==0x1eu || e.type()==0x11u || e.type()==0x27u || e.type()==0x2au || e.type()==0x2cu || e.type()==0x2du || e.type()==0x2fu || e.type()==0x31u || e.type()==0x58u || e.type()==0x5cu || e.type()==0x68u || e.type()==0x70u || e.type()==0x40u)) {
+        if(e.active() && (flight(e.type()) || e.type()==0x16u || e.type()==0x19u || e.type()==0x1eu || e.type()==0x11u || e.type()==0x27u || e.type()==0x2au || e.type()==0x2cu || e.type()==0x2du || e.type()==0x2fu || e.type()==0x31u || e.type()==0x58u || e.type()==0x5cu || e.type()==0x68u || e.type()==0x70u || e.type()==0x40u || e.type()==0x0du)) {
         const int divisor=e.type()==0x40u?3:4,phase=int(frame%unsigned(divisor));
         auto delta=[&](int v){return v*(phase+1)/divisor-v*phase/divisor;};
         e.set_x_fixed(std::uint16_t(e.x_fixed()+delta(signed_word(e,13))));
@@ -653,7 +653,71 @@ void Stage0Enemies::step_15hz(const Rom& rom,GameState& game,unsigned tick,std::
     static constexpr std::array<std::uint8_t,16> k26Delay{
         2,3,4,4,5,5,6,6,7,7,8,9,10,11,12,13}; // bank06 $BF04
     for(auto& e:game.enemies) if(e.active()) {
-        if(e.type()==0x56u) {
+        if(e.type()==0x7bu) {
+            // Bank06 $B513-$B66F: Stage-6 boss. The final vertical scenery
+            // scroll supplies its entrance motion; the handler itself owns the
+            // seven-state open/fire/close cycle. +22 is the opening phase and
+            // +21 counts the repeated type-$0D beam launches.
+            auto spawn_beam=[&] {
+                if(std::any_of(game.enemies.begin(),game.enemies.end(),
+                               [](const auto& q){return q.type()==0x0du;})) return;
+                if(auto* c=create(rom,game,0x0du)) {
+                    c->set_x_fixed(std::uint16_t(e.x_fixed()+0x0800u));
+                    c->set_y_fixed(std::uint16_t(e.y_fixed()+0x0200u));
+                    put(*c,11,-0x0080);put(*c,13,0);
+                    c->state()=0u;
+                    if(sounds) sounds->push_back(PlaySound::HatchShot); // ROM SFX $17
+                }
+            };
+            // $B51B: once HP falls below $10 the original forces HP to zero
+            // and queues one last damage unit so the ordinary $7CC3 death path
+            // takes over on the following damage service.
+            if(e.state()!=0u && e.raw[0x16]<0x10u) {
+                e.raw[0x16]=0u;
+                if(!e.raw[0x04]) e.raw[0x04]=1u;
+            }
+            if(e.state()==0u) {
+                e.raw[0x18]=0x1eu;e.raw[0x17]=0u;
+                e.raw[0x21]=0u;e.raw[0x22]=0u;
+                e.flags15()|=1u;e.state()=1u;
+            } else if(e.state()==1u) {
+                if(e.raw[0x18] && --e.raw[0x18]==0u) {
+                    e.raw[0x17]=5u;e.state()=2u;
+                }
+            } else if(e.state()==2u) {
+                if(e.raw[0x17] && --e.raw[0x17]==0u) {
+                    e.raw[0x17]=5u;
+                    if(e.raw[0x22]==0u && sounds) sounds->push_back(PlaySound::Stage6Open); // ROM $2E
+                    ++e.raw[0x22];
+                    if(e.raw[0x22]>=2u) e.state()=3u;
+                }
+            } else if(e.state()==3u) {
+                if(e.raw[0x17] && --e.raw[0x17]==0u) {
+                    spawn_beam();e.raw[0x17]=0x14u;
+                    if(++e.raw[0x21]>=4u) e.state()=4u;
+                }
+            } else if(e.state()==4u) {
+                if(e.raw[0x17] && --e.raw[0x17]==0u) {
+                    spawn_beam();e.raw[0x17]=5u;e.state()=5u;
+                }
+            } else if(e.state()==5u) {
+                if(e.raw[0x17] && --e.raw[0x17]==0u) {
+                    spawn_beam();e.raw[0x17]=5u;
+                    if(e.raw[0x21] && --e.raw[0x21]==0u) e.state()=6u;
+                }
+            } else if(e.state()==6u) {
+                if(e.raw[0x17] && --e.raw[0x17]==0u) {
+                    e.raw[0x17]=5u;
+                    if(e.raw[0x22]==2u && sounds) sounds->push_back(PlaySound::Stage6Close); // ROM $2F
+                    if(e.raw[0x22]) --e.raw[0x22];
+                    if(!e.raw[0x22]) {e.state()=1u;e.raw[0x18]=0x1eu;}
+                }
+            }
+            // $B5FD/$B60C draws the animated centre layer with +05, then
+            // restores the outer selector from +22 before returning.
+            if(e.raw[0x21]) e.raw[0x05]=std::uint8_t((e.raw[0x05]+1u)&7u);
+            e.raw[0x06]=e.raw[0x22];
+        } else if(e.type()==0x56u) {
             e.raw[0x3c]&=1u; // native mirror of CE48: clear the transient white bit
             // Bank06 $BF14-$BFB7: the large vertical tower is a boss-like
             // object with its own damage/death continuation. It must not be
