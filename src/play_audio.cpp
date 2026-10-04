@@ -12,6 +12,13 @@ PlayAudio::PlayAudio(const std::filesystem::path& directory) {
     try {
         stage_music_[0]=load(directory/"stage0.wav");
         stage_music_[1]=load(directory/"stage1.wav");
+        // Stage 3/4 gameplay can already be selected before their native
+        // music exports exist. Keep those slots explicit and silent instead
+        // of accidentally continuing the previous stage's track.
+        for(unsigned stage=2;stage<stage_music_.size();++stage) {
+            const auto path=directory/("stage"+std::to_string(stage)+".wav");
+            if(std::filesystem::exists(path)) stage_music_[stage]=load(path);
+        }
         boss_music_=load(directory/"boss.wav");
         music_=stage_music_[0];
         unsigned index=0;
@@ -43,7 +50,7 @@ void PlayAudio::set_stage(unsigned stage) {
     if(stage>=stage_music_.size()) return;
     SDL_LockAudioDevice(device_);
     current_stage_=stage;boss_music_active_=false;
-    music_=stage_music_[stage];music_position_=0;voices_={};music_playing_=true;
+    music_=stage_music_[stage];music_position_=0;voices_={};music_playing_=!music_.empty();
     SDL_UnlockAudioDevice(device_);
 }
 void PlayAudio::set_boss_music(bool active) {
@@ -57,7 +64,7 @@ void PlayAudio::set_boss_music(bool active) {
 }
 void PlayAudio::seek(double seconds) {
     SDL_LockAudioDevice(device_);
-    music_position_=std::size_t(std::max(0.0,seconds)*format_.freq)%music_.size();
+    music_position_=music_.empty()?0u:std::size_t(std::max(0.0,seconds)*format_.freq)%music_.size();
     voices_={};SDL_UnlockAudioDevice(device_);
 }
 void PlayAudio::play(PlaySound sound) {
@@ -80,8 +87,9 @@ void PlayAudio::callback(void* self, Uint8* output, int bytes) {
     auto& audio=*static_cast<PlayAudio*>(self);
     auto* samples=reinterpret_cast<Sint16*>(output);
     for(int i=0;i<bytes/int(sizeof(Sint16));++i) {
-        int mixed=audio.music_playing_?audio.music_[audio.music_position_]:0;
-        if(audio.music_playing_) audio.music_position_=(audio.music_position_+audio.speed_)%audio.music_.size();
+        const bool have_music=audio.music_playing_ && !audio.music_.empty();
+        int mixed=have_music?audio.music_[audio.music_position_]:0;
+        if(have_music) audio.music_position_=(audio.music_position_+audio.speed_)%audio.music_.size();
         for(auto& voice:audio.voices_) if(voice.active) {
             if(voice.clip>=audio.effects_.size()) {voice.active=false;continue;}
             const auto& clip=audio.effects_[voice.clip];

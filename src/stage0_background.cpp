@@ -591,6 +591,16 @@ void Stage0BackgroundStream::stream_phase() {
             write_horizontal(source_, kColOffset[yphase], -1, kRowPhase[yphase]);
             advance = 15; break;
         }
+        case 6: {
+            // Bank09 $7ECE->$7EFC. Stage 4 switches to a pure upward
+            // streamer at X=$03F8: eight metatiles (32 tiles) are written
+            // into the row immediately above the viewport. The source advances
+            // by eight bytes after the four C0DA phases. $7F04-$7F0C selects
+            // definition phases 12,0,4,8 for Y coarse phases 0..3.
+            static constexpr unsigned kRowPhase[4] = {12,0,4,8};
+            write_horizontal(source_,0,-1,kRowPhase[yphase],8);
+            advance=8;break;
+        }
         default: break;
         }
 

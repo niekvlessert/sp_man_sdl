@@ -2,7 +2,7 @@
 
 ## Controls
 
-Cmd-2 (macOS) / Ctrl-2 (Windows/Linux) starts stage 2, using stage index 1.
+Cmd-2/3/4 (macOS) / Ctrl-2/3/4 (Windows/Linux) starts stages 2/3/4, using stage indices 1/2/3.
 Cmd/Ctrl-1 returns to stage 1. Restart and decile jumps preserve the selected
 stage. 0 resets it with no upgrades; 1–9 retain the previous maximum-loadout
 convenience and replay to 10–90% of that stage's route. W toggles all reusable

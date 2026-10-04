@@ -453,7 +453,7 @@ PlaySession::PlaySession(const Rom& rom)
     reset();
 }
 void PlaySession::reset(unsigned stage) {
-    if(stage>1) throw std::invalid_argument("available stage index must be 0 or 1");
+    if(stage>3) throw std::invalid_argument("available stage index must be 0..3");
     bomb_palette_bias_=0;bomb_palette_ticks_=0;
     stage_index_=0;stage_start_frame_=0;previous_gate_actors_={};music_playing_=true;
     sound_events_.clear();
@@ -480,7 +480,11 @@ void PlaySession::reset(unsigned stage) {
     game_.player.raw[0x13]=3; game_.player.raw[0x14]=0x83; game_.player.raw[0x18]=15;
     player_history_.fill(game_.player);
     level_frames_=0;
-    if(stage) begin_next_stage();
+    // Initialize the requested ROM stage, not merely "a nonzero stage".
+    // The old boolean shortcut always called begin_next_stage() once, so
+    // reset(2)/reset(3) silently landed in stage 2. Reuse the normal handoff
+    // path repeatedly to keep graphics, stream, spawn and palette setup shared.
+    for(unsigned s=0;s<stage;++s) begin_next_stage();
 }
 void PlaySession::set_test_loadout(bool maximum) noexcept {
     if(maximum) combat_.set_max_test_loadout();
