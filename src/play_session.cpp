@@ -6,6 +6,11 @@ namespace sm {
 namespace {
 constexpr unsigned kInitialCameraPixels=31*8; // ROM preloads 31 tile columns.
 constexpr std::uint32_t kCarrierBackdrop=0xff000001u; // distinct from every 3-bit ROM palette color
+constexpr std::array<std::uint32_t,16> kStage3BossPalette{
+    0xff000000u,0xff004949u,0xff006d6du,0xff009292u,
+    0xff00b6b6u,0xffb69249u,0xffff0000u,0xff2424ffu,
+    0xff9292b6u,0xff920000u,0xffffff00u,0xff926d24u,
+    0xff6d4900u,0xff6d6d6du,0xffffffffu,0xff000000u};
 std::uint32_t stage_scene_palette9(unsigned phase) noexcept {
     // Fixed $6188 table selected by CE61=1: VDP palette index 9 receives
     // red levels 0,1,2,3,4,5,4,3,2,1, with green/blue zero.
@@ -243,7 +248,7 @@ void draw_tile_actor(const Rom& rom,const Screen4Snapshot& video,const Entity64&
     if(pickup_only) { if(e.type()!=3) return; }
     else if(e.type()==0x64u && e.state()==0u) return;
     else if(e.type()!=0x1eu && e.type()!=0x1fu && e.type()!=0x20u && e.type()!=0x29u && e.type()!=0x22u && e.type()!=0x2eu && e.type()!=0x24u && e.type()!=0x26u &&
-            e.type()!=0x55u && e.type()!=0x47u && e.type()!=0x56u && e.type()!=0x64u && e.type()!=0x6au && e.type()!=0x6bu && e.type()!=0x3du) return;
+            e.type()!=0x3eu && e.type()!=0x3fu && e.type()!=0x55u && e.type()!=0x47u && e.type()!=0x56u && e.type()!=0x64u && e.type()!=0x6au && e.type()!=0x6bu && e.type()!=0x3du) return;
     // Do not cull large cannon tile actors by anchor position. Their matrix can
     // still overlap the left edge after the anchor itself has crossed x=0;
     // per-tile clipping below keeps the visible half on screen, matching the ROM.
@@ -867,6 +872,14 @@ void PlaySession::step_60hz(PlayerInput input) {
             // $6A explosion selectors and emitting stray Hit/Explosion sounds.
             if(original.type()==0x64u)
                 for(auto& child:game_.enemies) if(&child!=&enemy && child.type()==0x40u) child.clear();
+            if(original.type()==0x3eu) {
+                // Stage-3 boss death ($7CC3 -> type $6A) invalidates all
+                // three linked $3F tile actors immediately. Their +34 bytes
+                // contain the parent's original pool id.
+                for(auto& child:game_.enemies)
+                    if(&child!=&enemy && child.type()==0x3fu && child.raw[0x34]==original.raw[0x2d])
+                        child.clear();
+            }
             if(original.type()==0x7au) {
                 // Original boss death raises CE52. The seven linked $3B
                 // segments disappear and each final-sector $3C receives the
@@ -922,16 +935,27 @@ void PlaySession::step_60hz(PlayerInput input) {
     auto collide=[&](Entity64& shot) {
         if(!shot.active() || shot.type()==8u) return;
         for(auto& enemy:game_.enemies) {
+            // The stage-3 $3E parent is an invisible controller. Its linked
+            // $3F pieces are the actual hit geometry, and only attack family
+            // 2 with a nonzero extension phase exposes the weak point.
+            if(enemy.type()==0x3eu) continue;
+            const bool stage3_weak=enemy.type()==0x3fu && enemy.raw[0x23]==2u && enemy.raw[0x24]!=0u;
             auto target=enemy;
             auto visible_shot=shot;
             if(camera_pixels()>=1536u && shot.type()!=7u &&
                enemy.type()!=0x10u && enemy.type()!=0x12u && enemy.type()!=0x15u && enemy.type()!=0x18u)
                 visible_shot.set_y_fixed(std::uint16_t(shot.y_fixed()-(background_.mode()==4u?7u:8u)*32u));
-            if(!(enemy.raw[0x14]&128u) || !stage0_sprite_overlap(rom_,visible_shot,target)) continue;
+            if((!stage3_weak && !(enemy.raw[0x14]&128u)) ||
+               !stage0_sprite_overlap(rom_,visible_shot,target)) continue;
             // $76A9 stores one pending hit; simultaneous W components do not
             // subtract HP independently. Type 4 supplies +06, M/type7 supplies 2.
             const auto amount=std::uint8_t(shot.type()==4u?shot.raw[6]:2u);
-            enemy.raw[4]=amount;
+            if(stage3_weak) {
+                for(auto& parent:game_.enemies)
+                    if(parent.type()==0x3eu && parent.raw[0x2d]==enemy.raw[0x34]) {
+                        parent.raw[4]=amount;break;
+                    }
+            } else enemy.raw[4]=amount;
             shot.clear();break;
         }
     };
@@ -1031,7 +1055,7 @@ void PlaySession::step_60hz(PlayerInput input) {
     // final tick. Stage 2's $7A boss uses the same replacement/death path as
     // the stage-1 gate boss, so do not artificially restrict completion to
     // stage index 0.
-    if(stage_index_<=1u && enemies_.stage_complete()) begin_next_stage();
+    if(stage_index_<=2u && enemies_.stage_complete()) begin_next_stage();
 
 }
 void PlaySession::begin_next_stage() {
@@ -1282,8 +1306,11 @@ std::vector<std::uint32_t> PlaySession::render() {
         }
     }
     const unsigned presented_palette_set=unsigned(background_.palette_set());
-    const auto& palette=presented_palette_set>=2u ? video_.tower_palette :
-        (presented_palette_set==1u ? video_.late_palette : video_.palette);
+    const bool stage3_boss_palette=stage_index_==2u && std::any_of(game_.enemies.begin(),game_.enemies.end(),
+        [](const auto& e){return e.type()==0x3eu || e.type()==0x3fu;});
+    const auto& palette=stage3_boss_palette ? kStage3BossPalette :
+        (presented_palette_set>=2u ? video_.tower_palette :
+        (presented_palette_set==1u ? video_.late_palette : video_.palette));
     {
         unsigned pattern_base=0,color_base=0x2000;
         unsigned overlay_set=unsigned(background_.graphics_set());
@@ -1339,7 +1366,14 @@ std::vector<std::uint32_t> PlaySession::render() {
                 t24_phase=int(stage0_t24_phase(source,std::uint8_t(ca3b),
                     std::uint8_t(background_.ca1c())));
             }
-            draw_vehicle_tile_actor(rom_,video_,e,pixels,palette,pattern_base,color_base,
+            // Stage-3 boss mode 7 switches the VDP to R4=$0B/R10=$01
+            // while its linked $3F matrices are drawn. The background stream
+            // remains at graphics-set 0 at the gate, so use the boss's real
+            // graphics page explicitly for these actors.
+            const bool stage3_boss_tiles=e.type()==0x3eu || e.type()==0x3fu;
+            const unsigned actor_pattern_base=stage3_boss_tiles?background_.pattern_base(1):pattern_base;
+            const unsigned actor_color_base=stage3_boss_tiles?background_.color_base(1):color_base;
+            draw_vehicle_tile_actor(rom_,video_,e,pixels,palette,actor_pattern_base,actor_color_base,
                 tile_screen_y_bias,overlay_start_row,overlay_fine_y,t24_phase);
         }
         for(const auto& source:game_.enemies) {

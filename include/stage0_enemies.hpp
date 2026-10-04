@@ -14,7 +14,7 @@ class Stage0Enemies {
 public:
     using TerrainProbe=std::function<std::uint8_t(const Entity64&,int,int)>;
     using TileProbe=std::function<std::uint8_t(const Entity64&,int,int)>;
-    void reset() noexcept { waves_={};stage_complete_=false; }
+    void reset() noexcept { waves_={};stage_complete_=false;stage3_parent_prev_x_={};stage3_parent_prev_y_={}; }
     void clear_waves() noexcept { waves_={}; }
     bool spawn(const Rom& rom, const SpawnRecord& record, GameState& game,
                std::uint8_t direction=1);
@@ -36,5 +36,10 @@ private:
         unsigned alive=0,killed=0;
     };
     std::array<Wave,16> waves_{};
+    // The original object scheduler visits linked $3F children before their
+    // $3E parent. The native array walks forward, so retain the parent's
+    // pre-update anchor to reproduce that one-object-tick linkage lag.
+    std::array<std::uint16_t,20> stage3_parent_prev_x_{};
+    std::array<std::uint16_t,20> stage3_parent_prev_y_{};
 };
 }

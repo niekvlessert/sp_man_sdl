@@ -557,6 +557,61 @@ std::vector<Stage0TileVisual> decode_stage0_tile_visuals(const Rom& rom,
         return out;
     }
 
+    if (entity.type() == 0x3eu) {
+        // Stage-3 boss shell, bank06 $A647->$7B65 with DE=$A7C3.
+        // +06 selects one of eight packed placement lists. Each list stamps
+        // the fixed shell matrices 0/1 plus one animated matrix 2..9, which
+        // is why rendering only the linked $3F weak-point actors produced the
+        // three detached orange shapes without the turquoise body.
+        const auto bank6=rom.bank(6);
+        const unsigned frame=std::min<unsigned>(entity.raw[0x06],7u);
+        const unsigned table=0xa7c3u-0xa000u;
+        if(table+frame*2u+1u>=bank6.size()) return out;
+        const auto list_cpu=le16(bank6,table+frame*2u);
+        if(list_cpu<0xa000u || list_cpu>=0xc000u) return out;
+        unsigned p=unsigned(list_cpu-0xa000u);
+        if(p>=bank6.size()) return out;
+        const unsigned packed_len=bank6[p++];
+        if(packed_len<2u || p+packed_len-1u>bank6.size()) return out;
+        const unsigned end=p+packed_len-1u;
+        int place_y=0,place_x=0;bool need_position=true;
+        while(p<end) {
+            if(need_position) {
+                if(p+2u>end) break;
+                place_y=int(static_cast<std::int8_t>(bank6[p++]));
+                place_x=int(static_cast<std::int8_t>(bank6[p++]));
+                need_position=false;
+            }
+            if(p>=end) break;
+            const auto control=bank6[p++];
+            if(control==0xffu) break;
+            if(control==0xfeu) {need_position=true;continue;}
+            const unsigned count=control;
+            if(p+count>end) break;
+            for(unsigned i=0;i<count;++i) {
+                Stage0TileVisual v;
+                if(decode_stage0_tile_frame(rom,entity,bank6[p++],v)) {
+                    v.x+=place_x*8;v.y+=place_y*8;
+                    v.tile_x_offset+=place_x;v.tile_y_offset+=place_y;
+                    out.push_back(std::move(v));
+                }
+            }
+        }
+        return out;
+    }
+
+    if (entity.type() == 0x3fu) {
+        // Stage-3 boss body, bank06 $A95D. Unlike ordinary tile actors,
+        // visibility is controlled by bits 6/4 in +15; bit 1 is not the
+        // ownership flag used by the generic $7B65 path. +06 is the exact
+        // matrix selector produced by the 24-byte $A9E2 visual table.
+        if((entity.flags15()&0x50u)!=0x50u) return out;
+        Stage0TileVisual v;
+        if(decode_stage0_tile_frame(rom,entity,entity.raw[0x06],v))
+            out.push_back(std::move(v));
+        return out;
+    }
+
     if (entity.type() == 0x56u) {
         // Type $56 uses the custom $BF29->$7B65 renderer.  $BFC0 is a
         // five-entry frame-pointer table indexed by object byte +06. Each
@@ -829,13 +884,14 @@ bool instantiate_stage0_spawn(const Rom& rom, const SpawnRecord& r, GameState& g
     const bool special26 = r.type == 0x26u && r.control_flag();
     const bool special2b = r.type == 0x2bu && r.control_flag();
     const bool special53 = r.type == 0x53u && r.control_flag();
+    const bool special3e = r.type == 0x3eu && r.control_flag();
     const bool special7a = r.type == 0x7au && r.control_flag();
     // The final stage-0 tower is also an extended record: trigger $5000,
     // control $88. Rejecting every flagged record except $26 silently dropped
     // type $64 from real gameplay, leaving only the scenery copy visible.
     const bool special64 = r.type == 0x64u && r.control_flag();
-    if (r.control_flag() && !special26 && !special2b && !special53 && !special64 && !special7a) return false;
-    if (r.type != 0x19u && r.type != 0x1eu && r.type != 0x1fu && r.type != 0x20u && r.type != 0x27u && r.type != 0x29u && r.type != 0x2bu && r.type != 0x2du && r.type != 0x2eu && r.type != 0x2fu && r.type != 0x31u && r.type != 0x3cu && r.type != 0x22u &&
+    if (r.control_flag() && !special26 && !special2b && !special53 && !special3e && !special64 && !special7a) return false;
+    if (r.type != 0x19u && r.type != 0x1eu && r.type != 0x1fu && r.type != 0x20u && r.type != 0x27u && r.type != 0x29u && r.type != 0x2bu && r.type != 0x2du && r.type != 0x2eu && r.type != 0x2fu && r.type != 0x31u && r.type != 0x3cu && r.type != 0x3eu && r.type != 0x22u &&
         r.type != 0x24u && r.type != 0x26u && r.type != 0x53u && r.type != 0x55u &&
         r.type != 0x56u && r.type != 0x47u && r.type != 0x64u && r.type != 0x7au) return false;
     if (r.payload.empty() || (r.type == 0x24u && r.payload.size() < 2u)) return false;
@@ -940,6 +996,13 @@ bool instantiate_stage0_spawn(const Rom& rom, const SpawnRecord& r, GameState& g
         e->raw[0x03]=r.payload[1];e->raw[0x05]=r.payload[1]&1u;
         e->raw[0x0b]=0x60u;e->raw[0x0c]=0xffu;
         e->raw[0x0d]=0u;e->raw[0x0e]=0u;
+    } else if(r.type==0x3eu) {
+        // Stage-3 boss controller, bank06 $A647. The extended record at
+        // trigger $2000 is `3E 86 02 FF`; its inline bytes are not a normal
+        // $6754 position. The handler installs the fixed entrance anchor and
+        // creates three linked type-$3F tile actors on its first logic tick.
+        e->set_x_fixed(0x1f00u);e->set_y_fixed(0x0100u);
+        e->raw[0x18]=0x14u;e->raw[0x34]=0x80u;e->raw[0x3f]=1u;
     } else if(r.type==0x3cu) {
         // Bank06 $A2B1: common $6754 position, then one extra selector byte
         // becomes the tile-frame/controller selector at +06.
@@ -1009,7 +1072,7 @@ bool instantiate_stage0_spawn(const Rom& rom, const SpawnRecord& r, GameState& g
     }
     // Type $64 must enter bank06:$A300 (state 0). Starting it at state 1
     // skips the ROM initializer that positions the tower at X=$2800/Y=$0C00.
-    e->state() = (r.type == 0x64u || r.type==0x47u || r.type==0x2du || r.type==0x2eu || r.type==0x31u || r.type==0x53u || r.type==0x7au) ? 0u : 1u;
+    e->state() = (r.type == 0x64u || r.type==0x47u || r.type==0x2du || r.type==0x2eu || r.type==0x31u || r.type==0x3eu || r.type==0x53u || r.type==0x7au) ? 0u : 1u;
     return true;
 }
 }

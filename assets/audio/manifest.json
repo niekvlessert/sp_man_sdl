@@ -211,6 +211,20 @@
       "channels": 1,
       "seconds": 1.9969160997732427,
       "sha256": "a853c1dcc72b19f84238222fa910e20de458cb35f2be06393afffca2d8d07923"
+    },
+    {
+      "name": "stage3_arm_extend",
+      "rate": 44100,
+      "channels": 1,
+      "seconds": 1.9969160997732427,
+      "sha256": "fa4d779b2a5b1e91ae0cfb7ad64cf07783a8ae4c54ce30c50193075344b6db86"
+    },
+    {
+      "name": "stage3_arm_retract",
+      "rate": 44100,
+      "channels": 1,
+      "seconds": 1.9969160997732427,
+      "sha256": "1a236f65418c5bde0f51dfc13d4c86266fbc2d27a71c43c6cfd255fa1e820741"
     }
   ]
 }

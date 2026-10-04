@@ -17,9 +17,13 @@ The ROM spawn catalog contains 72 records:
 - `$1C` ×9, `$25` ×9, `$27` ×11, `$28` ×3, `$32` ×20
 - `$33` ×1, `$3E` ×1, `$51` ×16, `$5F` ×1, `$72` ×1
 
-Only previously implemented/shared families currently have behavior. The new
-stage-3-specific families/controllers are preserved in the decoded spawn stream
-for the next restoration pass rather than approximated with fake behavior.
+The stage-3 `$3E` boss is now implemented from bank06 `$A647-$AA14`. It owns
+three linked `$3F` tile actors, the original entrance/reversal timing, attack
+scheduler, exposed weak-point sequence, aimed/fan fire, `$2A/$2B` arm SFX,
+boss palette and the shared `$6A` death/next-stage path. A 150-tick OpenMSX
+object trace matches the native boss state byte-for-byte through the complete
+entrance and first reversal. The remaining stage-3-specific regular enemy and
+controller families are still intentionally left for later ROM-traced passes.
 
 ## Stage 4
 

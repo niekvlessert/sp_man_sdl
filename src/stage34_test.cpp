@@ -102,6 +102,96 @@ int main(int argc,char** argv) {
            c4[0x2d]==1u && c4[0x37]==1u && c4[0x38]==7u &&
            c4[0x39]==10u && c4[0x5f]==1u);
 
+    // Stage-3 boss: exact extended record plus bank06 $A647/$A850 state.
+    // The first live OpenMSX object pass is:
+    //   $3E @ X=$1F00,Y=$0100, HP=$78
+    //   three linked $3F actors at (+0,+6), (+0,+10), (-1,+14).
+    const auto boss_record=std::find_if(s3.records().begin(),s3.records().end(),
+        [](const auto& r){return r.type==0x3eu;});
+    assert(boss_record!=s3.records().end());
+    assert(boss_record->trigger==0x2000u && boss_record->control==0x86u);
+    assert(boss_record->payload.size()==2u && boss_record->payload[0]==2u &&
+           boss_record->payload[1]==0xffu);
+    const auto boss_meta=sm::decode_spawn_type_metadata(rom,0x3eu);
+    const auto arm_meta=sm::decode_spawn_type_metadata(rom,0x3fu);
+    assert((boss_meta.bytes==std::array<std::uint8_t,4>{3u,0x83u,4u,0x78u}));
+    assert((arm_meta.bytes==std::array<std::uint8_t,4>{6u,8u,0x14u,1u}));
+
+    sm::GameState boss_game;
+    sm::Stage0Enemies boss_logic;
+    std::vector<sm::PlaySound> boss_sounds;
+    assert(sm::instantiate_stage0_spawn(rom,*boss_record,boss_game,1u));
+    auto& boss=boss_game.enemies[0];
+    assert(boss.type()==0x3eu && boss.state()==0u);
+    boss_logic.step_15hz(rom,boss_game,0u,0u,false,&boss_sounds);
+    assert(boss.state()==1u && boss.x_fixed()==0x1f00u && boss.y_fixed()==0x0100u);
+    assert(boss.raw[0x16]==0x78u && boss.raw[0x18]==0x14u);
+    assert(boss.raw[0x20]==1u && boss.raw[0x17]==2u);
+    assert(boss.raw[0x37]==3u && boss.raw[0x3b]==3u && boss.raw[0x34]==0x80u);
+    std::array<sm::Entity64*,3> arms{};
+    for(auto& e:boss_game.enemies) if(e.type()==0x3fu && e.raw[0x03]>=1u && e.raw[0x03]<=3u)
+        arms[e.raw[0x03]-1u]=&e;
+    assert(arms[0] && arms[1] && arms[2]);
+    assert(arms[0]->x_fixed()==0x1f00u && arms[0]->y_fixed()==0x0700u && arms[0]->raw[0x06]==0x0au);
+    assert(arms[1]->x_fixed()==0x1f00u && arms[1]->y_fixed()==0x0b00u && arms[1]->raw[0x06]==0x0eu);
+    assert(arms[2]->x_fixed()==0x1e00u && arms[2]->y_fixed()==0x0f00u && arms[2]->raw[0x06]==0x11u);
+    for(unsigned i=0;i<3u;++i) {
+        assert(arms[i]->raw[0x34]==boss.raw[0x2d] && arms[i]->raw[0x38]==i+1u);
+        assert((arms[i]->flags15()&0x50u)==0x50u);
+        assert(!sm::decode_stage0_tile_visuals(rom,*arms[i]).empty());
+    }
+    const auto shell=sm::decode_stage0_tile_visuals(rom,boss);
+    assert(shell.size()==3u);
+    boss_logic.step_15hz(rom,boss_game,1u,0u,false,&boss_sounds);
+    assert(boss.x_fixed()==0x1ee0u); // previous-tick $FFE0 velocity
+
+    // Drive the linked arm through the real family-2 weak-point sequence.
+    // $A93E emits SFX $2A on phase 0->1; state 5 then pulses 2<->3 on CA02&3.
+    boss.state()=1u;boss.set_x_fixed(0x1f00u);boss.raw[0x21]=2u;boss.raw[0x22]=2u;
+    boss.raw[0x03]=1u;boss_sounds.clear();
+    arms[1]->state()=0u;arms[1]->raw[0x23]=1u;arms[1]->raw[0x24]=0u;
+    boss_logic.step_15hz(rom,boss_game,2u,0u,false,&boss_sounds);
+    assert(arms[1]->state()==2u && arms[1]->raw[0x17]==3u);
+    for(unsigned tick=3u;tick<=6u;++tick)
+        boss_logic.step_15hz(rom,boss_game,tick,0u,false,&boss_sounds);
+    assert(arms[1]->state()==5u && arms[1]->raw[0x24]==2u);
+    assert(std::count(boss_sounds.begin(),boss_sounds.end(),sm::PlaySound::Stage3ArmExtend)==1);
+    boss_logic.step_15hz(rom,boss_game,8u,0u,false,&boss_sounds);
+    assert(arms[1]->raw[0x24]==3u);
+    boss_logic.step_15hz(rom,boss_game,9u,0u,false,&boss_sounds);
+    boss_logic.step_15hz(rom,boss_game,10u,0u,false,&boss_sounds);
+    boss_logic.step_15hz(rom,boss_game,11u,0u,false,&boss_sounds);
+    boss_logic.step_15hz(rom,boss_game,12u,0u,false,&boss_sounds);
+    assert(arms[1]->raw[0x24]==2u);
+    arms[1]->state()=7u;arms[1]->raw[0x17]=1u;arms[1]->raw[0x24]=2u;
+    boss.raw[0x03]=1u;boss_sounds.clear();
+    boss_logic.step_15hz(rom,boss_game,13u,0u,false,&boss_sounds);
+    assert(arms[1]->raw[0x24]==1u);
+    assert(std::count(boss_sounds.begin(),boss_sounds.end(),sm::PlaySound::Stage3ArmRetract)==1);
+    boss_logic.step_15hz(rom,boss_game,14u,0u,false,&boss_sounds);
+    assert(arms[1]->state()==0u && arms[1]->raw[0x24]==0u && boss.raw[0x03]==0u);
+
+    // Full session route: stage 3 reaches the real boss, switches to boss
+    // music, and the shared $6A death countdown advances cleanly to stage 4.
+    sm::PlaySession boss_route(rom);boss_route.reset(2u);
+    sm::Entity64* live_boss=nullptr;
+    while(boss_route.stage_frame()<24000u && !live_boss) {
+        boss_route.step_60hz({});
+        auto& state=const_cast<sm::GameState&>(boss_route.state());
+        auto it=std::find_if(state.enemies.begin(),state.enemies.end(),
+            [](auto& e){return e.type()==0x3eu;});
+        if(it!=state.enemies.end()) live_boss=&*it;
+    }
+    assert(live_boss && boss_route.at_fight_gate() && boss_route.boss_music_active());
+    const unsigned death_frame=boss_route.frame();
+    live_boss->raw[0x14]|=0x80u;
+    assert(sm::apply_stage0_damage(rom,*live_boss,std::uint8_t(live_boss->raw[0x16]+1u))==
+           sm::Stage0DamageResult::Destroyed);
+    assert(live_boss->type()==0x6au && boss_route.boss_music_active());
+    while(boss_route.stage_index()==2u && boss_route.frame()-death_frame<400u)
+        boss_route.step_60hz({});
+    assert(boss_route.stage_index()==3u);
+
     // Public session/timeline entry points can now start stages 3 and 4
     // directly; this used to collapse every non-zero reset onto stage 2.
     sm::PlaySession p3(rom);p3.reset(2);assert(p3.stage_index()==2u);

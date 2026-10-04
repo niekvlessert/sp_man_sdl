@@ -190,7 +190,7 @@ bool stage0_sprite_overlap(const Rom& rom,const Entity64& a,const Entity64& b) {
     // the pixels the player actually sees. In particular type $56 is the
     // destructible 64x80 upper section of the large vertical tower. Collide
     // against the exact nonzero tile cells used by the native compositor.
-    if(b.type()==0x26u || b.type()==0x3cu || b.type()==0x56u || b.type()==0x64u || b.type()==0x6au || b.type()==0x7au) {
+    if(b.type()==0x26u || b.type()==0x3cu || b.type()==0x3fu || b.type()==0x56u || b.type()==0x64u || b.type()==0x6au || b.type()==0x7au) {
         for(const auto& v:decode_stage0_tile_visuals(rom,b))
             for(unsigned ty=0;ty<v.rows;++ty) for(unsigned tx=0;tx<v.cols;++tx) {
                 if(!v.tiles[ty*unsigned(v.cols)+tx]) continue;
@@ -656,6 +656,179 @@ void Stage0Enemies::step_15hz(const Rom& rom,GameState& game,unsigned tick,std::
                 // $564F waits for a solid landing point (+1,+2.75 cells).
                 if(terrain_probe && solid(0x0100,0x02c0)) {
                     put(e,11,0);put(e,15,0);set_patrol_velocity();set_base_frame();e.state()=1u;
+                }
+            }
+        } else if(e.type()==0x3eu) {
+            // Bank06 $A647-$A7C2: stage-3 boss controller. The handler writes
+            // the current tick's movement vector to C0DC/C0DE via $6C6D and
+            // the common object service applies it afterwards.
+            static constexpr std::array<std::uint8_t,8> anim_frame{0,1,2,3,4,5,6,7};
+            auto next_anim=[&] {
+                unsigned i=e.raw[0x20];if(i>=anim_frame.size()) i=0u;
+                e.raw[0x20]=std::uint8_t(i+1u);e.raw[0x17]=2u;e.raw[0x06]=anim_frame[i];
+            };
+            auto rotate_child=[&] {
+                auto a=std::uint8_t(e.raw[0x23]+1u);if(a>=3u) a=0u;
+                e.raw[0x23]=a;return a;
+            };
+            auto attack_controller=[&] {
+                switch(e.raw[0x02]) {
+                case 0:
+                    if(e.raw[0x18]) --e.raw[0x18];
+                    if(!e.raw[0x18]) ++e.raw[0x02];
+                    break;
+                case 1:
+                    e.raw[0x21]=0u;e.raw[0x22]=0u;
+                    if(!e.raw[0x03]) {++e.raw[0x02];e.raw[0x18]=0x0au;}
+                    break;
+                case 2:
+                    if(e.raw[0x18]) --e.raw[0x18];
+                    if(!e.raw[0x18]) {
+                        const auto a=rotate_child();e.raw[0x21]=std::uint8_t(a+1u);
+                        e.raw[0x22]=2u;e.raw[0x18]=5u;++e.raw[0x03];++e.raw[0x02];
+                    }
+                    break;
+                case 3:
+                    e.raw[0x21]=0u;e.raw[0x22]=0u;
+                    if(e.raw[0x18]) --e.raw[0x18];
+                    if(!e.raw[0x18]) {
+                        const auto a=rotate_child();e.raw[0x21]=std::uint8_t(a+1u);
+                        e.raw[0x22]=1u;e.raw[0x18]=std::uint8_t(1u+(rom_random(rom,game)&0x0fu));
+                        ++e.raw[0x03];++e.raw[0x02];
+                    }
+                    break;
+                default:
+                    e.raw[0x21]=0u;e.raw[0x22]=0u;
+                    if(e.raw[0x18]) --e.raw[0x18];
+                    if(!e.raw[0x18]) {
+                        rotate_child();const auto a=rotate_child();
+                        e.raw[0x21]=std::uint8_t(a+1u);e.raw[0x22]=1u;
+                        ++e.raw[0x03];e.raw[0x02]=1u;
+                    }
+                    break;
+                }
+            };
+            const unsigned parent_slot=e.raw[0x2d]?unsigned(e.raw[0x2d]-1u):0u;
+            if(parent_slot<stage3_parent_prev_x_.size()) {
+                // The linked $3F records are visited before their $3E parent
+                // in the original scheduler. Preserve this pre-update anchor
+                // so the forward native array reproduces that one-object-tick lag.
+                stage3_parent_prev_x_[parent_slot]=e.x_fixed();
+                stage3_parent_prev_y_[parent_slot]=e.y_fixed();
+            }
+            // $A64C -> $6A13 applies the PREVIOUS tick's motion vector before
+            // the state dispatch. The state handler below only installs the
+            // vector to be used on the next object tick.
+            if(e.state()!=0u) {
+                e.set_x_fixed(std::uint16_t(e.x_fixed()+signed_word(e,13)));
+                e.set_y_fixed(std::uint16_t(e.y_fixed()+signed_word(e,11)));
+            }
+            auto set_velocity=[&](int vx) {put(e,11,0);put(e,13,vx);};
+            if(e.state()==0u) {
+                e.set_x_fixed(0x1f00u);e.set_y_fixed(0x0100u);e.raw[0x18]=0x14u;
+                if(parent_slot<stage3_parent_prev_x_.size()) {
+                    stage3_parent_prev_x_[parent_slot]=e.x_fixed();
+                    stage3_parent_prev_y_[parent_slot]=e.y_fixed();
+                }
+                e.raw[0x37]=0u;
+                for(unsigned ordinal=1u;ordinal<=3u;++ordinal) if(auto* c=create(rom,game,0x3fu)) {
+                    c->raw[0x03]=std::uint8_t(ordinal);c->raw[0x23]=1u;
+                    c->raw[0x34]=e.raw[0x2d];c->raw[0x38]=std::uint8_t(ordinal);
+                    c->state()=0u;++e.raw[0x37];
+                }
+                e.raw[0x3b]=e.raw[0x37];e.raw[0x34]=0x80u;e.raw[0x3f]=1u;
+                next_anim();set_velocity(-0x20);e.state()=1u;
+            } else {
+                if(e.raw[0x17]>1u) --e.raw[0x17]; else next_anim();
+                if(e.state()==1u) {
+                    set_velocity(-0x20);
+                    if(e.raw[0x0a]<0x0eu) {
+                        e.state()=2u;set_velocity(0x40);attack_controller();
+                        if(e.raw[0x0a]>=0x15u) e.state()=3u;
+                    }
+                } else if(e.state()==2u) {
+                    set_velocity(0x40);attack_controller();
+                    if(e.raw[0x0a]>=0x15u) e.state()=3u;
+                } else {
+                    set_velocity(-0x40);attack_controller();
+                    if(e.raw[0x0a]<0x0au) e.state()=2u;
+                }
+            }
+        } else if(e.type()==0x3fu) {
+            // Bank06 $A850-$AA14: one of the three large stage-3 boss tile
+            // actors. +03 is its 1-based ordinal, +23 selects attack family
+            // 1 (fire) or 2 (open weak point), and +24 is the extension phase.
+            Entity64* parent=nullptr;
+            for(auto& p:game.enemies) if(p.type()==0x3eu && p.raw[0x2d]==e.raw[0x34]) {parent=&p;break;}
+            if(!parent) {e.clear();continue;}
+            const unsigned ordinal=std::clamp<unsigned>(e.raw[0x03],1u,3u);
+            static constexpr std::array<std::int8_t,3> ox{0,0,-1};
+            static constexpr std::array<std::uint8_t,3> oy{6,10,14};
+            // Original object scheduling visits these linked actors before
+            // their parent. Use the parent's pre-update anchor saved above.
+            const unsigned link=parent->raw[0x2d]?unsigned(parent->raw[0x2d]-1u):0u;
+            const auto px=link<stage3_parent_prev_x_.size() && stage3_parent_prev_x_[link]?
+                stage3_parent_prev_x_[link]:parent->x_fixed();
+            const auto py=link<stage3_parent_prev_y_.size() && stage3_parent_prev_y_[link]?
+                stage3_parent_prev_y_[link]:parent->y_fixed();
+            e.set_x_fixed(std::uint16_t(px+int(ox[ordinal-1])*0x0100));
+            e.set_y_fixed(std::uint16_t(py+unsigned(oy[ordinal-1])*0x0100u));
+            static constexpr std::array<std::uint8_t,24> visual{
+                0x0b,0x0c,0x0d,0x0d, 0x0f,0x10,0x11,0x11, 0x12,0x13,0x14,0x14,
+                0x0b,0x1c,0x18,0x19, 0x0f,0x17,0x15,0x16, 0x12,0x1d,0x1a,0x1b};
+            auto update_visual=[&] {
+                const unsigned family=std::clamp<unsigned>(e.raw[0x23],1u,2u)-1u;
+                const unsigned phase=std::min<unsigned>(e.raw[0x24],3u);
+                const auto v=visual[family*12u+(ordinal-1u)*4u+phase];
+                if(v) {e.raw[0x06]=std::uint8_t(v-1u);e.raw[0x15]|=0x50u;}
+                else e.raw[0x15]&=std::uint8_t(~0x50u);
+            };
+            if(e.raw[0x06]==0u && e.raw[0x24]==0u) update_visual();
+            auto extend=[&](std::uint8_t next_state,std::uint8_t timer) {
+                if(e.raw[0x17]) --e.raw[0x17];
+                if(e.raw[0x17]) return;
+                e.raw[0x17]=1u;
+                if(e.raw[0x24]==0u && sounds) sounds->push_back(PlaySound::Stage3ArmExtend);
+                if(e.raw[0x24]<3u) ++e.raw[0x24];
+                update_visual();
+                if(e.raw[0x24]==2u) {e.state()=next_state;e.raw[0x17]=timer;}
+            };
+            if(e.state()==0u) {
+                if(parent->raw[0x21]==ordinal && parent->raw[0x22]) {
+                    e.state()=parent->raw[0x22];e.raw[0x23]=parent->raw[0x22];
+                    e.raw[0x17]=3u;e.raw[0x04]=0u;
+                }
+            } else if(e.state()==1u) {
+                extend(4u,0x28u);
+            } else if(e.state()==2u) {
+                extend(5u,0x1eu);
+            } else if(e.state()==3u || e.state()==4u) {
+                if(e.raw[0x17]) --e.raw[0x17];
+                if(!e.raw[0x17]) {e.state()=7u;e.raw[0x17]=5u;}
+                else if(e.raw[0x17]==0x25u || e.raw[0x17]==0x12u) e.raw[0x26]|=1u;
+                else if(e.raw[0x17]==0x1cu) e.raw[0x26]|=3u;
+            } else if(e.state()==5u) {
+                // $A8F5: CA02&3 gates the exposed weak-point pulse. Once the
+                // arm reaches phase 3 it alternates 3,2,3,2; it does not stick
+                // at phase 3 for the rest of the 30-tick vulnerability window.
+                if((tick&3u)==0u) {
+                    auto phase=std::uint8_t(e.raw[0x24]+1u);
+                    if(phase>=4u) phase=2u;
+                    e.raw[0x24]=phase;update_visual();
+                }
+                if(e.raw[0x17]) --e.raw[0x17];
+                if(!e.raw[0x17]) {e.state()=7u;e.raw[0x17]=5u;}
+            } else {
+                if(e.raw[0x17]) --e.raw[0x17];
+                if(!e.raw[0x17]) {
+                    e.raw[0x17]=1u;
+                    if(e.raw[0x24]==2u && sounds) sounds->push_back(PlaySound::Stage3ArmRetract);
+                    if(e.raw[0x24]) --e.raw[0x24];
+                    update_visual();
+                    if(!e.raw[0x24]) {
+                        if(parent->raw[0x03]) --parent->raw[0x03];
+                        e.state()=0u;
+                    }
                 }
             }
         } else if(e.type()==0x7au) {

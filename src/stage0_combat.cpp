@@ -273,6 +273,22 @@ void Stage0Combat::step(const Rom& rom,GameState& game,unsigned frame,int dx,int
             if(action==1u || action==3u) shot=fire_fixed_pattern(rom,e,e.raw[0x22],lower,8)||shot;
             if(action==1u || action==2u) shot=fire_fixed_pattern(rom,e,e.raw[0x22],upper,-2)||shot;
         }
+        if(e.type()==0x3fu && e.raw[0x26]) {
+            // Stage-3 boss arm, bank06 $A8D2/$AA06. The wrapper at $A850
+            // halves CA19 while running the child handler. Timers $25/$12
+            // emit one aimed round; $1C emits the {15,0,1} three-way fan from
+            // X+2 cells and then the same aimed round.
+            const auto action=e.raw[0x26];e.raw[0x26]=0u;
+            const unsigned difficulty=game.difficulty>>1u;
+            if(action&2u) {
+                static constexpr std::array<std::uint8_t,3> fan{15u,0u,1u};
+                auto muzzle=e;
+                muzzle.set_x_fixed(std::uint16_t((e.x_fixed()&0xff00u)+0x0200u));
+                const auto speed=rom.bank(4)[0x11a8u+std::min<unsigned>(difficulty,15u)];
+                shot=fire_fixed_pattern(rom,muzzle,speed,fan,0)||shot;
+            }
+            if(action&1u) shot=fire(rom,e,game.player,difficulty)||shot;
+        }
         if(e.type()==0x19u && e.raw[0x26]) {
             // Fixed $5624 -> $7143: one standard aimed enemy round after the
             // four-tick pivot/fire countdown.

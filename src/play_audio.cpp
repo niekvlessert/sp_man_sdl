@@ -22,7 +22,7 @@ PlayAudio::PlayAudio(const std::filesystem::path& directory) {
         boss_music_=load(directory/"boss.wav");
         music_=stage_music_[0];
         unsigned index=0;
-        for(const auto name:{"shot","wave_shot","power_shot","explosion","hit","enemy_shot","pickup","powerup","option_mode","missile_launch","tower_explosion","turret_explosion","heavy_vehicle_explosion","large_cannon_explosion","boss_hit","platform_explosion","platform_burst","platform_rumble","cannon_shot","claw_close","claw_open","terrain_hit","terrain_break","bomb_expand","bomb_blast","carrier_launch","hatch_shot"})
+        for(const auto name:{"shot","wave_shot","power_shot","explosion","hit","enemy_shot","pickup","powerup","option_mode","missile_launch","tower_explosion","turret_explosion","heavy_vehicle_explosion","large_cannon_explosion","boss_hit","platform_explosion","platform_burst","platform_rumble","cannon_shot","claw_close","claw_open","terrain_hit","terrain_break","bomb_expand","bomb_blast","carrier_launch","hatch_shot","stage3_arm_extend","stage3_arm_retract"})
             effects_[index++]=load(directory/(std::string(name)+".wav"));
     } catch(...) {SDL_CloseAudioDevice(device_);device_=0;throw;}
     SDL_PauseAudioDevice(device_,0);
