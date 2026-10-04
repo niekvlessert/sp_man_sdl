@@ -65,6 +65,9 @@ public:
         if(stage_index_==5u)
             return std::any_of(game_.enemies.begin(),game_.enemies.end(),
                                [](const auto& e){return e.type()==0x7bu || e.type()==0x6au;});
+        if(stage_index_==6u)
+            return std::any_of(game_.enemies.begin(),game_.enemies.end(),
+                               [](const auto& e){return e.type()==0x43u;});
         return false;
     }
     unsigned camera_pixels() const noexcept { return camera_half_pixels_ / 2; }

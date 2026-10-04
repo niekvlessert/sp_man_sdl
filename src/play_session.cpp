@@ -11,6 +11,17 @@ constexpr std::array<std::uint32_t,16> kStage3BossPalette{
     0xff00b6b6u,0xffb69249u,0xffff0000u,0xff2424ffu,
     0xff9292b6u,0xff920000u,0xffffff00u,0xff926d24u,
     0xff6d4900u,0xff6d6d6du,0xffffffffu,0xff000000u};
+std::uint32_t stage7_weak_palette(unsigned phase) noexcept {
+    // Mapped bank02:$8F74, consumed by $8F5F and fixed $4776 as VDP palette
+    // entry $0B. The words are GRB values in the exact 16-step pulse order.
+    static constexpr std::array<std::uint16_t,16> grb{
+        0x756u,0x756u,0x745u,0x734u,0x723u,0x612u,0x501u,0x400u,
+        0x300u,0x400u,0x501u,0x612u,0x723u,0x734u,0x745u,0x756u};
+    const auto c=grb[phase&15u];
+    auto scale=[](unsigned v){return (v*255u+3u)/7u;};
+    return 0xff000000u | (scale((c>>4u)&7u)<<16u) |
+           (scale((c>>8u)&7u)<<8u) | scale(c&7u);
+}
 std::uint32_t stage_scene_palette9(unsigned phase) noexcept {
     // Fixed $6188 table selected by CE61=1: VDP palette index 9 receives
     // red levels 0,1,2,3,4,5,4,3,2,1, with green/blue zero.
@@ -797,6 +808,15 @@ void PlaySession::step_60hz(PlayerInput input) {
         enemies_.step_gate_20hz(rom_,game_,frame_/3u,&sound_events_,
             std::uint8_t((background_.fast_ground_phase()+(background_.ca1c()>>8u))&7u),
             std::uint8_t(background_.ca1c()));
+        // Stage-7 $8F5F writes the 16-step pulse directly to VDP palette
+        // register $0B on every 20-Hz fight/death tick. Keep all native
+        // palette variants synchronized because the scenery streamer may
+        // select any of them while the Warp Machine remains visible.
+        for(const auto& e:game_.enemies) if(e.type()==0x43u && (e.state()==1u || e.state()==2u)) {
+            const auto c=stage7_weak_palette(e.raw[0x21]);
+            video_.palette[11]=c;video_.late_palette[11]=c;video_.tower_palette[11]=c;
+            break;
+        }
         if(death_wrap) {
             // $9AD7/$7058 is followed by the secondary-pool clear.  The boss's
             // type-$40 attack rockets disappear as part of that cleanup; they
@@ -852,6 +872,8 @@ void PlaySession::step_60hz(PlayerInput input) {
         const auto original=enemy;
         const auto damage=apply_stage0_damage(rom_,enemy,amount);
         if(damage==Stage0DamageResult::Ignored) return false;
+        if(original.type()==0x43u && original.state()==1u && enemy.state()==2u)
+            for(auto& q:game_.enemies) if(q.type()==0x23u) q.clear(); // original $7058 clear
         if(original.type()==0x64u) {
             boss_palette_kind_=0x64u;
             // Custom continuation $7C63: a hit flashes white only when
@@ -960,12 +982,13 @@ void PlaySession::step_60hz(PlayerInput input) {
             // 2 with a nonzero extension phase exposes the weak point.
             if(enemy.type()==0x3eu) continue;
             const bool stage3_weak=enemy.type()==0x3fu && enemy.raw[0x23]==2u && enemy.raw[0x24]!=0u;
+            const bool stage7_weak=enemy.type()==0x43u && enemy.state()==1u;
             auto target=enemy;
             auto visible_shot=shot;
             if(camera_pixels()>=1536u && shot.type()!=7u &&
                enemy.type()!=0x10u && enemy.type()!=0x12u && enemy.type()!=0x15u && enemy.type()!=0x18u)
                 visible_shot.set_y_fixed(std::uint16_t(shot.y_fixed()-(background_.mode()==4u?7u:8u)*32u));
-            if((!stage3_weak && !(enemy.raw[0x14]&128u)) ||
+            if((!stage3_weak && !stage7_weak && !(enemy.raw[0x14]&128u)) ||
                !stage0_sprite_overlap(rom_,visible_shot,target)) continue;
             // $76A9 stores one pending hit; simultaneous W components do not
             // subtract HP independently. Type 4 supplies +06, M/type7 supplies 2.

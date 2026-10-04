@@ -299,8 +299,8 @@ void Stage0Enemies::move_60hz(GameState& game,unsigned frame) {
             if(--e.raw[0x3e]==0) e.clear();
             continue;
         }
-        if(e.active() && (flight(e.type()) || e.type()==0x16u || e.type()==0x19u || e.type()==0x1eu || e.type()==0x11u || e.type()==0x27u || e.type()==0x2au || e.type()==0x2cu || e.type()==0x2du || e.type()==0x2fu || e.type()==0x31u || e.type()==0x58u || e.type()==0x5cu || e.type()==0x68u || e.type()==0x70u || e.type()==0x40u || e.type()==0x0du)) {
-        const int divisor=e.type()==0x40u?3:4,phase=int(frame%unsigned(divisor));
+        if(e.active() && (flight(e.type()) || e.type()==0x16u || e.type()==0x19u || e.type()==0x1eu || e.type()==0x11u || e.type()==0x23u || e.type()==0x27u || e.type()==0x2au || e.type()==0x2cu || e.type()==0x2du || e.type()==0x2fu || e.type()==0x31u || e.type()==0x58u || e.type()==0x5cu || e.type()==0x68u || e.type()==0x70u || e.type()==0x40u || e.type()==0x0du)) {
+        const int divisor=(e.type()==0x40u || e.type()==0x23u)?3:4,phase=int(frame%unsigned(divisor));
         auto delta=[&](int v){return v*(phase+1)/divisor-v*phase/divisor;};
         e.set_x_fixed(std::uint16_t(e.x_fixed()+delta(signed_word(e,13))));
         // Type $2D is the exception to the normal +0B/+0C position service:
@@ -436,7 +436,68 @@ void Stage0Enemies::step_gate_20hz(const Rom& rom,GameState& game,unsigned tick,
     };
 
     for(auto& e:game.enemies) if(e.active()) {
-        if(e.type()==0x14u) {
+        if(e.type()==0x43u) {
+            // Stage-7 Warp Machine, mapped handler $8E81-$8F71. This is a
+            // genuine 20-Hz boss controller with custom HP in +02. +16 stays
+            // zero in the ROM. State 0 is the 60-tick scrolling entrance,
+            // state 1 is the fight, then 40/20-tick destruction states.
+            auto spawn_bubble=[&] {
+                if(auto* c=create(rom,game,0x23u)) {
+                    c->set_x_fixed(e.x_fixed());c->set_y_fixed(e.y_fixed());
+                    c->state()=0u;
+                }
+            };
+            if(e.state()==0u) {
+                if(e.raw[0x09]==0u && e.raw[0x0a]==0x1au && !e.raw[0x03]) {
+                    if(sounds) sounds->push_back(PlaySound::Stage7Arrive); // ROM $42
+                    e.raw[0x03]=1u;
+                }
+                if(e.raw[0x17]>1u) --e.raw[0x17];
+                else if(e.x_fixed()<=0x1900u) {
+                    // In the original the 60-tick entrance and the final
+                    // horizontal gate converge on X=$1900 together. Native
+                    // scenery runs at 15 Hz, so hold the expired timer until
+                    // the same spatial fight anchor is reached.
+                    e.state()=1u;e.raw[0x18]=0x2du;e.raw[0x17]=1u;
+                    e.raw[0x02]=0xffu;
+                }
+            } else if(e.state()==1u) {
+                e.raw[0x21]=std::uint8_t((e.raw[0x21]+1u)&0x0fu); // $8F5F
+                if(e.raw[0x17]>1u) --e.raw[0x17];
+                else {
+                    spawn_bubble();
+                    int next=int(e.raw[0x18])-4;
+                    if(next<0) next=0x2d;
+                    next=(next+1)&0xff;
+                    e.raw[0x18]=std::uint8_t(next);
+                    // Default first-loop CA19=$02: -2+$1A == +$18.
+                    e.raw[0x17]=std::uint8_t(next+0x18);
+                }
+            } else if(e.state()==2u) {
+                e.raw[0x21]=std::uint8_t((e.raw[0x21]+1u)&0x0fu);
+                if(e.raw[0x17]>1u) --e.raw[0x17];
+                else {
+                    if(sounds) sounds->push_back(PlaySound::Stage7Break); // ROM $52
+                    e.raw[0x17]=0x14u;e.state()=3u;
+                    for(auto& q:game.enemies) if(q.type()==0x23u) q.clear();
+                }
+            } else if(e.state()==3u) {
+                if(e.raw[0x17]>1u) --e.raw[0x17];
+                else stage_complete_=true; // ROM CA0F <- 1
+            }
+        } else if(e.type()==0x23u) {
+            // Warp Machine's destructible blue bubble, bank handler $BD74.
+            // Birth aims it at the player with speed $18. State 1 bounces at
+            // Y=$01/$15 and at the right boundary X=$1D; motion is split over
+            // the three display frames of the original 20-Hz object tick.
+            if(e.state()==0u) {
+                aimed_velocity(rom,e,game.player,0x18u);e.state()=1u;
+            } else {
+                const auto yh=e.raw[0x08],xh=e.raw[0x0a];
+                if(yh<1u || yh>=0x15u) put(e,11,-signed_word(e,11));
+                if(xh>=0x1du) put(e,13,-signed_word(e,13));
+            }
+        } else if(e.type()==0x14u) {
             // Bank06 $AE0A-$B065. State 1 is the 80-tick entrance while the
             // stage stream carries the boss from X=$28 to the fight gate.
             if(e.state()==0u) {

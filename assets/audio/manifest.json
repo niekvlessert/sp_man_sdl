@@ -239,6 +239,20 @@
       "channels": 1,
       "seconds": 1.9969160997732427,
       "sha256": "652a460c3f16c4b67dafca39674d0686aabc90c5f9dbaa935f76a703c38cb581"
+    },
+    {
+      "name": "stage7_arrive",
+      "rate": 44100,
+      "channels": 1,
+      "seconds": 2.0083446712018143,
+      "sha256": "634749538d51936d0e2bba902285168400899318787e93882ca4d512e1ee9df8"
+    },
+    {
+      "name": "stage7_break",
+      "rate": 44100,
+      "channels": 1,
+      "seconds": 2.995374149659864,
+      "sha256": "13a8b2454b8c2b0e641835a080ce043cdb566714a40702112d404e52c62de5ab"
     }
   ]
 }

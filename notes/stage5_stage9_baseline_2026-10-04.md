@@ -100,6 +100,11 @@ and parent links), armour-to-core vulnerability handoff, linked cleanup and the
 stage-5 to stage-6 transition. `space-manbow-stage6-boss-test` locks the `$7B`
 metadata/entrance, 30/5/20-tick state cadence, type-`$0D` relative launch and
 `$FF80` motion vector, boss SFX, fatal cleanup and the stage-6 to stage-7 handoff.
+`space-manbow-stage7-boss-test` locks the Warp Machine `$43` entrance at
+`$2000/$0A00`, the `$1900` fight anchor, 20-Hz attack cadence, bouncing type-`$23`
+bubbles, the custom +02 `$FF` HP/borrow rule, weak-point palette pulse, destruction
+SFX/cleanup and the stage-7 to stage-8 handoff.
 
 The next work for these stages is the remaining regular object/enemy/controller
-restoration, not basic stage loading, scenery decoding or the stage-5/6 bosses.
+restoration and the stage-8/9 bosses, not basic stage loading, scenery decoding
+or the stage-5/6/7 bosses.
