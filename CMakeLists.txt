@@ -11,6 +11,7 @@ add_subdirectory(third_party/libkss EXCLUDE_FROM_ALL)
 
 add_library(smcore
     src/rom.cpp
+    src/rom_tile_script.cpp
     src/graphics.cpp
     src/level.cpp
     src/assets.cpp

@@ -1,4 +1,5 @@
 #include "spawn.hpp"
+#include "rom_tile_script.hpp"
 #include <stdexcept>
 #include <algorithm>
 
@@ -364,6 +365,20 @@ bool decode_stage0_tile_frame(const Rom& rom, const Entity64& entity,
     if(def_cpu<0x8000u || def_cpu>=0xc000u) return false;
     return decode_stage0_tile_def(rom, entity, def_cpu, 0, 0, out);
 }
+
+void append_packed_tile_script(const Rom& rom,const Entity64& entity,
+        std::span<const std::uint8_t> bank,std::uint16_t cpu_base,
+        std::uint16_t table_cpu,unsigned selector,
+        std::vector<Stage0TileVisual>& out) {
+    for(const auto& placement:
+            decode_packed_tile_placement_table(bank,cpu_base,table_cpu,selector)) {
+        Stage0TileVisual v;
+        if(!decode_stage0_tile_frame(rom,entity,placement.matrix,v)) continue;
+        v.x+=placement.x*8;v.y+=placement.y*8;
+        v.tile_x_offset+=placement.x;v.tile_y_offset+=placement.y;
+        out.push_back(std::move(v));
+    }
+}
 }
 
 bool decode_stage0_tile_visual(const Rom& rom, const Entity64& entity,
@@ -524,36 +539,8 @@ std::vector<Stage0TileVisual> decode_stage0_tile_visuals(const Rom& rom,
             const auto candidate=b5word(q);
             if(candidate>=0x8000u && candidate<0xa000u) table=candidate;
         }
-        const auto list_cpu=b5word(table+(unsigned(entity.raw[0x06])%3u)*2u);
-        if(list_cpu<0x8000u || list_cpu>=0xa000u) return out;
-        unsigned p=list_cpu-0x8000u;
-        if(p>=bank5.size()) return out;
-        const unsigned packed_len=bank5[p++];
-        if(packed_len<2u || p+packed_len-1u>bank5.size()) return out;
-        const unsigned end=p+packed_len-1u;
-        int place_y=0,place_x=0; bool need_position=true;
-        while(p<end) {
-            if(need_position) {
-                if(p+2u>end) break;
-                place_y=int(static_cast<std::int8_t>(bank5[p++]));
-                place_x=int(static_cast<std::int8_t>(bank5[p++]));
-                need_position=false;
-            }
-            if(p>=end) break;
-            const auto control=bank5[p++];
-            if(control==0xffu) break;
-            if(control==0xfeu) {need_position=true;continue;}
-            const unsigned count=control;
-            if(p+count>end) break;
-            for(unsigned i=0;i<count;++i) {
-                Stage0TileVisual v;
-                if(decode_stage0_tile_frame(rom,entity,bank5[p++],v)) {
-                    v.x+=place_x*8;v.y+=place_y*8;
-                    v.tile_x_offset+=place_x;v.tile_y_offset+=place_y;
-                    out.push_back(std::move(v));
-                }
-            }
-        }
+        append_packed_tile_script(rom,entity,bank5,0x8000u,table,
+                                  unsigned(entity.raw[0x06])%3u,out);
         return out;
     }
 
@@ -561,41 +548,10 @@ std::vector<Stage0TileVisual> decode_stage0_tile_visuals(const Rom& rom,
         // Fixed $58F0 -> $7B65. $5A19 is a six-entry pointer table indexed
         // by +06. The pointed lists use the same packed placement grammar as
         // the later $56 actor, but live in fixed bank 0 rather than bank 6.
-        const auto fixed = rom.bank(0);
-        unsigned frame = std::min<unsigned>(entity.raw[0x06], entity.type()==0x47u?6u:5u);
-        const unsigned table = (entity.type()==0x47u?0x5b67u:0x5a19u) - 0x4000u;
-        if (table + frame * 2u + 1u >= fixed.size()) return out;
-        const auto list_cpu = le16(fixed, table + frame * 2u);
-        if (list_cpu < 0x4000u || list_cpu >= 0x6000u) return out;
-        unsigned p = unsigned(list_cpu - 0x4000u);
-        if (p >= fixed.size()) return out;
-        const unsigned packed_len = fixed[p++];
-        if (packed_len < 2u || p + packed_len - 1u > fixed.size()) return out;
-        const unsigned end = p + packed_len - 1u;
-        int place_y = 0, place_x = 0;
-        bool need_position = true;
-        while (p < end) {
-            if (need_position) {
-                if (p + 2u > end) break;
-                place_y = int(static_cast<std::int8_t>(fixed[p++]));
-                place_x = int(static_cast<std::int8_t>(fixed[p++]));
-                need_position = false;
-            }
-            if (p >= end) break;
-            const auto control = fixed[p++];
-            if (control == 0xffu) break;
-            if (control == 0xfeu) { need_position = true; continue; }
-            const unsigned count = control;
-            if (p + count > end) break;
-            for (unsigned i = 0; i < count; ++i) {
-                Stage0TileVisual v;
-                if (decode_stage0_tile_frame(rom, entity, fixed[p++], v)) {
-                    v.x += place_x * 8; v.y += place_y * 8;
-                    v.tile_x_offset += place_x; v.tile_y_offset += place_y;
-                    out.push_back(std::move(v));
-                }
-            }
-        }
+        const auto fixed=rom.bank(0);
+        const unsigned frame=std::min<unsigned>(entity.raw[0x06],entity.type()==0x47u?6u:5u);
+        const std::uint16_t table_cpu=entity.type()==0x47u?0x5b67u:0x5a19u;
+        append_packed_tile_script(rom,entity,fixed,0x4000u,table_cpu,frame,out);
         return out;
     }
 
@@ -680,38 +636,8 @@ std::vector<Stage0TileVisual> decode_stage0_tile_visuals(const Rom& rom,
         const auto bank6=rom.bank(6);
         const unsigned selector=entity.type()==0x14u ? 0u : std::min<unsigned>(entity.raw[0x06],5u);
         const unsigned table_cpu=entity.type()==0x14u ? 0xb03cu : 0xb455u;
-        const unsigned table=table_cpu-0xa000u;
-        if(table+selector*2u+1u>=bank6.size()) return out;
-        const auto list_cpu=le16(bank6,table+selector*2u);
-        if(list_cpu<0xa000u || list_cpu>=0xc000u) return out;
-        unsigned p=unsigned(list_cpu-0xa000u);
-        if(p>=bank6.size()) return out;
-        const unsigned packed_len=bank6[p++];
-        if(packed_len<2u || p+packed_len-1u>bank6.size()) return out;
-        const unsigned end=p+packed_len-1u;
-        int place_y=0,place_x=0;bool need_position=true;
-        while(p<end) {
-            if(need_position) {
-                if(p+2u>end) break;
-                place_y=int(static_cast<std::int8_t>(bank6[p++]));
-                place_x=int(static_cast<std::int8_t>(bank6[p++]));
-                need_position=false;
-            }
-            if(p>=end) break;
-            const auto control=bank6[p++];
-            if(control==0xffu) break;
-            if(control==0xfeu) {need_position=true;continue;}
-            const unsigned count=control;
-            if(p+count>end) break;
-            for(unsigned i=0;i<count;++i) {
-                Stage0TileVisual v;
-                if(decode_stage0_tile_frame(rom,entity,bank6[p++],v)) {
-                    v.x+=place_x*8;v.y+=place_y*8;
-                    v.tile_x_offset+=place_x;v.tile_y_offset+=place_y;
-                    out.push_back(std::move(v));
-                }
-            }
-        }
+        append_packed_tile_script(rom,entity,bank6,0xa000u,
+                                  std::uint16_t(table_cpu),selector,out);
         if(entity.type()==0x14u && entity.state()!=0u) {
             auto append=[&](unsigned frame) {
                 Stage0TileVisual v;
@@ -733,38 +659,7 @@ std::vector<Stage0TileVisual> decode_stage0_tile_visuals(const Rom& rom,
         // three detached orange shapes without the turquoise body.
         const auto bank6=rom.bank(6);
         const unsigned frame=std::min<unsigned>(entity.raw[0x06],7u);
-        const unsigned table=0xa7c3u-0xa000u;
-        if(table+frame*2u+1u>=bank6.size()) return out;
-        const auto list_cpu=le16(bank6,table+frame*2u);
-        if(list_cpu<0xa000u || list_cpu>=0xc000u) return out;
-        unsigned p=unsigned(list_cpu-0xa000u);
-        if(p>=bank6.size()) return out;
-        const unsigned packed_len=bank6[p++];
-        if(packed_len<2u || p+packed_len-1u>bank6.size()) return out;
-        const unsigned end=p+packed_len-1u;
-        int place_y=0,place_x=0;bool need_position=true;
-        while(p<end) {
-            if(need_position) {
-                if(p+2u>end) break;
-                place_y=int(static_cast<std::int8_t>(bank6[p++]));
-                place_x=int(static_cast<std::int8_t>(bank6[p++]));
-                need_position=false;
-            }
-            if(p>=end) break;
-            const auto control=bank6[p++];
-            if(control==0xffu) break;
-            if(control==0xfeu) {need_position=true;continue;}
-            const unsigned count=control;
-            if(p+count>end) break;
-            for(unsigned i=0;i<count;++i) {
-                Stage0TileVisual v;
-                if(decode_stage0_tile_frame(rom,entity,bank6[p++],v)) {
-                    v.x+=place_x*8;v.y+=place_y*8;
-                    v.tile_x_offset+=place_x;v.tile_y_offset+=place_y;
-                    out.push_back(std::move(v));
-                }
-            }
-        }
+        append_packed_tile_script(rom,entity,bank6,0xa000u,0xa7c3u,frame,out);
         return out;
     }
 
@@ -785,38 +680,7 @@ std::vector<Stage0TileVisual> decode_stage0_tile_visuals(const Rom& rom,
         // explicit $8DBC placement-table rather than the generic type table.
         const auto bank5=rom.bank(5);
         const unsigned selector=std::min<unsigned>(entity.raw[0x06],11u);
-        const unsigned table=0x8dbcu-0x8000u;
-        if(table+selector*2u+1u>=bank5.size()) return out;
-        const auto list_cpu=le16(bank5,table+selector*2u);
-        if(list_cpu<0x8000u || list_cpu>=0xa000u) return out;
-        unsigned p=unsigned(list_cpu-0x8000u);
-        if(p>=bank5.size()) return out;
-        const unsigned packed_len=bank5[p++];
-        if(packed_len<2u || p+packed_len-1u>bank5.size()) return out;
-        const unsigned end=p+packed_len-1u;
-        int place_y=0,place_x=0;bool need_position=true;
-        while(p<end) {
-            if(need_position) {
-                if(p+2u>end) break;
-                place_y=int(static_cast<std::int8_t>(bank5[p++]));
-                place_x=int(static_cast<std::int8_t>(bank5[p++]));
-                need_position=false;
-            }
-            if(p>=end) break;
-            const auto control=bank5[p++];
-            if(control==0xffu) break;
-            if(control==0xfeu) {need_position=true;continue;}
-            const unsigned count=control;
-            if(p+count>end) break;
-            for(unsigned i=0;i<count;++i) {
-                Stage0TileVisual v;
-                if(decode_stage0_tile_frame(rom,entity,bank5[p++],v)) {
-                    v.x+=place_x*8;v.y+=place_y*8;
-                    v.tile_x_offset+=place_x;v.tile_y_offset+=place_y;
-                    out.push_back(std::move(v));
-                }
-            }
-        }
+        append_packed_tile_script(rom,entity,bank5,0x8000u,0x8dbcu,selector,out);
         return out;
     }
 
@@ -865,38 +729,7 @@ std::vector<Stage0TileVisual> decode_stage0_tile_visuals(const Rom& rom,
         // are fight frames and 3..7 are the destruction sequence.
         const auto bank5=rom.bank(5);
         const unsigned selector=std::min<unsigned>(entity.raw[0x06],7u);
-        const unsigned table=0x97c5u-0x8000u;
-        if(table+selector*2u+1u>=bank5.size()) return out;
-        const auto list_cpu=le16(bank5,table+selector*2u);
-        if(list_cpu<0x8000u || list_cpu>=0xa000u) return out;
-        unsigned p=unsigned(list_cpu-0x8000u);
-        if(p>=bank5.size()) return out;
-        const unsigned packed_len=bank5[p++];
-        if(packed_len<2u || p+packed_len-1u>bank5.size()) return out;
-        const unsigned end=p+packed_len-1u;
-        int place_y=0,place_x=0;bool need_position=true;
-        while(p<end) {
-            if(need_position) {
-                if(p+2u>end) break;
-                place_y=int(static_cast<std::int8_t>(bank5[p++]));
-                place_x=int(static_cast<std::int8_t>(bank5[p++]));
-                need_position=false;
-            }
-            if(p>=end) break;
-            const auto control=bank5[p++];
-            if(control==0xffu) break;
-            if(control==0xfeu) {need_position=true;continue;}
-            const unsigned count=control;
-            if(p+count>end) break;
-            for(unsigned i=0;i<count;++i) {
-                Stage0TileVisual v;
-                if(decode_stage0_tile_frame(rom,entity,bank5[p++],v)) {
-                    v.x+=place_x*8;v.y+=place_y*8;
-                    v.tile_x_offset+=place_x;v.tile_y_offset+=place_y;
-                    out.push_back(std::move(v));
-                }
-            }
-        }
+        append_packed_tile_script(rom,entity,bank5,0x8000u,0x97c5u,selector,out);
         return out;
     }
 
@@ -907,38 +740,7 @@ std::vector<Stage0TileVisual> decode_stage0_tile_visuals(const Rom& rom,
         // destruction matrices exported in type78_stamp_scripts.json.
         const auto bank6=rom.bank(6);
         const unsigned selector=std::min<unsigned>(entity.raw[0x06],9u);
-        const unsigned table=0xacdeu-0xa000u;
-        if(table+selector*2u+1u>=bank6.size()) return out;
-        const auto list_cpu=le16(bank6,table+selector*2u);
-        if(list_cpu<0xa000u || list_cpu>=0xc000u) return out;
-        unsigned p=unsigned(list_cpu-0xa000u);
-        if(p>=bank6.size()) return out;
-        const unsigned packed_len=bank6[p++];
-        if(packed_len<2u || p+packed_len-1u>bank6.size()) return out;
-        const unsigned end=p+packed_len-1u;
-        int place_y=0,place_x=0;bool need_position=true;
-        while(p<end) {
-            if(need_position) {
-                if(p+2u>end) break;
-                place_y=int(static_cast<std::int8_t>(bank6[p++]));
-                place_x=int(static_cast<std::int8_t>(bank6[p++]));
-                need_position=false;
-            }
-            if(p>=end) break;
-            const auto control=bank6[p++];
-            if(control==0xffu) break;
-            if(control==0xfeu) {need_position=true;continue;}
-            const unsigned count=control;
-            if(p+count>end) break;
-            for(unsigned i=0;i<count;++i) {
-                Stage0TileVisual v;
-                if(decode_stage0_tile_frame(rom,entity,bank6[p++],v)) {
-                    v.x+=place_x*8;v.y+=place_y*8;
-                    v.tile_x_offset+=place_x;v.tile_y_offset+=place_y;
-                    out.push_back(std::move(v));
-                }
-            }
-        }
+        append_packed_tile_script(rom,entity,bank6,0xa000u,0xacdeu,selector,out);
         auto append=[&](unsigned frame) {
             Stage0TileVisual v;
             if(decode_stage0_tile_frame(rom,entity,frame,v)) out.push_back(std::move(v));
@@ -963,42 +765,7 @@ std::vector<Stage0TileVisual> decode_stage0_tile_visuals(const Rom& rom,
         const auto bank6 = rom.bank(6);
         unsigned frame = entity.raw[0x06];
         if (frame > 4u) frame = 4u;
-        const unsigned table = 0xbfc0u - 0xa000u;
-        if (table + frame * 2u + 1u >= bank6.size()) return out;
-        const auto list_cpu = le16(bank6, table + frame * 2u);
-        if (list_cpu < 0xa000u || list_cpu >= 0xc000u) return out;
-        unsigned p = unsigned(list_cpu - 0xa000u);
-        if (p >= bank6.size()) return out;
-        const unsigned packed_len = bank6[p++];
-        if (packed_len < 2u || p + packed_len - 1u > bank6.size()) return out;
-        const unsigned end = p + packed_len - 1u;
-        int place_y = 0, place_x = 0;
-        bool need_position = true;
-        while (p < end) {
-            if (need_position) {
-                if (p + 2u > end) break;
-                place_y = int(static_cast<std::int8_t>(bank6[p++]));
-                place_x = int(static_cast<std::int8_t>(bank6[p++]));
-                need_position = false;
-            }
-            if (p >= end) break;
-            const auto control = bank6[p++];
-            if (control == 0xffu) break;
-            if (control == 0xfeu) { need_position = true; continue; }
-            const unsigned count = control;
-            if (p + count > end) break;
-            for (unsigned i = 0; i < count; ++i) {
-                const unsigned matrix = bank6[p++];
-                Stage0TileVisual v;
-                if (decode_stage0_tile_frame(rom, entity, matrix, v)) {
-                    v.x += place_x * 8;
-                    v.y += place_y * 8;
-                    v.tile_x_offset += place_x;
-                    v.tile_y_offset += place_y;
-                    out.push_back(std::move(v));
-                }
-            }
-        }
+        append_packed_tile_script(rom,entity,bank6,0xa000u,0xbfc0u,frame,out);
         return out;
     }
 
