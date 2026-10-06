@@ -1,4 +1,5 @@
 #include "play_session.hpp"
+#include "assets.hpp"
 #ifdef NDEBUG
 #undef NDEBUG
 #endif
@@ -48,6 +49,25 @@ void finish(sm::Stage0BackgroundStream& b,unsigned limit=12000u) {
 int main(int argc,char** argv) {
     if(argc!=2) return 2;
     sm::Rom rom(argv[1]);
+
+    // Independent unmodified-ROM DE00 captures: main at 15s, bosses at
+    // 330s with damage protection and no firing. Stage 1's final encounter
+    // uses another context; its existing dedicated collision map stays intact.
+    constexpr std::array<std::uint32_t,9> main_properties{
+        0x126d6fccu,0x5473414du,0x5a47ad05u,0xe4b3a7e2u,0x1b7cb4a7u,
+        0x4ccb87bdu,0x46cd691cu,0xaffd0845u,0xd92f8a2du};
+    constexpr std::array<std::uint32_t,8> boss_properties{
+        0xf813c87eu,0x9b529157u,0x164d1d87u,0x716f161bu,
+        0xc7b68d71u,0x5ff09edfu,0xe932b90eu,0xd92f8a2du};
+    auto property_hash=[](const auto& values) {
+        std::uint32_t h=2166136261u;
+        for(const auto value:values) h=(h^value)*16777619u;
+        return h;
+    };
+    for(unsigned stage=0;stage<9u;++stage) {
+        assert(property_hash(sm::decode_stage_terrain_properties(rom,stage))==main_properties[stage]);
+        if(stage) assert(property_hash(sm::decode_stage_terrain_properties(rom,stage,true))==boss_properties[stage-1u]);
+    }
 
     // Stage 5: long horizontal route. These unmodified-ROM captures span
     // almost the entire scenery stream and remain byte-exact.

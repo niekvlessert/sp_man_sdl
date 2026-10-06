@@ -1,0 +1,56 @@
+# Stage 2 object placement, red tubes and launcher wrecks
+
+## Findings and fixes
+
+The Stage-2 native scenery path did not compensate the one-column origin of
+its D988/R18 presentation. At world X=$04DA (1242 pixels), the canonical name
+row exactly equals original OpenMSX VRAM $C000, while native R18 contributes
+an extra eight-pixel display displacement. Apply the same native origin
+compensation already used by Stage 1, including the current camera step.
+This keeps native continuous movement aligned with object coordinates during
+horizontal, diagonal and vertical sections.
+
+Type $29 cannons, $2B launchers, $2E tube installations and $6B wrecks were
+also going through the coarse overlay and world-comparison passes. These
+passes applied camera interpolation twice or classified changing artwork as
+scenery. Give each complete assembly one native rendering owner; include the
+wreck in that ownership so destruction cannot leave an old launcher fragment.
+The original persistent wreck itself remains: $7CC3 retains +3E=$04 for $2B,
+and $9B38 eventually selects $6B tile frame 4.
+
+The green/red moving heads are type $31. Native implemented their movement
+but omitted fixed $5CF6-$5D3A entirely. This routine stamps tile pair CC/CD:
+variant zero runs down from head Y+2; nonzero runs up from head Y. It stops
+when the original terrain property is exactly 3. Native now builds both
+original tube directions, and terrain probes exclude their previous stamp
+so they cannot collide with their own tube. SDL renders the head and tube
+on the same camera clock.
+
+## Original checks
+
+- Six direct original $7B65 calls at X=$1000/Y=$0800, CA1A/CA1C low=0,
+  pointer table $858F. Hash all 1536 D800..DDFF bytes, with initial byte i*17:
+  `152FD715 878B48B5 FE593855 C8ED2DF5 12934045 10D3EB15`.
+  These confirm all $2E open/closing states; its packed decoder already
+  matched, so the scripts did not need a speculative change.
+- Original $866D/$8681 places the $2C module at parent X-$0200. Capture 021
+  confirms parent X=$1FC0, child X=$1DC0 and SAT X=245 (child pixels 238+7).
+  Preserve these ROM coordinates; correct the surrounding presentation path
+  rather than inserting another arbitrary module offset.
+- Original Stage-2 audit capture 025, world X=$04DA, VRAM $C000 row 0,
+  supplies the independent scenery row used by the new presentation test.
+
+## Validation
+
+Build succeeds. `space-manbow-stage2-presentation-test space_manbow.rom`
+checks six original tube scripts, both moving-head tube directions and solid
+terrain stops, all four native camera phases against original scenery, and
+that a destroyed launcher changes only pixels inside its original wreck.
+
+Existing Stage 2, Stage 3/4, Stage 5–9, late enemies, boss visuals, boss
+regressions, combat, timeline, continuous scroll, scroll feedback and Stage
+8/9 presentation checks pass (12 targeted executables including the new one).
+
+This is a focused correction of the reported visual faults, not an exhaustive
+claim of Stage-2 gameplay parity. The broader gaps remain documented in
+stage2_fidelity_report_2026-10-04.md.

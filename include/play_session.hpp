@@ -47,6 +47,7 @@ public:
     unsigned frame() const noexcept { return frame_; }
     unsigned stage_frame() const noexcept { return frame_-stage_start_frame_; }
     bool music_playing() const noexcept { return music_playing_; }
+    bool campaign_complete() const noexcept { return stage_index_==8u && enemies_.stage_complete(); }
     bool boss_music_active() const noexcept {
         if(!music_playing_) return false;
         if(stage_index_==0u) return camera_pixels()>=4224u;
@@ -91,6 +92,8 @@ private:
     void begin_next_stage();
     unsigned stage_index_=0,stage_start_frame_=0;
     bool music_playing_=true;
+    bool boss_scene_active_=false;
+    std::array<std::uint8_t,256> stage_terrain_properties_{},boss_terrain_properties_{};
     std::vector<std::uint32_t> render_early_presentation(unsigned x_samples,unsigned y_samples);
     std::vector<std::uint32_t> render_presentation(unsigned x_samples,unsigned y_samples);
     const Rom& rom_;
@@ -106,7 +109,8 @@ private:
     unsigned bomb_palette_ticks_=0;
     std::uint8_t boss_hit_timer_=0;   // original CE47
     std::uint8_t boss_palette_flags_=0; // original CE48: bit0 red, bit1 hit flash
-    std::uint8_t boss_palette_kind_=0;  // 0, $56 vertical tower, or $64 terminal gate
+    bool stage5_background_black_=false;
+    std::uint8_t boss_palette_kind_=0;  // ROM boss type owning CE47/CE48, or $56 vertical tower
     bool stage8_boss_palette_active_=false; // type $78 installs its own global VDP palette
     bool scene_palette_active_=false;   // original CE60=1 / CE61=1
     std::uint8_t scene_palette_phase_=0; // original CE68, 0..9
@@ -116,6 +120,8 @@ private:
     Stage0BackgroundStream background_;
     Stage0Enemies enemies_;
     std::array<Entity64,20> previous_gate_actors_{};
+    std::array<Entity64,20> previous_stage3_actors_{};
+    unsigned stage3_pose_frame_=0;
     unsigned presentation_frame_=0;
     Stage0Combat combat_;
     Stage0Screen4Presenter presenter_;

@@ -1,4 +1,5 @@
 #include "play_session.hpp"
+#include "assets.hpp"
 #include <algorithm>
 #include <stdexcept>
 
@@ -6,11 +7,6 @@ namespace sm {
 namespace {
 constexpr unsigned kInitialCameraPixels=31*8; // ROM preloads 31 tile columns.
 constexpr std::uint32_t kCarrierBackdrop=0xff000001u; // distinct from every 3-bit ROM palette color
-constexpr std::array<std::uint32_t,16> kStage3BossPalette{
-    0xff000000u,0xff004949u,0xff006d6du,0xff009292u,
-    0xff00b6b6u,0xffb69249u,0xffff0000u,0xff2424ffu,
-    0xff9292b6u,0xff920000u,0xffffff00u,0xff926d24u,
-    0xff6d4900u,0xff6d6d6du,0xffffffffu,0xff000000u};
 std::uint32_t stage7_weak_palette(unsigned phase) noexcept {
     // Mapped bank02:$8F74, consumed by $8F5F and fixed $4776 as VDP palette
     // entry $0B. The words are GRB values in the exact 16-step pulse order.
@@ -58,6 +54,24 @@ std::uint32_t stage8_cycle_color(const Rom& rom,unsigned phase) {
     const unsigned q=0x0cc8u+(phase&7u)*2u;
     return stage8_vdp_color(b[q],b[q+1u]);
 }
+void apply_stage3_exit_fade(std::array<std::uint32_t,16>& palette,
+                            bool active,std::uint8_t ticks) noexcept {
+    if(!active) return;
+    static constexpr std::array<unsigned,9> affected{0u,1u,2u,3u,4u,5u,9u,11u,12u};
+    const unsigned remain=std::min<unsigned>(ticks,32u);
+    auto fade_channel=[&](unsigned v) {
+        const unsigned level=(v*7u+127u)/255u;
+        const unsigned faded=(level*remain+31u)/32u;
+        return (faded*255u+3u)/7u;
+    };
+    for(const auto i:affected) {
+        const auto c=palette[i];
+        palette[i]=0xff000000u |
+            (fade_channel((c>>16u)&255u)<<16u) |
+            (fade_channel((c>>8u)&255u)<<8u) |
+             fade_channel(c&255u);
+    }
+}
 std::uint16_t word(std::span<const std::uint8_t> b, unsigned p) {
     return std::uint16_t(b[p]) | (std::uint16_t(b[p+1]) << 8);
 }
@@ -74,10 +88,14 @@ bool native_stage0_tile_actor(std::uint8_t type) noexcept {
 }
 // Sprite-frame components are six bytes: pattern, Y, X, colors, hitbox selector.
 // This uses the exported ROM's resident sprite assets, including CC color OR.
+bool native_stage2_tile_actor(std::uint8_t type) noexcept {
+    return type==0x29u || type==0x2bu || type==0x2eu || type==0x31u || type==0x6bu;
+}
 void draw_entity(const Rom& rom, const Screen4Snapshot& video,
                  const Entity64& entity, std::vector<std::uint32_t>& pixels,
                  const std::array<std::uint32_t,16>& palette, int sprite_origin_y,
-                 unsigned x_samples=1,unsigned y_samples=1,int clip_bottom=212) {
+                 unsigned x_samples=1,unsigned y_samples=1,int clip_bottom=212,
+                 int sprite_origin_x=7) {
     if (!entity.active() || entity.type()>0x7c) return;
     // A freshly spawned terminal boss spends one display slice in ROM state 0
     // before its 20-Hz initializer places the real entrance actor at x=$28.
@@ -103,7 +121,7 @@ void draw_entity(const Rom& rom, const Screen4Snapshot& video,
     // stage-0 sprite family, including the mixed tile/SAT type-$1F cannon.
     // Its aim-frame offsets live in the ROM frame definition; adding a special
     // type-$1F bias here makes the error grow as the stage changes direction.
-    const int ex=(int(std::int16_t(entity.x_fixed()))>>5)+7;
+    const int ex=(int(std::int16_t(entity.x_fixed()))>>5)+sprite_origin_x;
     for(int sy=0;sy<std::min(212,clip_bottom);++sy) {
         line.clear();
         // Keep ROM component/layer order: this is the SAT order produced by
@@ -287,8 +305,8 @@ void draw_tile_actor(const Rom& rom,const Screen4Snapshot& video,const Entity64&
     if(!e.active()) return;
     if(pickup_only) { if(e.type()!=3) return; }
     else if(e.type()==0x64u && e.state()==0u) return;
-    else if(e.type()!=0x1eu && e.type()!=0x1fu && e.type()!=0x20u && e.type()!=0x29u && e.type()!=0x22u && e.type()!=0x2eu && e.type()!=0x24u && e.type()!=0x26u &&
-            e.type()!=0x14u && e.type()!=0x3eu && e.type()!=0x3fu && e.type()!=0x55u && e.type()!=0x47u && e.type()!=0x56u && e.type()!=0x64u && e.type()!=0x6au && e.type()!=0x6bu && e.type()!=0x77u && e.type()!=0x3du) return;
+    else if(e.type()!=0x76u && !(e.type()==0x46u && e.raw[0x03]) && e.type()!=0x1cu && e.type()!=0x1eu && e.type()!=0x1fu && e.type()!=0x20u && e.type()!=0x28u && e.type()!=0x29u && e.type()!=0x2bu && e.type()!=0x31u && e.type()!=0x32u && e.type()!=0x22u && e.type()!=0x2eu && e.type()!=0x24u && e.type()!=0x26u &&
+            e.type()!=0x14u && e.type()!=0x3eu && e.type()!=0x3fu && e.type()!=0x55u && e.type()!=0x47u && e.type()!=0x56u && e.type()!=0x64u && e.type()!=0x6au && e.type()!=0x6bu && e.type()!=0x77u && e.type()!=0x7bu && e.type()!=0x78u && e.type()!=0x79u && e.type()!=0x3du) return;
     // Do not cull large cannon tile actors by anchor position. Their matrix can
     // still overlap the left edge after the anchor itself has crossed x=0;
     // per-tile clipping below keeps the visible half on screen, matching the ROM.
@@ -344,6 +362,51 @@ void draw_tile_actor(const Rom& rom,const Screen4Snapshot& video,const Entity64&
                             pixels[oy*256u*x_samples+ox]=palette[ci];
                     }
                 }
+            }
+        }
+    }
+}
+
+void draw_stage2_tube_shaft(const Screen4Snapshot& video,const Entity64& e,
+                            std::vector<std::uint32_t>& pixels,
+                            const std::array<std::uint32_t,16>& palette,
+                            unsigned pattern_base,unsigned color_base,
+                            int top_samples,int bottom_samples,int raster_r23,
+                            int scenery_y_shift_samples,
+                            unsigned x_samples,unsigned y_samples) {
+    if(!e.active() || e.type()!=0x31u || top_samples>=bottom_samples) return;
+    const int width=int(256u*x_samples),height=int(212u*y_samples);
+    top_samples=std::max(0,top_samples);bottom_samples=std::min(height,bottom_samples);
+    if(top_samples>=bottom_samples) return;
+
+    // The ROM shaft is two name-table cells wide (CC/CD). Keep its X anchor
+    // at the continuously interpolated object position, but sample the tile
+    // scanline from the VDP raster itself. This is important at R23 wrap:
+    // the fixed ceiling/floor end must remain attached while only the moving
+    // head end is clipped at sub-tile precision.
+    const int ex=int(std::int16_t(e.x_fixed()));
+    const int x_floor=ex>=0 ? ex/32 : -int((unsigned(-ex)+31u)/32u);
+    const int x0=x_floor*int(x_samples)+int(unsigned(e.x_fixed()&31u)*x_samples/32u);
+    for(int sy=top_samples;sy<bottom_samples;++sy) {
+        const int source_sample=sy-scenery_y_shift_samples;
+        const int source_y=source_sample>=0
+            ? source_sample/int(y_samples)
+            : -int((unsigned(-source_sample)+y_samples-1u)/y_samples);
+        const unsigned display_y=unsigned(source_y+raster_r23)&255u;
+        const unsigned physical_row=display_y>>3u;
+        const unsigned py=display_y&7u;
+        const unsigned quarter=(physical_row/8u)*0x800u;
+        for(unsigned px=0;px<16u;++px) {
+            const std::uint8_t tile=px<8u?0xccu:0xcdu;
+            const unsigned tx=px&7u;
+            const unsigned index=quarter+unsigned(tile)*8u+py;
+            if(pattern_base+index>=video.vram.size() || color_base+index>=video.vram.size()) continue;
+            const auto bits=video.vram[pattern_base+index],color=video.vram[color_base+index];
+            const unsigned ci=(bits&(0x80u>>tx))?color>>4u:color&15u;
+            const int ox0=x0+int(px*x_samples);
+            for(unsigned xx=0;xx<x_samples;++xx) {
+                const int ox=ox0+int(xx);
+                if(ox>=0 && ox<width) pixels[std::size_t(sy)*std::size_t(width)+unsigned(ox)]=palette[ci&15u];
             }
         }
     }
@@ -500,7 +563,7 @@ PlaySession::PlaySession(const Rom& rom)
 void PlaySession::reset(unsigned stage) {
     if(stage>8) throw std::invalid_argument("available stage index must be 0..8");
     bomb_palette_bias_=0;bomb_palette_ticks_=0;
-    stage_index_=0;stage_start_frame_=0;previous_gate_actors_={};music_playing_=true;
+    stage_index_=0;stage_start_frame_=0;previous_gate_actors_={};previous_stage3_actors_={};stage3_pose_frame_=0;music_playing_=true;
     sound_events_.clear();
     game_={}; shots_={}; frame_=0; camera_half_pixels_=2*kInitialCameraPixels; fire_was_down_=false;
     spawns_=StageSpawnStream::decode_stage0(rom_,true); stream_runtime_.reset(); background_.reset(); presenter_.reset();enemies_.reset();
@@ -509,7 +572,7 @@ void PlaySession::reset(unsigned stage) {
     combat_.reset();video_=Screen4Snapshot::from_stage0_rom(rom_);
     late_normal_palette_=video_.late_palette;
     tower_normal_palette_=video_.tower_palette;
-    scene_palette_active_=false;scene_palette_phase_=0;
+    scene_palette_active_=false;scene_palette_phase_=0;stage5_background_black_=false;
     scene_base_palette9_=video_.palette[9];scene_palette_color_=scene_base_palette9_;
     tower_flash_palette_=tower_normal_palette_;
     vehicle_tower_normal_palette_=video_.vehicle_tower_palette;
@@ -520,7 +583,7 @@ void PlaySession::reset(unsigned stage) {
     for(unsigned i:{1u,2u,3u,4u,9u,11u,12u}) tower_flash_palette_[i]=flash666;
     for(unsigned i:{0u,1u,2u,3u,4u,5u,9u}) vehicle_tower_flash_palette_[i]=flash666;
     boss_hit_timer_=0;boss_palette_flags_=0;boss_palette_kind_=0;
-    stage8_boss_palette_active_=false;
+    stage8_boss_palette_active_=false;boss_scene_active_=false;
     // $8254 initial ship record, including 15-tick spawn protection.
     game_.player.type()=1; game_.player.flags15()=0x39;
     game_.player.raw[0x13]=3; game_.player.raw[0x14]=0x83; game_.player.raw[0x18]=15;
@@ -545,6 +608,7 @@ void position_option(const Entity64& player,Entity64& option,unsigned mode) noex
 void PlaySession::step_60hz(PlayerInput input) {
     sound_events_.clear();
     ++frame_;
+    background_.step_60hz();
     if(scene_palette_active_ && (frame_&1u)==0u) {
         scene_palette_color_=stage_scene_palette9(scene_palette_phase_);
         scene_palette_phase_=std::uint8_t((scene_palette_phase_+1u)%10u);
@@ -555,7 +619,9 @@ void PlaySession::step_60hz(PlayerInput input) {
         video_.tower_palette[9]=scene_palette_color_;
     }
     if(bomb_palette_ticks_) --bomb_palette_ticks_;
-    const auto directions=std::uint8_t((input.up?1:0)|(input.down?2:0)|
+    const bool boss_exit=std::any_of(game_.enemies.begin(),game_.enemies.end(),
+        [](const auto& e){return e.type()==0x78u && e.state()==8u;});
+    const auto directions=boss_exit?std::uint8_t(0):std::uint8_t((input.up?1:0)|(input.down?2:0)|
                                       (input.left?4:0)|(input.right?8:0));
     // Live $8108 calls are 20 Hz (~50 ms). Preserve the ROM velocity table,
     // distributing each update across three native frames for smooth input.
@@ -596,7 +662,12 @@ void PlaySession::step_60hz(PlayerInput input) {
         option.raw[0x18]=std::uint8_t(std::uint16_t(local_y-0xe0)>>8);
         position_option(game_.player,option,option_mode_);
     }
-    if (input.fire_pressed || (input.fire && !fire_was_down_)) {
+    // Original bank02:$801B tests C907 bit4 directly every player update
+    // and calls $8599 for as long as FIRE is held.  The weapon pools themselves
+    // are the rate limiter: as soon as a projectile slot becomes free it is
+    // refilled without requiring a button release.  Treat fire_pressed as the
+    // SDL tap latch, but continuous fire must follow the held level as well.
+    if (input.fire_pressed || input.fire) {
         const auto& upgrades=combat_.upgrades();
         const bool pool_empty=std::none_of(shots_.begin(),shots_.end(),[](auto& s){return s.active();});
         bool fired=false;
@@ -655,10 +726,33 @@ void PlaySession::step_60hz(PlayerInput input) {
         }
     }
     fire_was_down_=input.fire;
+    static constexpr std::array<std::uint8_t,9> stage_boss_types{
+        0x64u,0x7au,0x3eu,0x14u,0x77u,0x7bu,0x43u,0x78u,0x79u};
+    const bool boss_terrain=std::any_of(game_.enemies.begin(),game_.enemies.end(),
+        [&](const auto& e){return e.type()==stage_boss_types[stage_index_] || (e.type()==0x6au && e.raw[0x3f]!=0xd3u);});
+    if(!boss_scene_active_ && boss_terrain && stage_index_>=1u && stage_index_<=6u) {
+        const auto colors=decode_stage_boss_palette(rom_,stage_index_);
+        for(unsigned i=0;i<16u;++i) video_.palette[i]=stage8_vdp_color(
+            std::uint8_t(colors[i]),std::uint8_t(colors[i]>>8u));
+        video_.late_palette=video_.tower_palette=video_.palette;
+        late_normal_palette_=tower_normal_palette_=video_.palette;
+        {
+            const auto red=decode_stage_boss_damage_palette(rom_,stage_index_);
+            const auto white=decode_stage_boss_damage_palette(rom_,stage_index_,true);
+            for(unsigned i=0;i<16u;++i) {
+                video_.tower_red_palette[i]=stage8_vdp_color(std::uint8_t(red[i]),std::uint8_t(red[i]>>8u));
+                tower_flash_palette_[i]=stage8_vdp_color(std::uint8_t(white[i]),std::uint8_t(white[i]>>8u));
+            }
+        }
+        scene_palette_active_=false;boss_scene_active_=true;
+    }
+    if(stage_index_==8u && boss_terrain) boss_scene_active_=true;
     auto stage_property=[&](std::uint8_t tile)->std::uint8_t {
         // Original DE00 stage-0 tile-property table. It is replaced once, at
         // the A13F vehicle context; these two maps were captured from the
         // unmodified game.
+        if(stage_index_>=2u)
+            return (boss_terrain?boss_terrain_properties_:stage_terrain_properties_)[tile];
         if(stage_index_==1u) {
             // Live original DE00: scenery IDs differ from stage 0. The boss
             // context switches to bank10 $8709's property ranges.
@@ -686,23 +780,52 @@ void PlaySession::step_60hz(PlayerInput input) {
     // Weapons query the complete ROM name table, including the vehicle deck.
     // Rendering omits these stamps in favor of smooth overlays; collision must
     // still see their tile properties so M follows the vehicle surface.
-    auto collision_tiles=background_.compose_d988_base();
+    const auto scenery_collision_tiles=background_.compose_d988_base();
+    auto collision_tiles=scenery_collision_tiles;
     stamp_stage0_tile_objects(rom_,background_,game_,collision_tiles,true);
     auto terrain_tile=[&](const Entity64& e,int xo,int yo)->std::uint8_t {
-        const bool late=camera_pixels()>=1538;
+        const bool late=camera_pixels()>=1538 || stage_index_==7u;
         const unsigned fx=late?(background_.ca1c()&0xffu):0u;
         const unsigned fy=late?(background_.ca1a()&0xffu):0u;
         const auto x=std::uint16_t(e.x_fixed()+xo+fx);
         const auto y=std::uint16_t(e.y_fixed()+yo+fy);
         const int col=int(std::int8_t(x>>8u)),row=int(std::int8_t(y>>8u));
-        if(col<0||col>=32||row<0||row>=24) return 0xff;
-        if(late) return collision_tiles[unsigned(row)*32u+unsigned(col)];
+        if(row<0||row>=24) return 0xff;
+        if(late) {
+            // Type $31 starts its terrain probes while the two-cell shaft is
+            // still just outside the visible D988 window. The original reads
+            // that neighbouring ring column; treating col 32/-1 as a solid
+            // screen boundary makes the head reverse every logic tick while
+            // entering, and loses the real wall contact while leaving.
+            if(stage_index_==1u && e.type()==0x31u && (col<0 || col>=32))
+                return background_.view_tile(unsigned(col),unsigned(row));
+            if(col<0||col>=32) return 0xff;
+            // A growing laser probes scenery before the ROM stamps its own
+            // cells. Including last tick's wall makes it collide with itself.
+            const auto& tiles=(e.type()==0x46u || e.type()==0x31u)?scenery_collision_tiles:collision_tiles;
+            return tiles[unsigned(row)*32u+unsigned(col)];
+        }
+        if(col<0||col>=32) return 0xff;
         const auto early=compose_stage0_horizontal_tiles(visual_level_,camera_pixels());
         return early[unsigned(row)*48u+unsigned(col)];
     };
     auto terrain_property=[&](const Entity64& e,int xo,int yo)->std::uint8_t {
         const auto tile=terrain_tile(e,xo,yo);
         return tile==0xffu ? 0xffu : stage_property(tile);
+    };
+    auto damage_breakable=[&](Entity64& shot,int xo,int yo)->bool {
+        const auto tile=terrain_tile(shot,xo,yo);
+        if(tile<0xa7u || tile>0xaeu) return false;
+        const auto property=stage_property(tile);
+        if((property&0x10u)==0u) return false;
+        // Bank02:$86CB ignores weapon power: every projectile contact advances
+        // exactly one A7..AE damage frame; AE's eighth contact clears the cell.
+        const auto next=tile==0xaeu ? 0u : std::uint8_t(tile+1u);
+        background_.write_object_tile(std::uint16_t(shot.x_fixed()+xo),
+                                      std::uint16_t(shot.y_fixed()+yo),next);
+        sound_events_.push_back(tile==0xaeu ? PlaySound::TerrainBreak
+                                            : PlaySound::TerrainHit);
+        return true;
     };
     auto advance=[&](Entity64& shot) {
         if(shot.type()!=8) {advance_shot(shot);return;}
@@ -773,16 +896,24 @@ void PlaySession::step_60hz(PlayerInput input) {
         // $03.  $8EBB then selects one of four exact velocity pairs so the
         // missile falls to the surface and follows flat/downward terrain.
         if((frame_&3u)==0u) {
+            // $8EA4/$8EAD runs the same $86CB breakable-material service at
+            // the missile's lower/forward probes. The previous native path
+            // omitted M entirely, reducing max-loadout wall damage further.
+            if(damage_breakable(missile_shot_,0x0000,0x0100) ||
+               damage_breakable(missile_shot_,0x0100,0x0000)) {
+                missile_shot_.clear();
+            }
             auto solid=[&](int xo,int yo) {return terrain_property(missile_shot_,xo,yo)==0x03u;};
-            const bool below=solid(0x0100,0x0200);
-            const bool lower=solid(0x0100,0x0300);
-            const bool ahead=solid(0x0300,0x0200);
-            select_ground_missile_velocity(missile_shot_,below,lower,ahead);
+            const bool below=missile_shot_.active() && solid(0x0100,0x0200);
+            const bool lower=missile_shot_.active() && solid(0x0100,0x0300);
+            const bool ahead=missile_shot_.active() && solid(0x0300,0x0200);
+            if(missile_shot_.active()) select_ground_missile_velocity(missile_shot_,below,lower,ahead);
             // The original projectile is gravity-bound, but it must not tunnel
             // through a vertical step that is taller than its climb allowance.
             // Probe the forward face at missile height and one cell above the
             // running surface; on contact retain vertical gravity and stop X.
-            const bool wall=solid(0x0200,0x0000) || solid(0x0200,0x0100);
+            const bool wall=missile_shot_.active() &&
+                (solid(0x0200,0x0000) || solid(0x0200,0x0100));
             // A vertical obstacle is not a surface-following case.  Retire the
             // M projectile immediately so the independent CD20 slot becomes
             // available for the next shot instead of waiting for screen scroll.
@@ -815,8 +946,9 @@ void PlaySession::step_60hz(PlayerInput input) {
                 // object pool. Our $51 wave controllers live outside that
                 // pool, so clear them explicitly at the same boundary.
                 for(auto& e:game_.enemies) if(e.type()!=0x65u) e.clear();
-                enemies_.clear_waves();previous_gate_actors_={};
-                scene_palette_active_=false;scene_palette_phase_=0;
+                game_.stage3_lattice={};
+                enemies_.clear_waves();previous_gate_actors_={};previous_stage3_actors_={};stage3_pose_frame_=0;
+                scene_palette_active_=false;scene_palette_phase_=0;stage5_background_black_=false;
                 scene_palette_color_=scene_base_palette9_;video_.palette[9]=scene_base_palette9_;
                 video_.late_palette[9]=late_normal_palette_[9];video_.tower_palette[9]=tower_normal_palette_[9];
             }
@@ -833,7 +965,7 @@ void PlaySession::step_60hz(PlayerInput input) {
     // ~1.5 seconds and made visible shots pass through the tower too long.
     if((frame_%3u)==0u) {
         const bool death_wrap=std::any_of(game_.enemies.begin(),game_.enemies.end(),
-            [](const auto& e){return e.type()==0x6au && e.state()==0u && e.raw[6]==7u;});
+            [](const auto& e){return e.type()==0x6au && e.raw[0x3f]!=0xd3u && e.state()==0u && e.raw[6]==7u;});
         // $AC96 executes before the type-$78 state dispatch. Retain the
         // pre-dispatch state so palette index 9 still receives its final
         // state-4 write on the exact call that advances the boss to state 5.
@@ -845,6 +977,23 @@ void PlaySession::step_60hz(PlayerInput input) {
         enemies_.step_gate_20hz(rom_,game_,frame_/3u,&sound_events_,
             std::uint8_t((background_.fast_ground_phase()+(background_.ca1c()>>8u))&7u),
             std::uint8_t(background_.ca1c()));
+        if(stage_index_==4u && std::any_of(game_.enemies.begin(),game_.enemies.end(),
+            [](const auto& e){return e.type()==0x77u && e.state()>=4u;}))
+            stage5_background_black_=true;
+        if(boss_palette_kind_==0x64u || boss_palette_kind_==0x14u || boss_palette_kind_==0x7bu || boss_palette_kind_==0x77u || boss_palette_kind_==0x78u) {
+            const bool service=boss_palette_kind_!=0x78u ||
+                std::any_of(game_.enemies.begin(),game_.enemies.end(),[](const auto& e) {
+                    return e.type()==0x78u && e.raw[0x29]==0u && e.raw[0x2b]!=0u;
+                });
+            if(service) {
+                boss_palette_flags_&=std::uint8_t(~2u);
+                if(boss_hit_timer_) --boss_hit_timer_;
+            }
+        }
+        for(const auto& e:game_.enemies) {
+            if(e.type()==0x3eu) background_.apply_object_raster_anchor(e.x_fixed(),e.y_fixed(),0xffu);
+            else if(e.type()==0x14u) background_.apply_object_raster_anchor(e.x_fixed(),e.y_fixed(),0xf4u);
+        }
         // Stage-8 type $78 begins every bank06:$AA1C handler call with
         // A=$F8 / CALL $6C75. This boss therefore owns the SCREEN-4 raster
         // anchor throughout its entrance/fight/destruction states. Without
@@ -855,6 +1004,14 @@ void PlaySession::step_60hz(PlayerInput input) {
             if(!stage8_boss_palette_active_) {
                 video_.palette=stage8_boss_palette(rom_);
                 stage8_boss_palette_active_=true;
+                tower_normal_palette_=video_.palette;
+                // Stage 8 normal/red entries are identical ($8744/$87C4).
+                const auto red=decode_stage_boss_damage_palette(rom_,7u);
+                const auto white=decode_stage_boss_damage_palette(rom_,7u,true);
+                for(unsigned i=0;i<16u;++i) {
+                    tower_normal_palette_[i]=video_.tower_red_palette[i]=stage8_vdp_color(std::uint8_t(red[i]),std::uint8_t(red[i]>>8u));
+                    tower_flash_palette_[i]=stage8_vdp_color(std::uint8_t(white[i]),std::uint8_t(white[i]>>8u));
+                }
             }
             // $AC96 calls $6AEC only on CA02-even frames. +18 has already
             // been advanced by Stage0Enemies; its low three bits select
@@ -901,13 +1058,21 @@ void PlaySession::step_60hz(PlayerInput input) {
         }
         // $7C63 begins every boss-damage service by clearing the transient
         // white-flash bit and counting CE47 down. Hits can re-arm it at zero.
-        boss_palette_flags_&=std::uint8_t(~0x02u);
-        if(boss_hit_timer_) --boss_hit_timer_;
+        if(boss_palette_kind_!=0x64u && boss_palette_kind_!=0x14u && boss_palette_kind_!=0x7bu && boss_palette_kind_!=0x77u && boss_palette_kind_!=0x78u) {
+            boss_palette_flags_&=std::uint8_t(~0x02u);
+            if(boss_hit_timer_) --boss_hit_timer_;
+        }
         const auto sound_mark=sound_events_.size();
         const bool tower_was_destroyed=game_.tower_destroyed;
+        if(stage_index_==2u) {
+            previous_stage3_actors_=game_.enemies;stage3_pose_frame_=frame_;
+        }
         enemies_.step_15hz(rom_,game_,frame_/4,trigger,false,&sound_events_,
             [&](const Entity64& e,int xo,int yo){return terrain_property(e,xo,yo);},
-            [&](const Entity64& e,int xo,int yo){return terrain_tile(e,xo,yo);});
+            [&](const Entity64& e,int xo,int yo){return terrain_tile(e,xo,yo);},
+            [&](std::uint16_t x,std::uint16_t y,std::uint8_t tile) {
+                background_.write_object_tile(x,y,tile);
+            });
         bool have56=false,red56=false,white56=false;
         for(const auto& e:game_.enemies) if(e.active() && e.type()==0x56u) {
             have56=true;red56|=e.raw[0x3c]!=0u || e.state()>=2u;
@@ -931,19 +1096,24 @@ void PlaySession::step_60hz(PlayerInput input) {
     }
     auto damage_enemy=[&](Entity64& enemy,std::uint8_t amount) {
         const auto original=enemy;
-        const auto damage=apply_stage0_damage(rom_,enemy,amount);
+        const bool scripted=enemy.type()==0x3cu && amount==0xffu &&
+            std::any_of(game_.enemies.begin(),game_.enemies.end(),
+                [](const auto& e){return e.type()==0x6au && e.raw[0x3f]!=0xd3u;});
+        const auto damage=apply_stage0_damage(rom_,enemy,amount,scripted);
         if(damage==Stage0DamageResult::Ignored) return false;
         if(original.type()==0x43u && original.state()==1u && enemy.state()==2u)
             for(auto& q:game_.enemies) if(q.type()==0x23u) q.clear(); // original $7058 clear
-        if(original.type()==0x64u) {
-            boss_palette_kind_=0x64u;
+        if(original.type()==0x64u || original.type()==0x7au || original.type()==0x3eu ||
+           original.type()==0x14u || original.type()==0x77u || original.type()==0x7bu || original.type()==0x78u) {
+            boss_palette_kind_=original.type();
             // Custom continuation $7C63: a hit flashes white only when
-            // CE47 is idle; HP <= CE4A ($3C/4 = $0F) latches the red palette.
+            // CE47 is idle; $69D7 sets CE4A to initial HP / 4.
             if(!boss_hit_timer_) {boss_hit_timer_=4u;boss_palette_flags_|=0x02u;}
-            if(damage==Stage0DamageResult::Destroyed || enemy.raw[0x16]<=0x0fu)
+            if(damage==Stage0DamageResult::Destroyed || enemy.raw[0x16]<=(original.type()==0x7au?0x08u:
+                decode_spawn_type_metadata(rom_,original.type()).bytes[3]/4u))
                 boss_palette_flags_|=0x01u;
         }
-        // Boss damage path $7C63 initializes CE4A to startHP/4 and sets
+        // Initializer $69D7 stores startHP/4 in CE4A; $7C63 sets
         // CE48 bit0 once remaining HP reaches that threshold. For type $64
         // start HP is $3C, so $0F is the original red/critical phase.
         if(enemy.type()==0x64u && enemy.raw[0x16]<=0x0fu) enemy.raw[0x3c]=1u;
@@ -977,7 +1147,8 @@ void PlaySession::step_60hz(PlayerInput input) {
                         child.clear();
             }
             if(original.type()==0x14u)
-                for(auto& child:game_.enemies) if(&child!=&enemy && child.type()==0x58u) child.clear();
+                for(auto& child:game_.enemies) if(&child!=&enemy && (child.type()==0x58u ||
+                    (child.type()==0x46u && child.raw[0x03]))) child.clear();
             if(original.type()==0x77u)
                 for(auto& child:game_.enemies) if(&child!=&enemy &&
                     (child.type()==0x76u || child.type()==0x5cu)) child.clear();
@@ -1031,15 +1202,15 @@ void PlaySession::step_60hz(PlayerInput input) {
             } else if(enemy.type()==0x6au) {
                 // Stage-0 gate death handler is fully ported below; do not
                 // attach the generic temporary-lifetime fallback.
-                enemy.raw[0x3f]=0;
+                if(enemy.raw[0x3f]!=0xd3u) enemy.raw[0x3f]=0;
             } else if(enemy.type()==0x6b) {
                 // $7CC3 deliberately preserves +3E from the destroyed
                 // source actor. Bank05:$9B38 consumes it as the persistent
                 // wreck frame selector; do not replace it with a lifetime.
-            } else if(enemy.type()==0x78u) {
-                // Stage-8's $AC3F fatal continuation deliberately keeps the
-                // $78 object alive through states 6/7/8. It never becomes
-                // the ordinary death-table $62 while the stage transition runs.
+            } else if(enemy.type()==0x78u || enemy.type()==0x79u) {
+                // $AC3F and $96F0 keep the boss record for their own death
+                // states. A generic 12-tick effect timeout deletes $79 before
+                // its $20-tick final hold can raise the ending latch at $9717.
                 enemy.raw[0x3f]=0u;
             } else {
                 enemy.flags15()|=1;
@@ -1064,21 +1235,23 @@ void PlaySession::step_60hz(PlayerInput input) {
     };
     // $7058 schedules damage; consume it through the same death/reward/audio
     // service as a bullet. Otherwise blue blasts silently lost every bonus.
-    if((frame_&3u)==0u) for(auto& enemy:game_.enemies)
-        if(enemy.active() && enemy.type()!=0x56u && enemy.raw[4])
+    for(auto& enemy:game_.enemies) {
+        const bool gate20=enemy.type()==0x43u || enemy.type()==0x64u || enemy.type()==0x14u || enemy.type()==0x77u || enemy.type()==0x7bu || enemy.type()==0x78u || enemy.type()==0x79u;
+        if(frame_%(gate20?3u:4u)==0u && enemy.active() && enemy.type()!=0x56u && enemy.raw[4])
             damage_enemy(enemy,enemy.raw[4]);
+    }
     auto collide=[&](Entity64& shot) {
         if(!shot.active() || shot.type()==8u) return;
         for(auto& enemy:game_.enemies) {
             // The stage-3 $3E parent is an invisible controller. Its linked
             // $3F pieces are the actual hit geometry, and only attack family
             // 2 with a nonzero extension phase exposes the weak point.
-            if(enemy.type()==0x3eu) continue;
+            if(enemy.type()==0x3eu || (enemy.type()==0x1bu && enemy.state()==2u) || (enemy.type()==0x76u && !(enemy.flags15()&0x10u))) continue;
             const bool stage3_weak=enemy.type()==0x3fu && enemy.raw[0x23]==2u && enemy.raw[0x24]!=0u;
             const bool stage7_weak=enemy.type()==0x43u && enemy.state()==1u;
             auto target=enemy;
             auto visible_shot=shot;
-            if(camera_pixels()>=1536u && shot.type()!=7u &&
+            if(stage_index_==0u && camera_pixels()>=1536u && shot.type()!=7u &&
                enemy.type()!=0x10u && enemy.type()!=0x12u && enemy.type()!=0x15u && enemy.type()!=0x18u)
                 visible_shot.set_y_fixed(std::uint16_t(shot.y_fixed()-(background_.mode()==4u?7u:8u)*32u));
             if((!stage3_weak && !stage7_weak && !(enemy.raw[0x14]&128u)) ||
@@ -1098,13 +1271,36 @@ void PlaySession::step_60hz(PlayerInput input) {
     for(auto& shot:shots_) collide(shot);
     for(auto& shot:option_shots_) collide(shot);
     collide(missile_shot_);
+    // The ordinary object-vs-player collision pass runs after pending enemy
+    // damage has been consumed.  A touching vulnerable enemy therefore gets
+    // +04=1 for the *next* object pass.  This matters in Stage 3 for type $27:
+    // the original repeatedly arms +04 while its sprite crosses the ship,
+    // causing $8173 to shorten the next re-aim timer to two ticks and, after
+    // fifteen one-point contacts (HP=$0E), destroy the enemy.  Without this
+    // pass the same objects orbit the player indefinitely and pollute later
+    // Stage-3 pool snapshots.
+    if(stage_index_==2u && (frame_&3u)==0u) {
+        for(auto& enemy:game_.enemies) {
+            if(!enemy.active() || enemy.raw[0x04] || !(enemy.raw[0x14]&0x80u) ||
+               enemy.type()==0x3eu || enemy.type()==0x3fu) continue;
+            if(stage0_sprite_overlap(rom_,game_.player,enemy)) enemy.raw[0x04]=1u;
+        }
+    }
     // Original $86BE (enemy scan) precedes $86AF (scenery). A cannon's solid
     // tile must not swallow the projectile before its pending hit is recorded.
+    // $86CB is also the Stage-3 breakable-material handler: A7..AE advance one
+    // tile per hit, and the eighth hit (AE) clears the cell completely.
     if((frame_&3u)==0u) {
-        for(auto& shot:shots_) if(shot.active() && shot.type()==4u &&
-            terrain_property(shot,0x0100,0x0100)!=0) shot.clear();
-        for(auto& shot:option_shots_) if(shot.active() &&
-            terrain_property(shot,0x0100,0x0100)!=0) shot.clear();
+        auto hit_scenery=[&](Entity64& shot) {
+            const auto tile=terrain_tile(shot,0x0100,0x0100);
+            if(tile==0xffu) {shot.clear();return;}
+            const auto property=stage_property(tile);
+            if((property&1u)==0u) return;
+            if((property&0x10u)!=0u) damage_breakable(shot,0x0100,0x0100);
+            shot.clear();
+        };
+        for(auto& shot:shots_) if(shot.active() && shot.type()==4u) hit_scenery(shot);
+        for(auto& shot:option_shots_) if(shot.active()) hit_scenery(shot);
     }
     const unsigned origin=stage_index_?stage_start_frame_:logic_start_frame_;
     const bool stage_tick=frame_>=origin && ((frame_-origin)&3)==0;
@@ -1186,7 +1382,10 @@ void PlaySession::step_60hz(PlayerInput input) {
     // Persist this in the simulation so rewind/jump restores the soundtrack
     // state too. Effects continue throughout the boss destruction/countdown.
     if(std::any_of(game_.enemies.begin(),game_.enemies.end(),
-        [](const auto& e){return e.type()==0x6au;})) music_playing_=false;
+        [](const auto& e){return (e.type()==0x6au && e.raw[0x3f]!=0xd3u) ||
+            (e.type()==0x43u && e.state()>=2u) ||
+            (e.type()==0x78u && e.state()>=6u) ||
+            (e.type()==0x79u && e.state()>=2u);})) music_playing_=false;
     // The shared $6A boss-death countdown advances the stage after its
     // final tick. Stage 2's $7A boss uses the same replacement/death path as
     // the stage-1 gate boss, so do not artificially restrict completion to
@@ -1201,12 +1400,37 @@ void PlaySession::begin_next_stage() {
     background_.reset_stage(stage_index_);
     spawns_=StageSpawnStream::decode_stage(rom_,stage_index_);
     video_=Screen4Snapshot::from_stage_rom(rom_,stage_index_);
+    stage_terrain_properties_=decode_stage_terrain_properties(rom_,stage_index_);
+    boss_terrain_properties_=decode_stage_terrain_properties(rom_,stage_index_,true);
     late_normal_palette_=video_.late_palette;tower_normal_palette_=video_.tower_palette;
-    scene_palette_active_=false;scene_palette_phase_=0;
+    scene_palette_active_=false;scene_palette_phase_=0;stage5_background_black_=false;
     scene_base_palette9_=video_.palette[9];scene_palette_color_=scene_base_palette9_;
     boss_hit_timer_=boss_palette_flags_=boss_palette_kind_=0;
-    stage8_boss_palette_active_=false;
-    game_.enemies={};game_.tower_destroyed=game_.platform_chain_active=false;enemies_.reset();previous_gate_actors_={};
+    stage8_boss_palette_active_=false;boss_scene_active_=false;
+    game_.enemies={};game_.lasers={};game_.stage3_lattice={};game_.tower_destroyed=game_.platform_chain_active=false;enemies_.reset();previous_gate_actors_={};previous_stage3_actors_={};stage3_pose_frame_=0;
+    if(stage_index_==2u) {
+        // The Stage-3 initializer preloads 31 scenery columns before gameplay.
+        // Spawn triggers $1019/$101B/$101D are crossed during that preload, so
+        // the three type-$32 sentries already exist when the first object pass
+        // starts. Their handlers have NOT run yet (all still have +18=$01),
+        // but their screen X has aged with the preload. A guarded original-ROM
+        // trace enters $87C1 at $19C0/$1BC0/$1DC0; seeding one camera pixel
+        // earlier lets the first native object-scroll tick land on those exact
+        // handler-entry anchors. Trigger $101F and later stay live and are
+        // consumed normally by step_to_trigger().
+        const auto initial_trigger=background_.trigger_cursor();
+        for(const auto& record:spawns_.records()) {
+            if(record.trigger>=initial_trigger) break;
+            if(record.type!=0x32u) continue;
+            auto slot=std::find_if(game_.enemies.begin(),game_.enemies.end(),
+                                   [](const auto& e){return !e.active();});
+            if(slot==game_.enemies.end()) break;
+            if(!instantiate_stage0_spawn(rom_,record,game_,background_.spawn_direction())) continue;
+            const unsigned age=(unsigned(initial_trigger-record.trigger)<<8u)+0x20u;
+            slot->set_x_fixed(std::uint16_t(slot->x_fixed()-age));
+        }
+        spawns_.skip_before_trigger(initial_trigger);
+    }
     shots_={};option_shots_={};missile_shot_.clear();presenter_.reset();
     prev_world_phase_valid_=false;camera_half_pixels_=3072u+background_.world_x()*2u;
 }
@@ -1229,7 +1453,25 @@ void PlaySession::seek_decile(unsigned step) {
 std::vector<std::uint32_t> PlaySession::render() {
     // The original boss palette service ($AA22/$6A22) changes the VDP palette
     // globally: transient hit flash wins over the persistent low-HP red state.
-    if(boss_palette_kind_==0x56u) {
+    if(boss_palette_kind_==0x7au || boss_palette_kind_==0x3eu ||
+       boss_palette_kind_==0x14u || boss_palette_kind_==0x77u || boss_palette_kind_==0x7bu) {
+        const auto& p=(boss_palette_flags_&2u)?tower_flash_palette_:
+            ((boss_palette_flags_&1u)?video_.tower_red_palette:tower_normal_palette_);
+        video_.palette=video_.late_palette=video_.tower_palette=p;
+    } else if(boss_palette_kind_==0x78u) {
+        // $AC96 owns indices 5/9; the common damage service owns only the
+        // eight indices named by bank07:$86C0. Preserve the live pulse.
+        const auto& p=(boss_palette_flags_&2u)?tower_flash_palette_:
+            ((boss_palette_flags_&1u)?video_.tower_red_palette:tower_normal_palette_);
+        const auto bank=rom_.bank(7);
+        const unsigned q=0x6c0u+7u*2u;
+        const unsigned table=unsigned(bank[q])|(unsigned(bank[q+1u])<<8u);
+        for(unsigned n=0;n<8u;++n) {
+            const unsigned i=bank[table-0x8000u+n*2u+1u]>>4u;
+            video_.palette[i]=p[i];
+        }
+        video_.late_palette=video_.tower_palette=video_.palette;
+    } else if(boss_palette_kind_==0x56u) {
         const auto& p=(boss_palette_flags_&0x02u)?vehicle_tower_flash_palette_:
             ((boss_palette_flags_&0x01u)?video_.vehicle_tower_red_palette:vehicle_tower_normal_palette_);
         // Type $56 runs while the stage streamer still reports palette_set=1.
@@ -1244,6 +1486,19 @@ std::vector<std::uint32_t> PlaySession::render() {
     if(scene_palette_active_) {
         video_.late_palette[9]=scene_palette_color_;
         video_.tower_palette[9]=scene_palette_color_;
+    }
+    if(stage_index_==6u && boss_scene_active_) {
+        for(const auto& e:game_.enemies) if(e.type()==0x43u) {
+            video_.palette[11]=stage7_weak_palette(e.raw[0x21]);
+            break;
+        }
+        video_.late_palette=video_.tower_palette=video_.palette;
+    }
+    if(stage_index_==4u && stage5_background_black_) {
+        // Bank06 $B136 -> $B4A3 turns scenery indices 9/B/C black once
+        // the last linked tube is destroyed. Keep them black through hits.
+        for(unsigned i:{9u,11u,12u})
+            video_.palette[i]=video_.late_palette[i]=video_.tower_palette[i]=0xff000000u;
     }
     auto bomb_palette=[&](auto p) {
         if(bomb_palette_ticks_) for(auto& c:p) {
@@ -1261,7 +1516,7 @@ std::vector<std::uint32_t> PlaySession::render() {
     const auto initial_palette=bomb_palette(video_.palette);
     std::vector<std::uint32_t> pixels(256*212, 0xff000000u);
     int world_remaining_x=0,world_remaining_y=0;
-    if(camera_pixels()>=1536 && !(render_native_wide_ && stage_index_==0u && background_.mode()==0u &&
+    if((camera_pixels()>=1536 || stage_index_==7u) && !(render_native_wide_ && stage_index_==0u && background_.mode()==0u &&
                                 background_.trigger_cursor()<0x2000u)) {
         const unsigned phase=(frame_-(stage_index_?stage_start_frame_:logic_start_frame_))&3u;
         auto current=background_.compose_d988_raw();
@@ -1301,8 +1556,7 @@ std::vector<std::uint32_t> PlaySession::render() {
         // consumes only the horizontal low nibble, so force that nibble to 0.
         if((stage_index_==7u && std::any_of(game_.enemies.begin(),game_.enemies.end(),
                 [](const auto& e){return e.type()==0x78u;})) ||
-           (stage_index_==8u && std::any_of(game_.enemies.begin(),game_.enemies.end(),
-                [](const auto& e){return e.type()==0x79u;})))
+           (stage_index_==8u && boss_scene_active_))
             current_state.r18=0u;
         // Keep the original R18 fine-scroll in every D988/raster-backed mode.
         // The 512-wide compositor interpolates *between* these proven coarse
@@ -1313,8 +1567,8 @@ std::vector<std::uint32_t> PlaySession::render() {
         const auto current_start_row=std::uint8_t((unsigned(background_.scroll_row())&0xf8u)>>3u);
 
         int tick_x=0,tick_y=0;
-        if(camera_pixels()<3072) tick_x=2;
-        else {
+        if(!background_.gated() && camera_pixels()<3072) tick_x=2;
+        else if(!background_.gated()) {
             tick_x=int(std::int16_t(background_.x_velocity_fp()))/256;
             tick_y=int(std::int16_t(background_.y_velocity_fp()))/256;
         }
@@ -1334,7 +1588,7 @@ std::vector<std::uint32_t> PlaySession::render() {
         // the MSX D988 raster window. Resolve that one-cell difference in the
         // scenery itself, keeping every actor (and its collision/muzzle) in
         // its original continuous coordinate domain across the $12 handoff.
-        const int native_column_origin=render_native_wide_ && stage_index_==0u && camera_pixels()>=3072u
+        const int native_column_origin=render_native_wide_ && (stage_index_==1u || (stage_index_==0u && camera_pixels()>=3072u))
             ? 8+int(std::int16_t(background_.x_velocity_fp()))/256 : 0;
         pixels=presenter_.render(background_,video_,current,&current_state,
                                  native_column_origin-world_remaining_x,-world_remaining_y,&right_edge,
@@ -1451,11 +1705,10 @@ std::vector<std::uint32_t> PlaySession::render() {
         }
     }
     const unsigned presented_palette_set=unsigned(background_.palette_set());
-    const bool stage3_boss_palette=stage_index_==2u && std::any_of(game_.enemies.begin(),game_.enemies.end(),
-        [](const auto& e){return e.type()==0x3eu || e.type()==0x3fu;});
-    const auto& palette=stage3_boss_palette ? kStage3BossPalette :
-        (presented_palette_set>=2u ? video_.tower_palette :
-        (presented_palette_set==1u ? video_.late_palette : video_.palette));
+    auto palette=presented_palette_set>=2u ? video_.tower_palette :
+        (presented_palette_set==1u ? video_.late_palette : video_.palette);
+    apply_stage3_exit_fade(palette,background_.palette_fade_active(),
+                           background_.palette_fade_ticks());
     {
         unsigned pattern_base=0,color_base=0x2000;
         unsigned overlay_set=unsigned(background_.graphics_set());
@@ -1484,7 +1737,7 @@ std::vector<std::uint32_t> PlaySession::render() {
             // Composed tile actors stay on this sub-tile overlay path for the
             // complete stage. This keeps their tile body phase-locked to the
             // SAT/sprite parts instead of snapping at D988/R18 carries.
-            if(render_subpixel_ && (source.type()==0x64u || source.type()==0x3du)) continue;
+            if(render_subpixel_ && ((stage_index_==1u && native_stage2_tile_actor(source.type())) || source.type()==0x64u || source.type()==0x3du || source.type()==0x7bu || source.type()==0x78u || source.type()==0x79u)) continue;
             auto e=source;
             if(render_native_wide_ && (e.type()==0x64u || e.type()==0x3du)) {
                 const auto index=std::size_t(&source-game_.enemies.data());
@@ -1511,13 +1764,12 @@ std::vector<std::uint32_t> PlaySession::render() {
                 t24_phase=int(stage0_t24_phase(source,std::uint8_t(ca3b),
                     std::uint8_t(background_.ca1c())));
             }
-            // Stage-3 boss mode 7 switches the VDP to R4=$0B/R10=$01
-            // while its linked $3F matrices are drawn. The background stream
-            // remains at graphics-set 0 at the gate, so use the boss's real
-            // graphics page explicitly for these actors.
-            const bool stage3_boss_tiles=e.type()==0x3eu || e.type()==0x3fu;
-            const unsigned actor_pattern_base=stage3_boss_tiles?background_.pattern_base(1):pattern_base;
-            const unsigned actor_color_base=stage3_boss_tiles?background_.color_base(1):color_base;
+            // Original boss contexts select $0B/$01 (stages 3/4) and
+            // $2B/$05 (stage 5). The route's scenery page can still be zero.
+            const int boss_graphics=(e.type()==0x3eu || e.type()==0x3fu || e.type()==0x14u || (e.type()==0x46u && e.raw[0x03]))?1:
+                ((e.type()==0x77u || e.type()==0x76u)?4:(e.type()==0x7bu?5:(e.type()==0x78u?3:-1)));
+            const unsigned actor_pattern_base=boss_graphics>=0?background_.pattern_base(boss_graphics):pattern_base;
+            const unsigned actor_color_base=boss_graphics>=0?background_.color_base(boss_graphics):color_base;
             draw_vehicle_tile_actor(rom_,video_,e,pixels,palette,actor_pattern_base,actor_color_base,
                 tile_screen_y_bias,overlay_start_row,overlay_fine_y,t24_phase);
         }
@@ -1702,7 +1954,7 @@ std::vector<std::uint32_t> PlaySession::render_early_presentation(unsigned x_sam
 std::vector<std::uint32_t> PlaySession::render_presentation(unsigned x_samples,unsigned y_samples) {
     // Early scenery and the streamed vehicle share continuous coordinates;
     // the ROM state machines retain their original coarse cadence.
-    if(camera_pixels()<1536) return render_early_presentation(x_samples,y_samples);
+    if(camera_pixels()<1536 && stage_index_!=7u) return render_early_presentation(x_samples,y_samples);
     const unsigned width=256u*x_samples;
 
     const unsigned saved_frame=frame_;
@@ -1733,7 +1985,8 @@ std::vector<std::uint32_t> PlaySession::render_presentation(unsigned x_samples,u
     // Pass 2: camera-relative world actors, over the exact same canonical background.
     game_.enemies=saved_enemies;
     for(auto& e:game_.enemies) if(e.active() &&
-        ((e.flags15()&0x04u)==0u || (stage_index_==0u && native_stage0_tile_actor(e.type())))) e.clear();
+        ((e.flags15()&0x04u)==0u || ((stage_index_==0u && native_stage0_tile_actor(e.type())) || (stage_index_==1u && native_stage2_tile_actor(e.type()))) ||
+         (stage_index_==2u && (e.type()==0x1cu || e.type()==0x28u || e.type()==0x32u || e.type()==0x3eu || e.type()==0x3fu)) || e.type()==0x76u || e.type()==0x7bu || e.type()==0x78u || e.type()==0x79u)) e.clear();
     // Native tile actors are composed once, after the world interpolation.
     // Leaving them in this classification pass made D988 modes apply the
     // camera remainder here and then again below, producing doubled treads,
@@ -1744,7 +1997,8 @@ std::vector<std::uint32_t> PlaySession::render_presentation(unsigned x_samples,u
     // Pass 3: complete screen-space composition.
     game_.player=saved_player; game_.enemies=saved_enemies;
     shots_=saved_shots; option_shots_=saved_option_shots; missile_shot_=saved_missile; options_=saved_options; combat_=saved_combat;
-    for(auto& e:game_.enemies) if(stage_index_==0u && native_stage0_tile_actor(e.type())) e.clear();
+    for(auto& e:game_.enemies) if(((stage_index_==0u && native_stage0_tile_actor(e.type())) || (stage_index_==1u && native_stage2_tile_actor(e.type()))) ||
+        (stage_index_==2u && (e.type()==0x1cu || e.type()==0x28u || e.type()==0x32u || e.type()==0x3eu || e.type()==0x3fu)) || e.type()==0x76u || e.type()==0x7bu || e.type()==0x78u || e.type()==0x79u) e.clear();
     const auto full=render();
     render_fast_ground_phase_override_=saved_fg_override;
     render_native_wide_=saved_native_wide;render_subpixel_=false;
@@ -1753,7 +2007,12 @@ std::vector<std::uint32_t> PlaySession::render_presentation(unsigned x_samples,u
 
     int tick_x=0,tick_y=0;
     if(camera_pixels()>=3072 && !background_.gated()) tick_y=int(std::int16_t(background_.y_velocity_fp()))/256;
-    if(camera_pixels()<3072) tick_x=2;
+    // Only Stage 1's pre-vehicle horizontal stream has the fixed 2px coarse
+    // cadence. Later stages use their actual CA1C velocity immediately. Using
+    // the Stage-1 2px shortcut in Stage 3 (whose X velocity is 1px/tick here)
+    // produced -0.5,-0.5,-0.5,+0.5px presentation steps every four frames:
+    // the entire cave visibly snapped backwards at each logic boundary.
+    if(!background_.gated() && stage_index_==0u && camera_pixels()<3072) tick_x=2;
     else if(!background_.gated()) tick_x=int(std::int16_t(background_.x_velocity_fp()))/256;
     const int tick_samples=tick_x*int(x_samples);
     const int progress_samples=tick_samples*int(phase+1u)/4;
@@ -1772,7 +2031,9 @@ std::vector<std::uint32_t> PlaySession::render_presentation(unsigned x_samples,u
     const unsigned fg_row_offset=std::uint8_t(0u-std::uint8_t(background_.ca1a()>>8u));
     const unsigned wpattern=background_.pattern_base();
     const unsigned wcolor=background_.color_base();
-    const auto& wpalette=background_.palette_set()>=2u?video_.tower_palette:(background_.palette_set()==1u?video_.late_palette:video_.palette);
+    auto wpalette=background_.palette_set()>=2u?video_.tower_palette:(background_.palette_set()==1u?video_.late_palette:video_.palette);
+    apply_stage3_exit_fade(wpalette,background_.palette_fade_active(),
+                           background_.palette_fade_ticks());
     const auto fixed=rom_.bank(0);
     const unsigned fg_table=background_.fast_ground_alternate()?0x1e6bu:0x1e4bu;
 
@@ -1821,8 +2082,10 @@ std::vector<std::uint32_t> PlaySession::render_presentation(unsigned x_samples,u
             for(unsigned q=0;q<x_samples;++q) out[y*width+x*x_samples+q]=c;
         }
     }
-    if(stage_index_==0u) {
-        // $6E8A advances C0E8 independently from the scenery ring. Interpolate
+    if(stage_index_==0u || (stage_index_==2u && background_.stage3_stars_enabled()) || stage_index_==7u) {
+        // $6E8A/$6E97 advances C0E8 independently from the scenery ring.
+        // Stage 3 uses the opposite $0020 star drift selected by $6E97.
+        // Interpolate
         // that phase directly; moving D988 star tiles with R18 caused an 8px
         // jump whenever the scenery crossed a tile boundary.
         const int delta=prev_world_phase_valid_
@@ -1838,7 +2101,7 @@ std::vector<std::uint32_t> PlaySession::render_presentation(unsigned x_samples,u
         const auto left_scene=background_.compose_left_edge();
         const auto right_scene=background_.compose_right_edge(false);
         stamp_stage0_tile_objects(rom_,background_,game_,scenery);
-        const bool horizontal_vehicle=background_.mode()==0u && background_.trigger_cursor()<0x2000u;
+        const bool horizontal_vehicle=stage_index_==0u && background_.mode()==0u && background_.trigger_cursor()<0x2000u;
         const auto horizontal=horizontal_vehicle
             ? compose_stage0_horizontal_tiles(visual_level_,camera_pixels())
             : std::array<std::uint8_t,24*48>{};
@@ -1895,9 +2158,36 @@ std::vector<std::uint32_t> PlaySession::render_presentation(unsigned x_samples,u
     }
     {
         const int sprite_y=background_.mode()==4u?27:28;
+        // Type-$31 writes its CC/CD shaft into D988 at 15 Hz, but the native
+        // head is presented continuously at 60 Hz.  Reusing the last coarse
+        // shaft length while the head has already moved leaves an entire tile
+        // gap (or overlap) at the ceiling/floor.  Keep the ROM gameplay state
+        // untouched and derive only the presentation length from the current
+        // interpolated anchor against the unmodified Stage-2 scenery.
+        const auto stage2_tube_scenery=background_.compose_d988_base();
+        auto stage2_tube_property=[&](std::uint8_t tile)->std::uint8_t {
+            if(background_.graphics_set()==1u) {
+                if(tile>=0x50u && tile<=0xbdu) return 3u;
+                if(tile>=0xc4u && tile<=0xcau) return 2u;
+                if(tile>=0xcbu && tile<=0xcdu) return 0x47u;
+            } else {
+                if((tile>=1u && tile<=0x10u) || (tile>=0xacu && tile<=0xbfu)) return 0x47u;
+                if((tile>=0x11u && tile<=0x4au) || (tile>=0xc0u && tile<=0xcdu)) return 3u;
+            }
+            if(tile>=0xceu && tile<=0xe9u) return 0x24u;
+            return 0u;
+        };
         auto present=[&](const Entity64& source) {
             auto e=present_carrier(source,saved_frame);
-            if(e.type()==0x64u || e.type()==0x3du) {
+            if(stage_index_==2u && (e.type()==0x3eu || e.type()==0x3fu)) {
+                const auto index=std::size_t(&source-game_.enemies.data());
+                const auto& old=previous_stage3_actors_[index];
+                if(old.type()==e.type() && (e.type()==0x3fu || (old.state()!=0u && e.state()!=0u))) {
+                    const int remaining=3-int(std::min(3u,saved_frame-stage3_pose_frame_));
+                    e.set_x_fixed(std::uint16_t(e.x_fixed()+std::int16_t(old.x_fixed()-e.x_fixed())*remaining/4));
+                    e.set_y_fixed(std::uint16_t(e.y_fixed()+std::int16_t(old.y_fixed()-e.y_fixed())*remaining/4));
+                }
+            } else if(e.type()==0x64u || e.type()==0x3du || e.type()==0x7bu || e.type()==0x78u) {
                 const auto index=std::size_t(&source-game_.enemies.data());
                 const auto& old=previous_gate_actors_[index];
                 if(old.type()==e.type() && old.state()!=0u && e.state()!=0u) {
@@ -1938,13 +2228,81 @@ std::vector<std::uint32_t> PlaySession::render_presentation(unsigned x_samples,u
                     +(background_.mode()==4u?28:29))*int(y_samples)
                     +((e.flags15()&4u)?remaining_y_samples:0);
                 composite_carrier(out,layer,wpalette,width,dx,dy,deck_y);
-            } else if(stage_index_==0u && native_stage0_tile_actor(e.type())) {
-                // All other composed stage-0 actors are owned by this one
+            } else if(stage_index_==2u && (e.type()==0x3eu || e.type()==0x3fu)) {
+                // Keep ROM animation cadence; interpolate its complete tile
+                // assembly at quarter-pixel resolution on every 60-Hz frame.
+                draw_tile_actor(rom_,video_,e,out,wpalette,background_.pattern_base(1),background_.color_base(1),
+                    29,start_row,background_.ca1a()&255u,false,x_samples,y_samples);
+            } else if(e.type()==0x76u) {
+                // Complete tube matrices follow the native camera remainder.
+                draw_tile_actor(rom_,video_,e,out,wpalette,background_.pattern_base(4),background_.color_base(4),
+                    29,start_row,background_.ca1a()&255u,false,x_samples,y_samples);
+            } else if(e.type()==0x7bu || e.type()==0x78u || e.type()==0x79u) {
+                const int graphics=e.type()==0x7bu?5:(e.type()==0x78u?3:int(background_.graphics_set()));
+                draw_tile_actor(rom_,video_,e,out,wpalette,background_.pattern_base(graphics),background_.color_base(graphics),
+                    29,start_row,background_.ca1a()&255u,false,x_samples,y_samples);
+            } else if((stage_index_==0u && native_stage0_tile_actor(e.type())) || (stage_index_==1u && native_stage2_tile_actor(e.type())) || (stage_index_==2u && (e.type()==0x1cu || e.type()==0x28u || e.type()==0x32u))) {
+                // Composed stage-1/2 actors are owned by this one
                 // high-resolution pass.  Their low-resolution copies were
                 // deliberately removed from the world/full classification
                 // passes above, so vertical/diagonal camera remainder cannot
                 // be applied twice.
-                if(e.type()==0x1fu) {
+                if(e.type()==0x31u) {
+                    // The ROM changes the CC/CD shaft in complete name-table
+                    // rows at 15 Hz, while native presentation moves the head
+                    // every 60-Hz frame.  Rendering the coarse row count here
+                    // makes the scenery contact jump by exactly one 8px tile.
+                    // Instead, locate the same solid D988 row used by $5CF6,
+                    // keep that ceiling/floor edge fixed, and clip only the
+                    // head end of the shaft at the current sub-tile position.
+                    const auto fine_x=std::uint16_t(background_.ca1c()&0x00ffu);
+                    const auto fine_y=std::uint16_t(background_.ca1a()&0x00ffu);
+                    const int col=int(std::int8_t(std::uint16_t(e.x_fixed()+fine_x)>>8u));
+                    const int row=int(std::int8_t(std::uint16_t(e.y_fixed()+fine_y)>>8u));
+                    const bool ceiling=e.raw[0x03]!=0u;
+                    const int first=ceiling?0:2;
+                    const int direction=ceiling?-1:1;
+                    int solid_row=-1;
+                    for(int n=0;n<24;++n) {
+                        const int rr=row+first+direction*n;
+                        if(rr<0 || rr>=24) break;
+                        const auto tile=(col>=0 && col<32)
+                            ? stage2_tube_scenery[unsigned(rr)*32u+unsigned(col)]
+                            : background_.view_tile(unsigned(col),unsigned(rr));
+                        if(stage2_tube_property(tile)==3u) {solid_row=rr;break;}
+                    }
+                    if(solid_row>=0) {
+                        const int ey=int(std::int16_t(e.y_fixed()));
+                        const int y_floor=ey>=0 ? ey/32 : -int((unsigned(-ey)+31u)/32u);
+                        const int actor_y_samples=y_floor*int(y_samples)+
+                            int(unsigned(e.y_fixed()&31u)*y_samples/32u);
+                        const int bias_samples=(background_.mode()==4u?28:29)*int(y_samples);
+                        const int moving_edge=actor_y_samples+bias_samples+
+                            (ceiling?0:16*int(y_samples));
+                        const unsigned physical_row=(start_row+unsigned(solid_row))&31u;
+                        int contact=((int(physical_row*8u)-int(ps.r23))&255)*int(y_samples)
+                            +remaining_y_samples;
+                        if(ceiling) contact+=8*int(y_samples); // underside of ceiling cell
+                        const int period=256*int(y_samples);
+                        if(ceiling) {
+                            while(contact>moving_edge) contact-=period;
+                            while(contact+period<=moving_edge) contact+=period;
+                            draw_stage2_tube_shaft(video_,e,out,wpalette,wpattern,wcolor,
+                                contact,moving_edge,int(ps.r23),remaining_y_samples,x_samples,y_samples);
+                        } else {
+                            while(contact<moving_edge) contact+=period;
+                            while(contact-period>=moving_edge) contact-=period;
+                            draw_stage2_tube_shaft(video_,e,out,wpalette,wpattern,wcolor,
+                                moving_edge,contact,int(ps.r23),remaining_y_samples,x_samples,y_samples);
+                        }
+                    } else {
+                        // Off-screen/newly spawned fallback: retain the coarse
+                        // ROM stamp until a real scenery contact is visible.
+                        draw_tile_actor(rom_,video_,e,out,wpalette,wpattern,wcolor,
+                            background_.mode()==4u?28:29,start_row,background_.ca1a()&255u,
+                            false,x_samples,y_samples,-1,0,0,int(ps.r23));
+                    }
+                } else if(e.type()==0x1fu) {
                     // Keep both halves of the large cannon in one native object
                     // coordinate domain. Frame 0's 4x2 tile body starts at +16px;
                     // the SAT frame starts at +15px (ROM X offset 8 plus the
@@ -1989,7 +2347,12 @@ std::vector<std::uint32_t> PlaySession::render_presentation(unsigned x_samples,u
                 }
             }
             const int actor_sprite_y=(e.type()==0x10u || e.type()==0x12u || e.type()==0x15u || e.type()==0x18u)?20:sprite_y;
-            draw_entity(rom_,video_,e,out,wpalette,actor_sprite_y,x_samples,y_samples,clip_bottom);
+            // These stage-2 heads ride a tile-rendered red tube. The native
+            // tube already uses screen coordinates, so retain the ROM frame
+            // offsets without the SAT border origin that displaced the head
+            // seven pixels to the right of its support.
+            const int actor_sprite_x=stage_index_==1u && (e.type()==0x2cu || e.type()==0x31u)?0:7;
+            draw_entity(rom_,video_,e,out,wpalette,actor_sprite_y,x_samples,y_samples,clip_bottom,actor_sprite_x);
         };
         for(const auto& e:game_.enemies) present(e);
         for(unsigned i=0;i<combat_.bullets().size();++i) draw_entity(rom_,video_,combat_.bullets()[i],out,wpalette,combat_.opening_bullet(i)?20:sprite_y,x_samples,y_samples);

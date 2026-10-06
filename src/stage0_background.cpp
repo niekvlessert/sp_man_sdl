@@ -27,7 +27,7 @@ Stage0BackgroundStream::Stage0BackgroundStream(const Rom& rom) : rom_(rom) {
 }
 
 void Stage0BackgroundStream::reset() {
-    stage_index_=0;object_raster_anchor_=false;
+    stage_index_=0;object_raster_anchor_=false;palette_fade_ticks_=0;palette_fade_active_=false;frame_service_seen_=false;
     metatile_base_=0;
     tower_destroyed_=false;
     ring_.fill(0);
@@ -123,16 +123,21 @@ void Stage0BackgroundStream::reset() {
 void Stage0BackgroundStream::reset_stage(unsigned stage) {
     if(stage==0u) {reset();return;}
     if(stage>=9u) throw std::out_of_range("stage index");
-    reset();stage_index_=stage;ring_.fill(0);gated_=false;
+    reset();stage_index_=stage;ring_.fill(0);gated_=false;palette_fade_ticks_=0;palette_fade_active_=false;frame_service_seen_=false;
     const auto b=rom_.bank(9);
     auto word=[&](unsigned p){return unsigned(b[p])|(unsigned(b[p+1])<<8);};
     const auto cp=word(0x1c8c+stage*2u)-0x6000u;
     source_=std::uint16_t(word(cp));trigger_cursor_=std::uint16_t(word(cp+2u));
     metatile_base_=word(0x1d76+stage*2u)-0x8000u;
     x_fp_=y_fp_=0;macro_phase_=0;phase_accum_=0;
-    // Non-stage-0 initial traces keep the stage palette selected as set 0;
-    // later FF13/FF1C commands explicitly switch to scene palettes.
-    graphics_set_=0;palette_set_=0;c0d2_=0;c0b5_=0;
+    // Stage 8 inherits Stage 7's R4=$13/R10=$02 atlas. Other stages
+    // begin in context 0; FF13/FF1C can explicitly change the context.
+    graphics_set_=stage==7u?2u:0u;palette_set_=0;
+    // Live Stage 3 keeps C0D2=$20 from the preload onward, producing R23=$04
+    // through $1079/$10A2/$10E9. Starting it at zero made native R23=$E4:
+    // the complete name table (including the $75 lattice) was presented four
+    // tile rows too high even though the E000 ring itself was byte-exact.
+    c0d2_=stage==2u?0x20u:0u;c0b5_=0;
     ca3a_=0;c0e6_=c0e8_=0;
     prepare_data();
     // The original stage initializer preloads 31 columns before releasing
@@ -266,12 +271,15 @@ void Stage0BackgroundStream::apply_fast_ground(
 void Stage0BackgroundStream::apply_d988_parallax_phase(
         std::array<std::uint8_t, 24u * 32u>& out, std::uint16_t phase) const {
     // Bank09 $6EBC-$6F0D. H selects the display column and L selects one
-    // of the eight pre-shifted star tiles $C6..$CD. The interactive native
-    // path supplies the original per-video-frame presentation phase; the
-    // coarse stream state remains separately validated at the ROM anchors.
-    if(stage_index_) return;
+    // of eight pre-shifted star tiles. Stage 1 uses $C6..$CD; Stage 3 uses
+    // the equivalent $58..$5F family from its own graphics context.
+    if(stage_index_!=0u && stage_index_!=2u) return;
+    // Stage-3 FF14 calls $4E73 (C0D4=1). $6E9C then stops inserting
+    // $58..$5F stars. gated_ is the native equivalent of that encounter latch.
+    if(stage_index_==2u && gated_) return;
     const auto h=std::uint8_t(phase>>8u);
-    const auto l=std::uint8_t(0xcdu-((phase&0xffu)>>5u));
+    const auto base=std::uint8_t(stage_index_==2u?0x5fu:0xcdu);
+    const auto l=std::uint8_t(base-((phase&0xffu)>>5u));
     for (unsigned y = 0; y < 24u; ++y) {
         const unsigned c0=(unsigned(e800_[y])+h)&31u;
         const unsigned c1=(unsigned(e800_[y+1u])+h+13u)&31u;
@@ -281,9 +289,10 @@ void Stage0BackgroundStream::apply_d988_parallax_phase(
 }
 void Stage0BackgroundStream::apply_d988_parallax(
         std::array<std::uint8_t, 24u * 32u>& out) const {
+    const auto base=std::uint8_t(stage_index_==2u?0x5fu:0xcdu);
     apply_d988_parallax_phase(out,
         std::uint16_t((std::uint16_t(parallax_h_)<<8u)|
-                      (std::uint16_t(0xcdu-parallax_l_)<<5u)));
+                      (std::uint16_t(base-parallax_l_)<<5u)));
 }
 
 std::array<std::uint8_t, 24u * 32u> Stage0BackgroundStream::compose_d988_base() const {
@@ -371,6 +380,22 @@ std::uint8_t Stage0BackgroundStream::view_tile(unsigned x, unsigned y) const noe
     return ring_[r * 64u + c];
 }
 
+bool Stage0BackgroundStream::write_object_tile(std::uint16_t x_fixed,
+                                               std::uint16_t y_fixed,
+                                               std::uint8_t tile) noexcept {
+    // Fixed $76D0 uses only the low byte of CA1A/CA1C. Their carry into the
+    // object's high coordinate selects the logical 32x24 cell; $76F1 clips
+    // before $4E3A maps it through integrated C0CC/C0CD into E000.
+    const auto ax=std::uint16_t(x_fixed+std::uint8_t(ca1c()));
+    const auto ay=std::uint16_t(y_fixed+std::uint8_t(ca1a()));
+    const unsigned x=ax>>8u,y=ay>>8u;
+    if(x>=0x20u || y>=0x18u) return false;
+    const unsigned c=(unsigned(floor_div8(int(world_x())))+x)&63u;
+    const unsigned r=(unsigned(floor_div8(world_y()))+y)&31u;
+    ring_[r*64u+c]=tile;
+    return true;
+}
+
 void Stage0BackgroundStream::advance_trigger_segment() noexcept {
     // Original $78F0: keep the high nibble of CA35, advance it by $10,
     // and clear the low byte. This yields $11xx->$2000->$3000...
@@ -436,11 +461,22 @@ bool Stage0BackgroundStream::prepare_data() {
             // encounter. The bytes after A94A belong to the following stage.
             x_vel_fp_=y_vel_fp_=0;gated_=true;return false;
         }
+        // Stage 3's end sequence is FF13 A94A, FF15, FF18. $4CE0 loads
+        // the A94A target palette (indices 0,1,2,3,4,5,9,11,12 -> black) and
+        // arms EF60=$80. $6E44/$4D6E then performs the 32-video-frame fade.
+        // FF15 rewinds itself while EF60 is nonzero and loads scroll preset 7
+        // (zero X/Y velocity), so the cave remains stationary while it fades.
+        if(cmd==0x15u && stage_index_==2u && palette_fade_ticks_) {
+            source_=std::uint16_t(source_-2u);
+            apply_preset(7u);
+            return false;
+        }
+
         // $18 calls $6E2D/$6E0B on the original Z80: clear the complete
         // E000-E7FF 32x64 tile ring and its D988 composition buffer.
-        // Without this, stale machinery from the previous scene leaks into
-        // the diagonal/tower scene (the exact corruption seen in the preview).
-        if (cmd == 0x18u) ring_.fill(0);
+        // In Stage 3 this is reached only after the FF15 palette fade above
+        // has completed, so the cave has already faded to black before clear.
+        if (cmd == 0x18u) {ring_.fill(0);if(stage_index_==2u) palette_fade_active_=false;}
 
         const unsigned n = payload_size(cmd);
         const auto po = source_ >= 0xA000u ? std::size_t(source_ - 0xA000u) : stream.size();
@@ -477,6 +513,12 @@ bool Stage0BackgroundStream::prepare_data() {
             else if (ptr == 0xA44Du) palette_set_ = 2;
             else if(stage_index_==1u && ptr==0xA94Au) palette_set_=1;
             else if(stage_index_==1u && ptr==0xA95Du) palette_set_=2;
+            else if(stage_index_==2u && ptr==0xA94Au) {
+                // Original A94A is not an alternate static palette. It is a
+                // $4CE0 transition script whose nine entries all target RGB
+                // 000, followed by FE. EF60 then counts 32 display frames.
+                palette_fade_ticks_=32u;palette_fade_active_=true;
+            }
         }
 
         // $12 is the real transition into the two-source mode-2 streamer.
@@ -628,9 +670,13 @@ void Stage0BackgroundStream::stream_phase() {
 }
 
 void Stage0BackgroundStream::step_parallax() {
-    if(stage_index_) return;
-    // $6E8A path used by stage 0 (CA10=0). CA12/CA14 are the negated
-    // camera velocities divided by 8, in signed 8.8 tile units.
+    if(stage_index_!=0u && stage_index_!=2u && stage_index_!=7u) return;
+    if(stage_index_==2u && gated_) return; // $6E9C: C0D4 stops Stage-3 stars at the boss gate.
+    // Bank09 $6E44 selects two distinct star paths by CA10:
+    //   Stage 1 (CA10=0): $6E8A, DE=+$0020, base tile $CD.
+    //   Stage 3 (CA10=2): $6E97, DE=-$0020, base tile $5F.
+    // Stage 8 retains the already-validated native phase path. CA12/CA14 are
+    // the negated camera velocities divided by 8, in signed 8.8 tile units.
     const auto vy = std::int16_t(y_vel_fp_);
     const auto vx = std::int16_t(x_vel_fp_);
     const auto ca12s = asr3(std::int16_t(-vy));
@@ -652,13 +698,26 @@ void Stage0BackgroundStream::step_parallax() {
         }
     }
 
-    c0e8_ = std::uint16_t(c0e8_ + std::uint16_t(ca14s) + 0x20u);
+    const int star_step=stage_index_==2u ? -0x20 : 0x20;
+    const std::uint8_t star_base=stage_index_==2u ? 0x5fu : 0xcdu;
+    c0e8_ = std::uint16_t(c0e8_ + std::uint16_t(ca14s) + std::uint16_t(star_step));
     const auto t = std::uint16_t(c0e8_ + (ca1c() & 0x00ffu));
     parallax_h_ = std::uint8_t(t >> 8u);
-    parallax_l_ = std::uint8_t(0xcdu - ((t & 0xffu) >> 5u));
+    parallax_l_ = std::uint8_t(star_base - ((t & 0xffu) >> 5u));
+}
+
+void Stage0BackgroundStream::step_60hz() {
+    frame_service_seen_=true;
+    if(palette_fade_ticks_) --palette_fade_ticks_;
 }
 
 void Stage0BackgroundStream::step_15hz() {
+    // Background-only regression/probe users do not have a 60-Hz session
+    // clock. Preserve the same 32-frame EF60 duration by consuming four
+    // video-frame steps per coarse tick only when no frame service occurred.
+    if(palette_fade_ticks_ && !frame_service_seen_)
+        palette_fade_ticks_=std::uint8_t(palette_fade_ticks_>4u?palette_fade_ticks_-4u:0u);
+    frame_service_seen_=false;
     if (gated_) {
         // The streamer stops at $16; the $65 animation/parallax controller
         // keeps running during the boss fight, including the $3D tread phases.

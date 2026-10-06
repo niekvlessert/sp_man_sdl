@@ -14,6 +14,7 @@ class Stage0Enemies {
 public:
     using TerrainProbe=std::function<std::uint8_t(const Entity64&,int,int)>;
     using TileProbe=std::function<std::uint8_t(const Entity64&,int,int)>;
+    using TileWrite=std::function<void(std::uint16_t,std::uint16_t,std::uint8_t)>;
     void reset() noexcept { waves_={};stage_complete_=false;type1a_shot_counter_=0;stage3_parent_prev_x_={};stage3_parent_prev_y_={}; }
     void clear_waves() noexcept { waves_={}; }
     bool spawn(const Rom& rom, const SpawnRecord& record, GameState& game,
@@ -26,7 +27,8 @@ public:
     bool stage_complete() const noexcept { return stage_complete_; }
     void step_15hz(const Rom& rom, GameState& game, unsigned tick, std::uint16_t trigger,
                    bool include_gate=true, std::vector<PlaySound>* sounds=nullptr,
-                   const TerrainProbe& terrain_probe={},const TileProbe& tile_probe={});
+                   const TerrainProbe& terrain_probe={},const TileProbe& tile_probe={},
+                   const TileWrite& tile_write={});
     bool destroyed(const Entity64& enemy);
 private:
     bool stage_complete_=false;
@@ -34,7 +36,7 @@ private:
     struct Wave {
         bool active=false,repeat=false,bonus=false;
         std::uint8_t x=0,y=0,count=0,remaining=0,interval=0,timer=0,
-            first_timer=0,end_trigger=0,type=0,parameter=0,ordinal=0;
+            first_timer=0,end_trigger=0,type=0,parameter=0,ordinal=0,owner=0;
         unsigned alive=0,killed=0;
     };
     std::array<Wave,16> waves_{};

@@ -57,8 +57,43 @@ int main(int argc,char** argv) {
         {0xaa1au,0x106du,0x036du,0,0,0xc7abe820u},
     }};
     sm::Stage0BackgroundStream stage3(rom);stage3.reset_stage(2);
+    assert(stage3.scroll_row()==0x20u && stage3.presentation_state().r23==0x04u);
+    {
+        // Bank09 $6E44 dispatches a genuinely different Stage-3 star path:
+        // $6E97 uses DE=-$20 and tiles $58..$5F, whereas Stage 1 uses
+        // $6E8A with DE=+$20 and tiles $C6..$CD.
+        sm::Stage0BackgroundStream s1stars(rom);s1stars.reset_stage(0u);
+        const auto s1p=s1stars.star_x_phase();s1stars.step_15hz();
+        assert(std::int16_t(s1stars.star_x_phase()-s1p)==-0x20);
+        sm::Stage0BackgroundStream s3stars(rom);s3stars.reset_stage(2u);
+        auto star_tiles=s3stars.compose_d988_base();
+        assert(std::any_of(star_tiles.begin(),star_tiles.end(),
+            [](auto t){return t>=0x58u && t<=0x5fu;}));
+        const auto s3p=s3stars.star_x_phase();s3stars.step_15hz();
+        assert(std::int16_t(s3stars.star_x_phase()-s3p)==-0x40);
+        star_tiles=s3stars.compose_d988_base();
+        assert(std::any_of(star_tiles.begin(),star_tiles.end(),
+            [](auto t){return t>=0x58u && t<=0x5fu;}));
+    }
     assert(check_references(stage3,stage3_refs,5000u)==stage3_refs.size());
-    while(!stage3.gated()) stage3.step_15hz();
+    {
+        sm::Stage0BackgroundStream stage3fade(rom);stage3fade.reset_stage(2u);
+        unsigned guard=5000u;
+        while(stage3fade.source_address()<0xab9au && guard--) stage3fade.step_15hz();
+        assert(guard && stage3fade.source_address()==0xab9au);
+        assert(stage3fade.palette_fade_active() && stage3fade.palette_fade_ticks()>0u);
+        const auto x=stage3fade.world_x();
+        // FF15 loads preset 7 while EF60 is active: the cave stops moving
+        // and fades for 32 display frames instead of being cleared abruptly.
+        stage3fade.step_15hz();
+        assert(stage3fade.world_x()==x && stage3fade.x_velocity_fp()==0 && stage3fade.y_velocity_fp()==0);
+        guard=32u;
+        while(stage3fade.palette_fade_ticks() && guard--) stage3fade.step_15hz();
+        assert(!stage3fade.palette_fade_ticks());
+        while(!stage3fade.gated() && guard++<64u) stage3fade.step_15hz();
+        assert(stage3fade.gated() && !stage3fade.stage3_stars_enabled());
+    }
+    assert(!stage3.stage3_stars_enabled());
     assert(stage3.source_address()==0xaba7u);
     assert(stage3.trigger_cursor()==0x2000u);
     assert(stage3.world_x()==2744u && stage3.world_y()==0);
@@ -101,6 +136,313 @@ int main(int argc,char** argv) {
     assert(c4[0x14]==1u && c4[0x17]==7u && c4[0x19]==33u &&
            c4[0x2d]==1u && c4[0x37]==1u && c4[0x38]==7u &&
            c4[0x39]==10u && c4[0x5f]==1u);
+
+    // Regular Stage-3 families. These checks lock the ROM-specific behavior
+    // that was previously missing from the native port.
+    const auto find3=[&](std::uint8_t type,std::uint16_t trigger=0u) {
+        return std::find_if(s3.records().begin(),s3.records().end(),[&](const auto& r) {
+            return r.type==type && (!trigger || r.trigger==trigger);
+        });
+    };
+    {
+        // $983D/$67CE: Stage-3 type-$13 wave records end on the child type and
+        // therefore have no ninth parameter byte. This exact 8-byte record was
+        // previously rejected, making the first half of Stage 3 much too empty.
+        const auto rec=find3(0x51u,0x101fu);assert(rec!=s3.records().end());
+        assert(rec->payload.size()==8u && rec->payload[7]==0x13u);
+        sm::GameState g;sm::Stage0Enemies logic;
+        assert(logic.spawn(rom,*rec,g,1u));
+        auto controller=std::find_if(g.enemies.begin(),g.enemies.end(),
+            [](const auto& e){return e.type()==0x51u;});
+        assert(controller!=g.enemies.end() && controller->state()==2u &&
+               controller->x_fixed()==0x1f00u && controller->y_fixed()==0x0800u);
+        logic.step_15hz(rom,g,0u,0x101fu,false); // state constructor compensation: 3 -> 2
+        logic.step_15hz(rom,g,1u,0x101fu,false); // encoded first-timer 2 -> 1
+        assert(std::none_of(g.enemies.begin(),g.enemies.end(),
+            [](const auto& e){return e.type()==0x13u;}));
+        logic.step_15hz(rom,g,2u,0x101fu,false); // births first child
+        auto child=std::find_if(g.enemies.begin(),g.enemies.end(),
+            [](const auto& e){return e.type()==0x13u;});
+        assert(child!=g.enemies.end());
+        assert(child->x_fixed()==0x1f00u && child->y_fixed()==0x0800u);
+        // The child is created before the normal enemy pass, so its $53C4
+        // state-0 constructor executes in this same object tick.
+        assert(child->state()==1u && child->raw[0x17]==0x0au &&
+               child->raw[0x34]==1u && child->raw[0x38]==1u);
+        auto sw=[](const sm::Entity64& q,unsigned p) {
+            return std::int16_t(unsigned(q.raw[p])|(unsigned(q.raw[p+1])<<8u));
+        };
+        assert(sw(*child,13)==-0x80);
+
+        // The controller itself consumes a real CE80 slot until its final
+        // linked child is gone ($98C3/$6E98). A one-child copy makes that
+        // lifetime deterministic without waiting through the full wave.
+        auto one=*rec;one.payload[3]=1u;
+        sm::GameState one_game;sm::Stage0Enemies one_logic;
+        for(unsigned i=0;i<3u;++i) one_game.enemies[i].type()=0x32u;
+        assert(one_logic.spawn(rom,one,one_game,1u));
+        one_logic.step_15hz(rom,one_game,0u,0x101fu,false);
+        one_logic.step_15hz(rom,one_game,1u,0x101fu,false);
+        one_logic.step_15hz(rom,one_game,2u,0x101fu,false);
+        auto one_controller=std::find_if(one_game.enemies.begin(),one_game.enemies.end(),
+            [](const auto& e){return e.type()==0x51u;});
+        auto one_child=std::find_if(one_game.enemies.begin(),one_game.enemies.end(),
+            [](const auto& e){return e.type()==0x13u;});
+        assert(one_controller!=one_game.enemies.end() && one_child!=one_game.enemies.end());
+        assert(std::distance(one_game.enemies.begin(),one_controller)==3 &&
+               one_controller->raw[0x34]==0x80u && one_child->raw[0x34]==4u);
+        one_child->clear();
+        one_logic.step_15hz(rom,one_game,3u,0x101fu,false);
+        assert(std::none_of(one_game.enemies.begin(),one_game.enemies.end(),
+            [](const auto& e){return e.type()==0x51u;}));
+    }
+    {
+        // $821D: after its initial $60 wait the heavy emitter uses the $18
+        // default interval, creates exactly four type-$45 homing children,
+        // then reloads $18 before another burst can begin.
+        const auto rec=find3(0x28u,0x1100u);assert(rec!=s3.records().end());
+        sm::GameState g;g.difficulty=1u;sm::Stage0Enemies logic;
+        assert(sm::instantiate_stage0_spawn(rom,*rec,g,1u));auto& e=g.enemies[0];
+        logic.step_15hz(rom,g,0u,0u,false);assert(e.state()==1u && e.raw[0x17]==0x60u);
+        e.raw[0x17]=1u;logic.step_15hz(rom,g,1u,0u,false);
+        assert(e.state()==2u && e.raw[0x17]==0x18u);
+        e.raw[0x17]=1u;logic.step_15hz(rom,g,2u,0u,false);assert(e.state()==3u);
+        for(unsigned t=3u;t<7u;++t) logic.step_15hz(rom,g,t,0u,false);
+        assert(e.state()==3u && e.raw[0x20]==4u);
+        unsigned homing=0;for(const auto& q:g.enemies) homing+=q.type()==0x45u;
+        assert(homing==4u);
+        logic.step_15hz(rom,g,7u,0u,false);
+        assert(e.state()==2u && e.raw[0x20]==0u && e.raw[0x17]==0x18u);
+    }
+    {
+        // $8AD7/$8910/$9E7C: the lattice controller has eight route records.
+        // Record 0 is intro-only; its first pulse makes four secondary $75
+        // records through the two linked $35 endpoints, then route 1 follows.
+        const auto rec=find3(0x72u,0x1070u);assert(rec!=s3.records().end());
+        sm::GameState g;sm::Stage0Enemies logic;
+        assert(sm::instantiate_stage0_spawn(rom,*rec,g,1u));auto& e=g.enemies[0];
+        logic.step_15hz(rom,g,0u,0u,false);
+        // State 0 falls through $8B46 into the route body, so route 0's
+        // initial $02 counter is already $01 after this first handler call.
+        assert(e.state()==2u && e.raw[0x24]==1u && e.raw[0x17]==0x01u);
+        assert(e.raw[0x26]==0x0cu && e.raw[0x27]==0x08u &&
+               e.raw[0x28]==0x12u && e.raw[0x29]==0x07u);
+        unsigned endpoints=0;for(const auto& q:g.enemies) endpoints+=q.type()==0x35u;
+        assert(endpoints==2u);
+        // Both $8B79 (+18) and $8B59 (+17) are literal DEC paths. They must
+        // actually reach zero; the shared $6AD2 helper deliberately does not.
+        e.raw[0x18]=1u;e.raw[0x17]=0x10u;
+        logic.step_15hz(rom,g,8u,0u,false);
+        assert(e.state()==2u && e.raw[0x18]==0u && e.raw[0x23]==1u);
+        assert(e.raw[13]==0x00u && e.raw[14]==0xfeu);
+        e.raw[0x23]=0u;e.raw[0x18]=0x48u;e.raw[0x17]=1u;
+        logic.step_15hz(rom,g,1u,0u,false);
+        assert(e.state()==3u && e.raw[0x17]==0u);
+        logic.step_15hz(rom,g,2u,0u,false);assert(e.state()==4u);
+        logic.step_15hz(rom,g,3u,0u,false);assert(e.state()==5u && e.raw[0x22]==1u);
+        unsigned lines=0;for(const auto& q:g.lasers) lines+=q.type()==0x75u;
+        assert(lines==4u);
+        // D460 follows CE80 in the ROM's object pass. These records have
+        // therefore already had their first velocity integration and $9E7C
+        // state-0 fall-through when the parent pulse finishes.
+        for(const auto& q:g.lasers) if(q.type()==0x75u)
+            assert(q.state()==1u && q.raw[0x17]==0x1fu);
+        logic.step_15hz(rom,g,4u,0u,false);assert(e.state()==1u && e.raw[0x22]==0u);
+        for(const auto& q:g.lasers) if(q.type()==0x75u)
+            assert(q.state()==1u && q.raw[0x17]==0x1eu);
+        auto line75=std::find_if(g.lasers.begin(),g.lasers.end(),
+            [](auto& q){return q.type()==0x75u;});
+        assert(line75!=g.lasers.end());
+        line75->raw[0x17]=1u;
+        const auto count75=line75->raw[0x0f];
+        logic.step_15hz(rom,g,5u,0u,false);
+        // State-1 expiry falls through $9EA4: two cells are painted in the
+        // same call and the fresh $0A paint timer is already $09.
+        assert(line75->state()==2u && line75->raw[0x17]==0x09u &&
+               line75->raw[0x18]==count75 && line75->raw[0x0f]==count75-2u);
+        // State 1 has the same $8B46 fall-through: route 1 loads
+        // $3C and immediately consumes its first tick to $3B.
+        assert(e.state()==2u && e.raw[0x24]==2u && e.raw[0x17]==0x3bu);
+        // Odd line lengths are special in the ROM: the second $9F05 call
+        // sees +0F==0 and returns Z, so $9EAE enters $9ECA immediately.
+        // Thus the last CA/CB cell and the first two A7 cells happen in one
+        // handler invocation, without decrementing +17.
+        auto odd75=std::find_if(g.lasers.begin(),g.lasers.end(),
+            [](auto& q){return q.type()==0x75u && q.raw[0x0f]==7u;});
+        assert(odd75!=g.lasers.end());
+        for(auto& q:g.lasers) if(&q!=&*odd75) q.clear();
+        odd75->state()=2u;odd75->raw[0x30]=7u;odd75->raw[0x0f]=1u;
+        odd75->raw[0x18]=7u;odd75->raw[0x17]=7u;
+        odd75->raw[11]=odd75->raw[12]=odd75->raw[13]=odd75->raw[14]=0u;
+        const auto odd_x=odd75->x_fixed(),odd_y=odd75->y_fixed();
+        const int odd_sx=std::int8_t(odd75->raw[0x12]),odd_sy=std::int8_t(odd75->raw[0x10]);
+        const auto odd_tile=odd75->raw[0x11];
+        unsigned write_count=0;std::array<std::uint8_t,3> write_tiles{};
+        sm::Stage0Enemies::TileWrite writer=[&](std::uint16_t,std::uint16_t,std::uint8_t tile) {
+            assert(write_count<write_tiles.size());write_tiles[write_count++]=tile;
+        };
+        logic.step_15hz(rom,g,6u,0u,false,nullptr,{}, {},writer);
+        assert(odd75->active() && odd75->state()==2u && odd75->raw[0x0f]==0u &&
+               odd75->raw[0x18]==5u && odd75->raw[0x17]==7u);
+        assert(odd75->x_fixed()==std::uint16_t(odd_x-odd_sx*0x100) &&
+               odd75->y_fixed()==std::uint16_t(odd_y-odd_sy*0x100));
+        assert(write_count==3u && write_tiles[0]==odd_tile &&
+               write_tiles[1]==0xa7u && write_tiles[2]==0xa7u);
+    }
+    {
+        // +15=$04 enrolls a painting/erasing D460 $75 record in the common
+        // camera-scroll service; travelling +15=$21 records remain fixed.
+        sm::GameState g;auto& q=g.lasers[0];q.clear();q.type()=0x75u;
+        q.set_x_fixed(0x1200u);q.set_y_fixed(0x0800u);q.flags15()=0x04u;
+        sm::step_stage0_object_scroll_15hz(g,0x0100,0,&rom);
+        assert(q.x_fixed()==0x11e0u);
+        q.flags15()=0x21u;
+        sm::step_stage0_object_scroll_15hz(g,0x0100,0,&rom);
+        assert(q.x_fixed()==0x11e0u);
+    }
+    {
+        // $BDDB: velocity is the aimed vector /4 and acceleration is /8.
+        const auto rec=find3(0x25u,0x10e0u);assert(rec!=s3.records().end());
+        sm::GameState g;g.player.set_x_fixed(0x0800u);g.player.set_y_fixed(0x0800u);
+        sm::Stage0Enemies logic;assert(sm::instantiate_stage0_spawn(rom,*rec,g,1u));
+        auto& e=g.enemies[0];logic.step_15hz(rom,g,0u,0u,false);assert(e.state()==1u);
+        logic.step_15hz(rom,g,1u,0u,false);assert(e.state()==2u && e.raw[0x17]==0x10u);
+        auto sw=[](const sm::Entity64& q,unsigned p) {
+            return std::int16_t(unsigned(q.raw[p])|(unsigned(q.raw[p+1])<<8u));
+        };
+        const auto vy=sw(e,11),vx=sw(e,13),ay=sw(e,15),ax=sw(e,17);
+        auto ashift=[](int v){return v>=0?v/2:-int((unsigned(-v)+1u)/2u);};
+        assert(ay==ashift(vy) && ax==ashift(vx));
+    }
+
+    {
+        // Fixed $53C4: Stage-3 wave type $13 cruises left for ten object
+        // ticks, then starts the exact +$60 X / +/-$40 Y return arc with
+        // -$000F X acceleration and a $16-tick phase timer.
+        sm::GameState g;g.player.set_x_fixed(0x0500u);g.player.set_y_fixed(0x1000u);
+        auto& e=g.enemies[0];e.clear();e.type()=0x13u;e.set_x_fixed(0x1f00u);e.set_y_fixed(0x0800u);
+        sm::initialize_stage0_flyer(rom,e,0u,0u,0u,g.player);
+        sm::Stage0Enemies logic;assert(e.state()==0u);
+        logic.step_15hz(rom,g,0u,0u,false);
+        assert(e.state()==1u && e.raw[0x17]==0x0au);
+        auto sw=[](const sm::Entity64& q,unsigned p) {
+            return std::int16_t(unsigned(q.raw[p])|(unsigned(q.raw[p+1])<<8u));
+        };
+        assert(sw(e,11)==0 && sw(e,13)==-0x80);
+        e.state()=2u;e.raw[0x17]=1u;
+        logic.step_15hz(rom,g,1u,0u,false);
+        assert(e.state()==3u && e.raw[0x17]==0x16u);
+        assert(sw(e,11)==0x40 && sw(e,13)==0x60 && sw(e,15)==0 && sw(e,17)==-0x0f);
+        // Dispatch continuation $6DF5->$6EED keeps signed coarse X=$FE/$FF,
+        // but deletes the object at $FD and below even when the camera itself
+        // is not scrolling horizontally.
+        e.state()=3u;e.raw[0x17]=2u;e.set_x_fixed(0xfe51u);e.set_y_fixed(0x0980u);
+        e.raw[11]=e.raw[12]=e.raw[13]=e.raw[14]=e.raw[15]=e.raw[16]=e.raw[17]=e.raw[18]=0u;
+        e.raw[0x17]=2u;logic.step_15hz(rom,g,2u,0u,false);assert(e.active());
+        e.set_x_fixed(0xfd67u);e.raw[0x17]=2u;
+        logic.step_15hz(rom,g,3u,0u,false);assert(!e.active());
+    }
+    {
+        // Fixed $54C1/$550D: the two Stage-3 $18 wave parameters (03/83)
+        // select the same vertical oscillator but opposite horizontal travel.
+        auto make=[&](std::uint8_t parameter) {
+            sm::GameState g;auto& e=g.enemies[0];e.clear();e.type()=0x18u;
+            e.set_x_fixed(0x1f00u);e.set_y_fixed(0x0400u);
+            sm::initialize_stage0_flyer(rom,e,parameter,0u,0u,g.player);
+            return g;
+        };
+        auto a=make(0x03u),b=make(0x83u);
+        auto sw=[](const sm::Entity64& q,unsigned p) {
+            return std::int16_t(unsigned(q.raw[p])|(unsigned(q.raw[p+1])<<8u));
+        };
+        assert(a.enemies[0].state()==1u && a.enemies[0].raw[0x21]==3u &&
+               a.enemies[0].raw[0x22]==0x60u && a.enemies[0].raw[0x17]==0x17u);
+        assert(sw(a.enemies[0],13)==-0x40 && sw(b.enemies[0],13)==0x40);
+        assert(sw(a.enemies[0],15)==4 && sw(b.enemies[0],15)==4);
+        sm::Stage0Enemies logic;logic.step_15hz(rom,a,0u,0u,false);
+        assert(sw(a.enemies[0],11)==4);
+        for(unsigned t=1;t<24u;++t) logic.step_15hz(rom,a,t,0u,false);
+        assert(sw(a.enemies[0],11)>0 && sw(a.enemies[0],15)<0); // +$60 limit reversed acceleration
+    }
+    {
+        // $6DE1->$6F0D: Stage-3 $1C launchers use the ordinary anchor cull.
+        // X=$FE00 is still legal; the next $20 scenery step to $FDE0 removes
+        // the object even though its decoded tile matrix is four columns wide.
+        const auto rec=find3(0x1cu,0x10d3u);assert(rec!=s3.records().end());
+        sm::GameState g;assert(sm::instantiate_stage0_spawn(rom,*rec,g,1u));
+        auto& e=g.enemies[0];assert(e.type()==0x1cu && (e.flags15()&4u));
+        e.set_x_fixed(0xfe20u);
+        sm::step_stage0_object_scroll_15hz(g,0x0100,0,&rom);
+        assert(e.active() && e.x_fixed()==0xfe00u);
+        sm::step_stage0_object_scroll_15hz(g,0x0100,0,&rom);
+        assert(!e.active());
+    }
+    {
+        // Bank06 $BA9F: a ceiling $1D child launches at +$00A0 with
+        // -$0018 acceleration armed for its return. At the player-relative
+        // turn row it stops, enters state 2, and begins accelerating upward.
+        sm::GameState g;g.player.set_y_fixed(0x0800u);
+        auto& e=g.enemies[0];e.clear();e.type()=0x1du;e.raw[0x20]=1u;
+        e.set_x_fixed(0x1de0u);e.set_y_fixed(0x0300u);
+        sm::Stage0Enemies logic;logic.step_15hz(rom,g,0u,0u,false);
+        auto sw=[](const sm::Entity64& q,unsigned p) {
+            return std::int16_t(unsigned(q.raw[p])|(unsigned(q.raw[p+1])<<8u));
+        };
+        assert(e.state()==1u && e.raw[0x21]==9u && e.raw[0x22]==3u);
+        assert(sw(e,11)==0x00a0 && sw(e,15)==-0x18);
+        e.set_y_fixed(0x0940u);g.difficulty=6u;g.player.set_x_fixed(0x0500u);
+        logic.step_15hz(rom,g,1u,0u,false);
+        assert(e.state()==2u && sw(e,11)==0);
+        // Player is well to the left, so $BB48 queues heading 0. Difficulty
+        // 6 selects $18 from $9D15 and $9CAD increments it to $1B.
+        assert(e.raw[0x26]==1u && e.raw[0x27]==0x1bu);
+        sm::Stage0Combat combat;std::vector<sm::PlaySound> sounds;
+        combat.step(rom,g,0u,0,0,sounds);
+        assert(e.raw[0x26]==0u && e.raw[0x27]==0u);
+        auto bullet=std::find_if(combat.bullets().begin(),combat.bullets().end(),
+            [](const auto& q){return q.active();});
+        assert(bullet!=combat.bullets().end() && sw(*bullet,11)==0 && sw(*bullet,13)<0);
+        logic.step_15hz(rom,g,2u,0u,false);assert(sw(e,11)==-0x18);
+    }
+    {
+        // $8304: Stage-3 $32 sentry pose selection is staggered by the object
+        // ordinal and only runs on (CA02+ordinal)&7 == 0, not every logic tick.
+        const auto rec=find3(0x32u);assert(rec!=s3.records().end());
+        sm::GameState g;sm::Stage0Enemies logic;
+        assert(sm::instantiate_stage0_spawn(rom,*rec,g,1u));auto& e=g.enemies[0];
+        assert(e.raw[0x2d]==1u);e.raw[0x06]=0xfeu;e.raw[0x18]=0x20u;
+        for(unsigned t=0;t<7u;++t) {logic.step_15hz(rom,g,t,0u,false);assert(e.raw[0x06]==0xfeu);}
+        logic.step_15hz(rom,g,7u,0u,false);assert(e.raw[0x06]<=7u);
+    }
+    {
+        // $87F1: lock the large $33 mover's exact entrance state and the
+        // $88EA pair launcher. Difficulty 16 makes the ROM random gate always
+        // succeed, so CA02&$17==0 must create type-$70 headings $40/$C0 at $10.
+        const auto rec=find3(0x33u);assert(rec!=s3.records().end());
+        sm::GameState g;g.difficulty=16u;sm::Stage0Enemies logic;
+        assert(sm::instantiate_stage0_spawn(rom,*rec,g,1u));auto& e=g.enemies[0];
+        logic.step_15hz(rom,g,0u,0u,false);
+        auto sw=[](const sm::Entity64& q,unsigned p) {
+            return std::int16_t(unsigned(q.raw[p])|(unsigned(q.raw[p+1])<<8u));
+        };
+        assert(e.state()==1u && e.x_fixed()==0x1c00u && e.y_fixed()==0u && e.raw[0x17]==0x50u);
+        assert(sw(e,11)==0x20 && sw(e,13)==-0x20);
+        std::array<unsigned,2> heading{};unsigned n=0;
+        for(const auto& q:g.enemies) if(q.type()==0x70u) {assert(n<2u);heading[n++]=q.raw[0x0f];assert(q.raw[0x12]==0x10u && q.raw[0x11]==0x10u);}
+        std::sort(heading.begin(),heading.end());assert(n==2u && heading[0]==0x40u && heading[1]==0xc0u);
+        e.raw[0x17]=1u;logic.step_15hz(rom,g,1u,0u,false);
+        // $8828-$8835 flips only VX. The next state-2 pass runs $885C and
+        // decides the vertical component from scenery/player geometry.
+        assert(e.state()==2u && sw(e,11)==0x20 && sw(e,13)==0x20);
+        std::array<std::pair<int,int>,2> probes{};unsigned np=0;
+        logic.step_15hz(rom,g,2u,0u,false,nullptr,
+            [&](const sm::Entity64&,int xo,int yo) {
+                if(np<probes.size()) probes[np++]={xo,yo};
+                return std::uint8_t(0);
+            });
+        assert(np==2u && probes[0]==std::make_pair(-0x0200,0x0100) &&
+               probes[1]==std::make_pair(0x0600,0x0100));
+    }
 
     // Stage-3 boss: exact extended record plus bank06 $A647/$A850 state.
     // The first live OpenMSX object pass is:
@@ -183,6 +525,43 @@ int main(int argc,char** argv) {
         if(it!=state.enemies.end()) live_boss=&*it;
     }
     assert(live_boss && boss_route.at_fight_gate() && boss_route.boss_music_active());
+    // Exercise several complete attack cycles, rather than commanding a
+    // single eye manually. Every eye must expose its family-2 weak point,
+    // return idle, and expose it again without leaking the parent's counter.
+    std::array<unsigned,3> openings{};
+    std::array<bool,3> was_open{};
+    unsigned completed_cycles=0;
+    bool had_commands=false;
+    for(unsigned f=0;f<3600u;++f) {
+        boss_route.step_60hz({});
+        for(const auto& e:boss_route.state().enemies) if(e.type()==0x3fu) {
+            const unsigned i=e.raw[3]-1u;
+            assert(i<3u);
+            const bool open=e.raw[0x23]==2u && e.raw[0x24]>=2u && e.state()==5u;
+            if(open && !was_open[i]) ++openings[i];
+            was_open[i]=open;
+        }
+        if(live_boss->raw[3]) had_commands=true;
+        else if(had_commands) {++completed_cycles;had_commands=false;}
+    }
+    for(auto n:openings) assert(n>=2u);
+    assert(completed_cycles>=3u);
+
+    // Cyan boss geometry must move on all four presentation frames while
+    // its ROM logic position is held for the original 15-Hz cadence.
+    while((boss_route.frame()&3u)!=0u) boss_route.step_60hz({});
+    std::array<std::uint32_t,4> poses{};
+    for(unsigned f=0;f<4u;++f) {
+        const auto image=boss_route.render_continuous();
+        auto& hash=poses[f];hash=2166136261u;
+        for(auto c:image) {
+            const unsigned r=(c>>16u)&255u,g=(c>>8u)&255u,b=c&255u;
+            const bool cyan=g>r+20u && b>r+20u;
+            hash=(hash^unsigned(cyan))*16777619u;
+        }
+        boss_route.step_60hz({});
+    }
+    for(unsigned i=0;i<4u;++i) for(unsigned j=i+1u;j<4u;++j) assert(poses[i]!=poses[j]);
     const unsigned death_frame=boss_route.frame();
     live_boss->raw[0x14]|=0x80u;
     assert(sm::apply_stage0_damage(rom,*live_boss,std::uint8_t(live_boss->raw[0x16]+1u))==
@@ -195,6 +574,56 @@ int main(int argc,char** argv) {
     // Public session/timeline entry points can now start stages 3 and 4
     // directly; this used to collapse every non-zero reset onto stage 2.
     sm::PlaySession p3(rom);p3.reset(2);assert(p3.stage_index()==2u);
+    {
+        const auto& g=p3.state();
+        assert(g.enemies[0].type()==0x32u && g.enemies[0].x_fixed()==0x19e0u && g.enemies[0].raw[0x18]==1u);
+        assert(g.enemies[1].type()==0x32u && g.enemies[1].x_fixed()==0x1be0u && g.enemies[1].raw[0x18]==1u);
+        assert(g.enemies[2].type()==0x32u && g.enemies[2].x_fixed()==0x1de0u && g.enemies[2].raw[0x18]==1u);
+    }
+    for(unsigned i=0;i<4u;++i) p3.step_60hz({});
+    {
+        const auto& g=p3.state();
+        assert(g.enemies[0].x_fixed()==0x19c0u && g.enemies[0].raw[0x18]==0x1eu);
+        assert(g.enemies[1].x_fixed()==0x1bc0u && g.enemies[1].raw[0x18]==0x20u);
+        assert(g.enemies[2].x_fixed()==0x1dc0u && g.enemies[2].raw[0x18]==0x22u);
+    }
+    {
+        sm::PlaySession autofire(rom);autofire.reset(2u);autofire.set_max_test_loadout();
+        sm::PlayerInput held{};held.fire=true;
+        unsigned volleys=0;
+        for(unsigned i=0;i<120u;++i) {
+            autofire.step_60hz(held);
+            for(const auto s:autofire.sound_events()) if(s==sm::PlaySound::WaveShot) ++volleys;
+        }
+        // Bank02:$801B reads C907 bit4 as a level every update. Holding FIRE
+        // must refill W's three-shot pool without requiring key releases.
+        assert(volleys>=5u);
+    }
+    {
+        // Final 1024x848 presentation must retain Stage-3's isolated one-pixel
+        // stars. At 4x native sampling each ROM star is an isolated 4x4 block
+        // in palette colour 8 ($9292B6) surrounded by black.
+        const auto image=p3.render_continuous();
+        constexpr std::uint32_t star=0xff9292b6u,black=0xff000000u;
+        unsigned isolated=0;
+        for(unsigned y=113u;y+5u<848u;++y) for(unsigned x=1u;x+5u<1024u;++x) {
+            bool block=true;
+            for(unsigned yy=0;yy<4u;++yy) for(unsigned xx=0;xx<4u;++xx)
+                block&=image[(y+yy)*1024u+x+xx]==star;
+            if(!block) continue;
+            bool border=true;
+            for(int xx=-1;xx<=4;++xx) {
+                border&=image[(y-1u)*1024u+unsigned(int(x)+xx)]==black;
+                border&=image[(y+4u)*1024u+unsigned(int(x)+xx)]==black;
+            }
+            for(unsigned yy=0;yy<4u;++yy) {
+                border&=image[(y+yy)*1024u+x-1u]==black;
+                border&=image[(y+yy)*1024u+x+4u]==black;
+            }
+            isolated+=border;
+        }
+        assert(isolated>=24u);
+    }
     sm::PlaySession p4(rom);p4.reset(3);assert(p4.stage_index()==3u);
     for(unsigned i=0;i<120u;++i) {p3.step_60hz({});p4.step_60hz({});}
     assert(!p3.render().empty() && !p4.render().empty());

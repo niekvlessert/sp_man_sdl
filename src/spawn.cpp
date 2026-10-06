@@ -112,11 +112,8 @@ void scroll_stage0_objects(GameState& game, int dx, int dy,const Rom* native_vis
         // the pre-anchor part of the level where this scenery helper is idle.
         const bool handler_x_scroll=e.type()==0x2au || e.type()==0x53u;
         const bool forced_full_scroll=e.type()==0x48u && (e.raw[0x34]&0x80u);
-        if (!e.active() || e.type()==3 || e.type()==0x79u ||
+        if (!e.active() || e.type()==3 ||
             ((e.flags15() & 0x04u) == 0u && !handler_x_scroll && !forced_full_scroll)) continue;
-        // Type $79 is the final-boss exception: its bank05 controller owns
-        // the measured $2000->$1700 entrance/death X motion at 20 Hz. Applying
-        // this generic camera scroll as well double-counts that motion.
         const auto ox = std::int16_t(e.x_fixed());
         const auto oy = std::int16_t(e.y_fixed());
         const int nx = int(ox) - dx;
@@ -130,10 +127,14 @@ void scroll_stage0_objects(GameState& game, int dx, int dy,const Rom* native_vis
         int left_guard = e.type()==0x56u ? -0x3000 :
             (e.type()==0x47u ? -0x2000 : (e.type()==0x24u ? -0x1100 :
             (e.type()==0x48u ? -0x4000 : (e.type()==0x1fu ? -0x0800 : -0x0200))));
-        if(native_visuals) {
+        if(native_visuals && e.type()!=0x1cu) {
             // SDL exposes the complete ROM artwork immediately, including the
             // full aircraft hull. Retain its pool record until that artwork,
             // plus the remaining native interpolation, has left the viewport.
+            // Stage-3 type $1C is different: its $6DE1 continuation uses
+            // $6F0D and culls the anchor itself below X=$FE00 even though its
+            // decoded artwork is four tiles wide. Extending that matrix kept
+            // stale launchers in the 20-slot pool for several extra columns.
             auto visual=e;
             if(e.type()==0x55u) visual.raw[6]=5;
             int right_extent=0;
@@ -157,6 +158,29 @@ void scroll_stage0_objects(GameState& game, int dx, int dy,const Rom* native_vis
             store_anchor(e,0x28u,int(anchor(e,0x28u))-dx);
             store_anchor(e,0x2au,int(anchor(e,0x2au))-dy);
         }
+        e.set_x_fixed(std::uint16_t(std::int16_t(nx)));
+        e.set_y_fixed(std::uint16_t(std::int16_t(ny)));
+    }
+    // Once type $75 reaches state 2, $9E9A changes +15 from $21 to $04.
+    // That opts the D460 record into the same common camera compensation as
+    // CE80 scenery. OpenMSX shows a horizontal paint advancing +$0200 per
+    // handler call but only +$01E0 on screen: two cells forward minus the
+    // current $0020 camera tick. Travelling state-1 records keep +15=$21 and
+    // must not be scrolled here.
+    for(auto& e:game.lasers) if(e.active() && e.type()==0x75u && (e.flags15()&0x04u)) {
+        e.set_x_fixed(std::uint16_t(std::int16_t(e.x_fixed())-dx));
+        e.set_y_fixed(std::uint16_t(std::int16_t(e.y_fixed())-dy));
+    }
+    // Legacy native shadow records are kept for compatibility with older
+    // captures, but new $75 code commits directly into the canonical ring.
+    for(auto& e:game.stage3_lattice) if(e.active()) {
+        const int nx=int(std::int16_t(e.x_fixed()))-dx;
+        const int ny=int(std::int16_t(e.y_fixed()))-dy;
+        const int step_x=std::int8_t(e.raw[0x12]);
+        const int length=std::max(1,int(e.raw[0x30]));
+        const int tail_x=nx+(length-1)*step_x*0x100;
+        const int right=std::max(nx,tail_x);
+        if(dx>0 && right < -0x0200) {e.clear();continue;}
         e.set_x_fixed(std::uint16_t(std::int16_t(nx)));
         e.set_y_fixed(std::uint16_t(std::int16_t(ny)));
     }
@@ -354,6 +378,75 @@ std::vector<Stage0TileVisual> decode_stage0_tile_visuals(const Rom& rom,
                                                          const Entity64& entity) {
     std::vector<Stage0TileVisual> out;
     if (!entity.active()) return out;
+
+    if(entity.type()==0x7du) {
+        // Native shadow of the permanent A7 line written by type $75.
+        const unsigned count=entity.raw[0x30];
+        const int sy=std::int8_t(entity.raw[0x10]),sx=std::int8_t(entity.raw[0x12]);
+        if(!count || (!sx && !sy)) return out;
+        Stage0TileVisual v;
+        if(sx) {
+            v.rows=1u;v.cols=std::uint8_t(count);
+            v.tile_x_offset=sx>0?0:-(int(count)-1);
+        } else {
+            v.cols=1u;v.rows=std::uint8_t(count);
+            v.tile_y_offset=sy>0?0:-(int(count)-1);
+        }
+        v.x=(int(std::int16_t(entity.x_fixed()))>>5)+v.tile_x_offset*8;
+        v.y=(int(std::int16_t(entity.y_fixed()))>>5)+v.tile_y_offset*8;
+        v.tiles.assign(count,0xa7u);out.push_back(std::move(v));return out;
+    }
+
+    if(entity.type()==0x75u) {
+        // Bank05 $9E7C-$9F31 paints a transient CA/CB line, then walks back
+        // across it writing A7. +30 is a native-only copy of the initial +0F
+        // length, allowing presentation to show both halves of that conversion.
+        if(entity.state()!=2u) return out;
+        const int sy=std::int8_t(entity.raw[0x10]);
+        const int sx=std::int8_t(entity.raw[0x12]);
+        const unsigned total=entity.raw[0x30]?entity.raw[0x30]:entity.raw[0x18];
+        if(!total || (!sx && !sy)) return out;
+        auto append=[&](int ox,int oy,unsigned count,std::uint8_t tile,int dirx,int diry) {
+            if(!count) return;
+            Stage0TileVisual v;
+            if(dirx) {
+                v.rows=1u;v.cols=std::uint8_t(count);
+                v.tile_x_offset=ox+(dirx>0?0:-(int(count)-1));v.tile_y_offset=oy;
+            } else {
+                v.cols=1u;v.rows=std::uint8_t(count);
+                v.tile_y_offset=oy+(diry>0?0:-(int(count)-1));v.tile_x_offset=ox;
+            }
+            v.x=(int(std::int16_t(entity.x_fixed()))>>5)+v.tile_x_offset*8;
+            v.y=(int(std::int16_t(entity.y_fixed()))>>5)+v.tile_y_offset*8;
+            v.tiles.assign(count,tile);out.push_back(std::move(v));
+        };
+        if(entity.raw[0x0f]) {
+            const unsigned painted=total-entity.raw[0x0f];
+            // Cursor is one cell beyond the painted prefix.
+            append(-int(painted)*sx,-int(painted)*sy,painted,entity.raw[0x11],sx,sy);
+        } else {
+            const unsigned transient=entity.raw[0x18];
+            const unsigned converted=total-transient;
+            // Cursor sits at the first A7 cell. The transient prefix is behind
+            // it; converted cells continue from the cursor toward the far end.
+            append(-int(transient)*sx,-int(transient)*sy,transient,entity.raw[0x11],sx,sy);
+            append(0,0,converted,0xa7u,sx,sy);
+        }
+        return out;
+    }
+
+    if(entity.type()==0x31u) {
+        // Fixed $5CF6-$5D3A stamps CC/CD from the moving head to solid
+        // scenery: variant 0 down from +2 Y, variant 1 up from +0 Y.
+        const unsigned length=entity.raw[0x3e];
+        if(!length) return out;
+        Stage0TileVisual v;v.cols=2;v.rows=std::uint8_t(length);
+        v.tile_y_offset=entity.raw[3]?1-int(length):2;
+        v.x=int(std::int16_t(entity.x_fixed()))>>5;
+        v.y=(int(std::int16_t(entity.y_fixed()))>>5)+v.tile_y_offset*8;
+        for(unsigned row=0;row<length;++row) {v.tiles.push_back(0xcc);v.tiles.push_back(0xcd);}
+        out.push_back(std::move(v));return out;
+    }
 
     if (entity.type() == 0x64u) {
         // Bank06 $A2D8/$A494: the gate/tower is a composed tile actor.
@@ -619,6 +712,16 @@ std::vector<Stage0TileVisual> decode_stage0_tile_visuals(const Rom& rom,
                 }
             }
         }
+        if(entity.type()==0x14u && entity.state()!=0u) {
+            auto append=[&](unsigned frame) {
+                Stage0TileVisual v;
+                if(decode_stage0_tile_frame(rom,entity,frame,v)) out.push_back(std::move(v));
+            };
+            append(entity.raw[0x26]);append(entity.raw[0x28]);
+            if(entity.raw[0x2c]) append(entity.raw[0x2c]);
+            append((entity.raw[0x29]&1u)?7u:6u);
+            append((entity.raw[0x29]&1u)?9u:8u);
+        }
         return out;
     }
 
@@ -729,8 +832,30 @@ std::vector<Stage0TileVisual> decode_stage0_tile_visuals(const Rom& rom,
         v.rows=1u;v.cols=std::uint8_t(width);
         v.tile_x_offset=1-int(width);v.tile_y_offset=0;
         v.x=v.tile_x_offset*8;v.y=0;
-        v.tiles.assign(width,tile[entity.raw[0x0f]&7u]);
+        v.tiles.assign(width,entity.raw[0x3f]==0xe8u?0xcbu:tile[entity.raw[0x0f]&7u]);
+        if(entity.raw[0x03]) {
+            // $913A alternates CC/CD from the launch cell towards the left.
+            for(unsigned n=0;n<width;++n)
+                v.tiles[width-1u-n]=std::uint8_t(((entity.raw[0x18]+n)&1u)?0xccu:0xcdu);
+        }
         out.push_back(std::move(v));
+        return out;
+    }
+
+    if (entity.type() == 0x7bu) {
+        // Bank06 $B5FD/$B60C, packed lists $B670: animated centre first,
+        // then the three outer shell poses. Both are original tile matrices.
+        auto append=[&](unsigned frame,int x,int y) {
+            Stage0TileVisual v;
+            if(decode_stage0_tile_frame(rom,entity,frame,v)) {
+                v.x+=x*8;v.y+=y*8;
+                v.tile_x_offset+=x;v.tile_y_offset+=y;
+                out.push_back(std::move(v));
+            }
+        };
+        if(entity.raw[0x21]) append((entity.raw[0x05]&7u)+3u,6,5-int(entity.raw[0x21]));
+        const unsigned shell=std::min<unsigned>(entity.raw[0x06],2u);
+        append(shell,2-int(shell),4);
         return out;
     }
 
@@ -814,6 +939,18 @@ std::vector<Stage0TileVisual> decode_stage0_tile_visuals(const Rom& rom,
                 }
             }
         }
+        auto append=[&](unsigned frame) {
+            Stage0TileVisual v;
+            if(decode_stage0_tile_frame(rom,entity,frame,v)) out.push_back(std::move(v));
+        };
+        // $AB42 and $AC65/$AC86 draw additional matrices outside $ACDE.
+        if(entity.state()>=3u && entity.state()<=5u && entity.raw[0x2b])
+            append(0x1du+entity.raw[0x2b]);
+        if(entity.state()!=8u && entity.raw[0x20]) {
+            append(0x0eu+entity.raw[0x20]);
+            append(0x11u+entity.raw[0x20]);
+        }
+        if(entity.state()==8u) append(entity.raw[0x25]);
         return out;
     }
 
@@ -909,18 +1046,25 @@ void stamp_stage0_tile_objects(const Rom& rom, const Stage0BackgroundStream& str
                                std::array<std::uint8_t, 24u * 32u>& d988,bool include_native_overlays) {
     const auto fine_x = std::uint16_t(stream.ca1c() & 0x00ffu);
     const auto fine_y = std::uint16_t(stream.ca1a() & 0x00ffu);
-    for (const auto& entity : game.enemies) {
+    for(const auto& pool:{std::span<const Entity64>(game.enemies),std::span<const Entity64>(game.lasers),std::span<const Entity64>(game.stage3_lattice)})
+    for (const auto& entity : pool) {
         if (!entity.active() || entity.type()==3u) continue;
+        // Stage-3 $75/$7D lattice cells are now committed directly to the
+        // canonical E000-equivalent ring by the object handler. Stamping the
+        // secondary record again here would render the same line in a second,
+        // screen-relative coordinate domain.
+        if(stream.stage_index()==2u && (entity.type()==0x75u || entity.type()==0x7du)) continue;
         // Native SDL draws composed tile actors at their real sub-tile pixel
         // position. The ROM D988 path quantizes these objects to 8x8 cells;
         // that is correct for the VDP name table but visibly makes mixed
         // tile+sprite actors (cannon body/barrel and type $64 core) jump at
         // R18/tile carries. Keep scenery in D988, but render these actors once
         // as native overlays in every stage-0 raster mode.
-        if(!include_native_overlays && (entity.type()==0x1eu || entity.type()==0x1fu || entity.type()==0x20u || entity.type()==0x29u || entity.type()==0x22u || entity.type()==0x2eu ||
+        if(!include_native_overlays && ((stream.stage_index()==2u && (entity.type()==0x1cu || entity.type()==0x28u)) || (stream.stage_index()==1u && (entity.type()==0x2bu || entity.type()==0x31u || entity.type()==0x6bu)) || entity.type()==0x76u || (entity.type()==0x46u && entity.raw[0x03]) || entity.type()==0x1eu || entity.type()==0x1fu || entity.type()==0x20u || entity.type()==0x29u || entity.type()==0x22u || entity.type()==0x2eu ||
            entity.type()==0x24u || entity.type()==0x26u || entity.type()==0x55u ||
            entity.type()==0x47u || entity.type()==0x56u || entity.type()==0x64u || entity.type()==0x6au ||
-           entity.type()==0x6bu || entity.type()==0x3du)) continue;
+           entity.type()==0x6bu || entity.type()==0x3du || entity.type()==0x3eu ||
+           entity.type()==0x3fu || entity.type()==0x14u || entity.type()==0x77u || entity.type()==0x7bu || entity.type()==0x78u || entity.type()==0x79u)) continue;
         const auto visuals = decode_stage0_tile_visuals(rom, entity);
         if (visuals.empty()) continue;
 
@@ -957,14 +1101,17 @@ void stamp_stage0_tile_objects_right_edge(const Rom& rom, const Stage0Background
                                           std::array<std::uint8_t,24u>& edge) {
     const auto fine_x=std::uint16_t(stream.ca1c()&0x00ffu);
     const auto fine_y=std::uint16_t(stream.ca1a()&0x00ffu);
-    for(const auto& entity:game.enemies) {
+    for(const auto& pool:{std::span<const Entity64>(game.enemies),std::span<const Entity64>(game.lasers),std::span<const Entity64>(game.stage3_lattice)})
+    for(const auto& entity:pool) {
         if(!entity.active() || entity.type()==3u) continue;
+        if(stream.stage_index()==2u && (entity.type()==0x75u || entity.type()==0x7du)) continue;
         // Same ownership rule as the main D988 stamper: native overlays own
         // these complete actors, including the successor edge.
-        if(entity.type()==0x1eu || entity.type()==0x1fu || entity.type()==0x20u || entity.type()==0x29u || entity.type()==0x22u || entity.type()==0x2eu ||
+        if((stream.stage_index()==1u && (entity.type()==0x2bu || entity.type()==0x31u || entity.type()==0x6bu)) || entity.type()==0x1eu || entity.type()==0x1fu || entity.type()==0x20u || entity.type()==0x29u || entity.type()==0x22u || entity.type()==0x2eu ||
            entity.type()==0x24u || entity.type()==0x26u || entity.type()==0x55u ||
            entity.type()==0x47u || entity.type()==0x56u || entity.type()==0x64u || entity.type()==0x6au ||
-           entity.type()==0x6bu || entity.type()==0x3du) continue;
+           entity.type()==0x6bu || entity.type()==0x3du || entity.type()==0x3eu ||
+           entity.type()==0x3fu || entity.type()==0x14u || entity.type()==0x77u || entity.type()==0x7bu || entity.type()==0x78u || entity.type()==0x79u) continue;
         const auto visuals=decode_stage0_tile_visuals(rom,entity);
         if(visuals.empty()) continue;
         const auto ax=std::uint16_t(entity.x_fixed()+fine_x);
@@ -1020,7 +1167,12 @@ void seed_stage0_gate_reference(GameState& game) noexcept {
 }
 
 Stage0DamageResult apply_stage0_damage(const Rom& rom, Entity64& entity,
-                                       std::uint8_t damage) noexcept {
+                                       std::uint8_t damage,bool scripted) noexcept {
+    // $A2C3 does not call the player-damage service. These side structures
+    // only receive fatal damage when the core raises the CE52 death latch.
+    if(entity.type()==0x3cu && !scripted) {
+        entity.raw[4]=0u;return Stage0DamageResult::Ignored;
+    }
     // Stage-7 Warp Machine ($8EF5) is the deliberate exception to the common
     // +14/+16 damage service. Its weak point is live only in state 1 and keeps
     // the real $FF HP counter in +02. Fatality is a borrow (damage > HP), after
@@ -1082,6 +1234,9 @@ Stage0DamageResult apply_stage0_damage(const Rom& rom, Entity64& entity,
         const unsigned p = table + unsigned(entity.type()) * 3u;
         if (p >= bank.size()) return Stage0DamageResult::Destroyed;
         const auto replacement = bank[p];
+        // $3C machinery shares the $6A animation, but is not the stage
+        // boss. Keep that provenance through the shared effect countdown.
+        if(entity.type()==0x3cu && replacement==0x6au) entity.raw[0x3f]=0xd3u;
         entity.raw[0x15] = 0x04;
         entity.raw[0x14] &= 0x7fu;
         entity.raw[0x01] = 0;
@@ -1145,11 +1300,27 @@ bool instantiate_stage0_spawn(const Rom& rom, const SpawnRecord& r, GameState& g
     // control $88. Rejecting every flagged record except $26 silently dropped
     // type $64 from real gameplay, leaving only the scenery copy visible.
     const bool special64 = r.type == 0x64u && r.control_flag();
-    if (r.control_flag() && !special26 && !special2b && !special48 && !special4f && !special53 && !special54 && !special3e && !special77 && !special64 && !special7a && !special7c) return false;
-    if (r.type != 0x14u && r.type != 0x19u && r.type != 0x1eu && r.type != 0x1fu && r.type != 0x20u && r.type != 0x27u && r.type != 0x29u && r.type != 0x2bu && r.type != 0x2du && r.type != 0x2eu && r.type != 0x2fu && r.type != 0x31u && r.type != 0x3cu && r.type != 0x3eu && r.type != 0x22u &&
+    const bool special1c = r.type == 0x1cu && r.control_flag();
+    if (r.control_flag() && !special1c && !special26 && !special2b && !special48 && !special4f && !special53 && !special54 && !special3e && !special77 && !special64 && !special7a && !special7c) return false;
+    if(r.type==0x46u && !r.payload.empty()) {
+        // Script lasers use $915D: eight independent rows in the secondary
+        // pool, rather than consuming the twenty ordinary enemy slots.
+        for(unsigned row=0;row<8u;++row) {
+            auto it=std::find_if(game.lasers.begin(),game.lasers.end(),[](const auto& e){return !e.active();});
+            if(it==game.lasers.end()) break;
+            it->clear();it->type()=0x46u;
+            const auto m=decode_spawn_type_metadata(rom,0x46u);
+            std::copy(m.bytes.begin(),m.bytes.end(),it->raw.begin()+0x13);
+            it->set_x_fixed(0x1f00u);
+            it->set_y_fixed(std::uint16_t(std::uint8_t(r.payload[0]+row))<<8u);
+            it->raw[0x0f]=std::uint8_t(row);it->raw[0x17]=0x14u;it->raw[0x3f]=0xe8u;
+        }
+        return true;
+    }
+    if (r.type != 0x1bu && r.type != 0x42u && r.type != 0x14u && r.type != 0x19u && r.type != 0x1cu && r.type != 0x1eu && r.type != 0x1fu && r.type != 0x20u && r.type != 0x25u && r.type != 0x27u && r.type != 0x28u && r.type != 0x29u && r.type != 0x2bu && r.type != 0x2du && r.type != 0x2eu && r.type != 0x2fu && r.type != 0x31u && r.type != 0x32u && r.type != 0x33u && r.type != 0x3cu && r.type != 0x3eu && r.type != 0x22u &&
         r.type != 0x24u && r.type != 0x26u && r.type != 0x41u && r.type != 0x48u && r.type != 0x49u && r.type != 0x4au && r.type != 0x4du && r.type != 0x4eu && r.type != 0x4fu && r.type != 0x50u &&
         r.type != 0x53u && r.type != 0x54u && r.type != 0x55u && r.type != 0x56u && r.type != 0x47u && r.type != 0x43u && r.type != 0x64u &&
-        r.type != 0x73u && r.type != 0x77u && r.type != 0x78u && r.type != 0x79u && r.type != 0x7au && r.type != 0x7bu && r.type != 0x7cu) return false;
+        r.type != 0x72u && r.type != 0x73u && r.type != 0x77u && r.type != 0x78u && r.type != 0x79u && r.type != 0x7au && r.type != 0x7bu && r.type != 0x7cu) return false;
     if (r.payload.empty() || (r.type == 0x24u && r.payload.size() < 2u)) return false;
     auto* e = game.allocate_enemy();
     if (!e) return false;
@@ -1163,7 +1334,7 @@ bool instantiate_stage0_spawn(const Rom& rom, const SpawnRecord& r, GameState& g
     // Original $6754 initializer. The same payload byte is interpreted on a
     // different axis depending on C0D5, so it is NOT an absolute Y value.
     // Extended records expose their first inline byte after the count byte.
-    const unsigned payload_index = (special26 || special2b || special48 || special4f || special54 || special77 || special7a || special7c) ? 1u : 0u;
+    const unsigned payload_index = (special1c || special26 || special2b || special48 || special4f || special54 || special77 || special7a || special7c) ? 1u : 0u;
     if (r.payload.size() <= payload_index) { e->clear(); return false; }
     const std::uint8_t pos = r.payload[payload_index] & 0x7fu;
     std::uint8_t xh = 0x20u, yh = pos;
@@ -1176,7 +1347,16 @@ bool instantiate_stage0_spawn(const Rom& rom, const SpawnRecord& r, GameState& g
     }
     e->set_x_fixed(std::uint16_t(xh) << 8);
     e->set_y_fixed(std::uint16_t(yh) << 8);
-    if (r.type == 0x19u) {
+    if(r.type==0x1bu) {
+        // $5BB5 installs an invisible wave controller; $5C84 births the ships.
+        e->state()=2u;e->flags15()=0u;e->raw[3]=0xffu;
+        e->set_x_fixed(0u);e->set_y_fixed(0u);
+    } else if(r.type==0x42u) {
+        // Fixed $5A84: payload sign selects the slow vertical rock drift.
+        const auto vy=std::uint16_t((r.payload[0]&0x80u)?-16:16);
+        e->raw[11]=std::uint8_t(vy);e->raw[12]=std::uint8_t(vy>>8u);
+        e->raw[0x3d]=1u;e->state()=1u;
+    } else if (r.type == 0x19u) {
         // Fixed $5592-$55B6. Unlike the common $6754 initializer, type $19
         // stores both inline coordinates directly. Bit 7 of the first byte
         // chooses the right-moving variant and is removed from Y.
@@ -1200,6 +1380,41 @@ bool instantiate_stage0_spawn(const Rom& rom, const SpawnRecord& r, GameState& g
         e->raw[0x24] = 0x00;
         e->raw[0x17] = 0x20;
         e->raw[0x18] = 0x01;
+    } else if(r.type==0x1cu) {
+        // Bank06 $BA3B: extended Stage-3 surface launcher, descriptor
+        //   02 <surface/orientation> 02 1D
+        if(r.payload.size()<4u || r.payload[0]!=2u || r.payload[2]!=2u || r.payload[3]!=0x1du) {
+            e->clear();return false;
+        }
+        const auto surface=r.payload[1];
+        e->raw[0x20]=(surface>>7u)&1u;
+        e->raw[0x06]=e->raw[0x20];
+        e->raw[0x3e]=std::uint8_t(6u+e->raw[0x20]);
+        e->raw[0x18]=0x20u;
+    } else if(r.type==0x25u) {
+        // Bank06 $BDDB: state 0 only performs the common placement. The next
+        // state computes its quarter-speed aimed vector and acceleration.
+        e->raw[0x17]=0u;
+    } else if(r.type==0x28u) {
+        // Bank05 $821D: heavy emitter. State 0 installs the long pre-fire wait.
+        e->raw[0x20]=0u;e->raw[0x06]=2u;
+    } else if(r.type==0x32u) {
+        // Bank05 $87C1: Stage-3 ceiling/floor sentry. Bit 7 of the stream
+        // coordinate mirrors the sprite family; +18 is the shot cadence.
+        e->raw[0x20]=(r.payload[0]>>7u)&1u;
+        e->raw[0x17]=0x20u;e->raw[0x18]=1u;e->raw[0x25]=0u;
+    } else if(r.type==0x33u) {
+        // Bank05 $87F1 overrides its stream position in state 0.
+        e->set_x_fixed(0x1c00u);e->set_y_fixed(0u);
+    } else if(r.type==0x72u) {
+        // Bank05 $8AD7/$8AF1 does NOT use the common $6754 placement. Its
+        // state-0 constructor installs the fixed X=$1F/Y=$14 anchor and turns
+        // the stream parameter $28 into the initial $48 countdown. Seed that
+        // live entry position here so the generic 60-Hz off-screen culler
+        // cannot discard the controller before its first 15-Hz handler tick.
+        e->set_x_fixed(0x1f00u);e->set_y_fixed(0x1400u);
+        e->raw[0x18]=std::uint8_t(r.payload[0]+0x20u);
+        e->raw[0x34]=0x80u;e->raw[0x24]=0u;
     } else if(r.type==0x27u) {
         // Bank05 $8170/$817D: stage-2 aimed mover. The continuation has
         // already run the common spawn initializer; +17 is the ten-tick
@@ -1219,7 +1434,12 @@ bool instantiate_stage0_spawn(const Rom& rom, const SpawnRecord& r, GameState& g
         e->raw[0x20]=(position>>7u)&1u;
         e->raw[0x06]=e->raw[0x20];
         e->raw[0x18]=r.payload[2];
-        e->raw[0x3e]=4u;
+        // Fixed $834E-$835B: the floor form stores wreck selector 3;
+        // only the ceiling form (position bit 7) increments it to 4.
+        // $7CC3 preserves +3E when the launcher becomes type $6B, so this
+        // selector is what gives the two destroyed orientations their
+        // distinct final matrix. Treating both as 4 mirrored the floor wreck.
+        e->raw[0x3e]=e->raw[0x20]?4u:3u;
         if(r.type==0x4fu) {
             e->raw[0x17]=0x18u;
             e->raw[0x3d]=1u;
@@ -1471,6 +1691,7 @@ bool instantiate_stage0_spawn(const Rom& rom, const SpawnRecord& r, GameState& g
         e->raw[0x20]=0x20u;e->raw[0x21]=1u;
         e->raw[0x17]=0x38u;              // first $9755 attack delay
         e->raw[0x25]=0u;e->raw[0x26]=6u;e->raw[0x27]=1u;
+        e->raw[0x16]=game.difficulty>=5u?0x40u:0x30u;
         e->state()=1u;
     } else if (r.type == 0x7cu) {
         // Stage-6 boss escort chain, bank06 $B76C. Extended grammar:
@@ -1489,13 +1710,15 @@ bool instantiate_stage0_spawn(const Rom& rom, const SpawnRecord& r, GameState& g
         // common spawn position to the live $0700/$1400 entrance anchor;
         // keep that anchor explicit so direct stage selection is identical.
         e->set_x_fixed(0x0700u);e->set_y_fixed(0x1400u);
-        e->flags15()|=1u;
     } else if (r.type == 0x7au) {
         // Bank06 $A000: extended descriptor 02 08 02 3B. $6754 consumes
         // the position byte after the count and the handler creates seven
         // linked type-$3B body parts on its first logic tick.
         if(r.payload.size()<4u || r.payload[0]!=2u || r.payload[3]!=0x3bu) {e->clear();return false;}
         e->raw[0x34]=0x80u;
+        // Metadata HP is zero until $A031 initializes the real $20 HP.
+        // Native collision runs between spawn and that first handler call.
+        e->raw[0x14]&=0x7fu;
     } else if (r.type == 0x64u) {
         // Boss/gate objects use the $7C63 continuation. A live unmodified
         // object dump at the first $7C63 call has +3F=$01; the type handler
@@ -1506,8 +1729,8 @@ bool instantiate_stage0_spawn(const Rom& rom, const SpawnRecord& r, GameState& g
     }
     // Type $64 must enter bank06:$A300 (state 0). Starting it at state 1
     // skips the ROM initializer that positions the tower at X=$2800/Y=$0C00.
-    if(!special48)
-        e->state() = (r.type == 0x14u || r.type == 0x43u || r.type == 0x64u || r.type==0x47u || r.type==0x2du || r.type==0x2eu || r.type==0x31u || r.type==0x3eu || r.type==0x4du || r.type==0x4eu || r.type==0x53u || r.type==0x77u || r.type==0x7au || r.type==0x7bu || r.type==0x7cu) ? 0u : 1u;
+    if(!special48 && r.type!=0x1bu)
+        e->state() = (r.type == 0x14u || r.type == 0x43u || r.type == 0x64u || r.type==0x47u || r.type==0x1cu || r.type==0x25u || r.type==0x28u || r.type==0x2du || r.type==0x2eu || r.type==0x31u || r.type==0x33u || r.type==0x3eu || r.type==0x4du || r.type==0x4eu || r.type==0x53u || r.type==0x72u || r.type==0x77u || r.type==0x7au || r.type==0x7bu || r.type==0x7cu) ? 0u : 1u;
     return true;
 }
 }

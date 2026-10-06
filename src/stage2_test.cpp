@@ -124,7 +124,10 @@ int main(int argc,char** argv) {
             ++launchers2b;if(!first2b) first2b=&record;
             assert(record.payload.size()==5u && record.payload[0]==3u && record.payload[3]==2u && record.payload[4]==0x16u);
             assert(e.raw[0x20]==((record.payload[1]>>7u)&1u));
-            assert(e.raw[0x18]==record.payload[2] && e.raw[0x3e]==4u);
+            assert(e.raw[0x18]==record.payload[2]);
+            // $834E-$835B selects wreck compositor 3 for the floor launcher
+            // and 4 for the ceiling launcher; +3E survives the $2B->$6B death.
+            assert(e.raw[0x3e]==(e.raw[0x20]?4u:3u));
         } else {
             ++launchers2e;if(!first2e) first2e=&record;
             assert(!sm::decode_stage0_tile_visuals(rom,e).empty());
@@ -139,6 +142,13 @@ int main(int argc,char** argv) {
         const auto child=std::find_if(game.enemies.begin(),game.enemies.end(),[](const auto& e){return e.type()==0x16u;});
         assert(child!=game.enemies.end() && child->state()==1u);
         assert(child->raw[0x20]==game.enemies[0].raw[0x20]);
+        // Original live trace: $2B is allowed to emit at X=$28/$26/$24,
+        // but each off-screen $16 child is retired before its next handler;
+        // the first child that survives begins at X=$1C. Preserve that right
+        // boundary instead of the wider generic native actor margin.
+        child->set_x_fixed(0x2000u);
+        enemies.move_60hz(game,0u);
+        assert(!child->active());
     }
     {
         sm::GameState game;sm::Stage0Enemies enemies;sm::Stage0Combat child_combat;
@@ -326,6 +336,22 @@ int main(int argc,char** argv) {
         const auto vx=std::int16_t(unsigned(e.raw[13])|(unsigned(e.raw[14])<<8));
         const auto vy=std::int16_t(unsigned(e.raw[11])|(unsigned(e.raw[12])<<8));
         assert(vx<0 && vy>0 && e.raw[5]==1u);
+
+        // $8173 hit reaction only pulls the next aim update forward by
+        // setting +17 to two. The ROM never clears the current motion vector.
+        e.raw[0x04]=1u;
+        enemies.step_15hz(rom,game,10u,0,false,nullptr);
+        assert(e.raw[0x17]==2u);
+        assert(std::int16_t(unsigned(e.raw[13])|(unsigned(e.raw[14])<<8))==vx);
+        assert(std::int16_t(unsigned(e.raw[11])|(unsigned(e.raw[12])<<8))==vy);
+        e.raw[0x04]=0u; // damage service consumes it after the object pass
+        enemies.step_15hz(rom,game,11u,0,false,nullptr);
+        assert(e.raw[0x17]==1u);
+        assert(std::int16_t(unsigned(e.raw[13])|(unsigned(e.raw[14])<<8))==vx);
+        assert(std::int16_t(unsigned(e.raw[11])|(unsigned(e.raw[12])<<8))==vy);
+        enemies.step_15hz(rom,game,12u,0,false,nullptr);
+        assert(e.raw[0x17]==0x0au);
+        assert((e.raw[11]|e.raw[12]|e.raw[13]|e.raw[14])!=0u);
     }
     {
         sm::GameState game;
@@ -422,15 +448,33 @@ int main(int argc,char** argv) {
             if(it!=mutable_state.enemies.end()) boss=&*it;
         }
         assert(boss && completion.boss_music_active());
+        while(boss->state()==0u) completion.step_60hz({});
+        // $A2C3 never services player damage on $3C. Only the core-death
+        // script may turn these side structures into explosions.
+        auto& live=const_cast<sm::GameState&>(completion.state());
+        auto part=std::find_if(live.enemies.begin(),live.enemies.end(),
+            [](const auto& e){return e.type()==0x3cu && e.raw[6]!=0u && (e.raw[0x14]&0x80u);});
+        assert(part!=live.enemies.end() && part->raw[0x16]==1u);
+        assert(sm::apply_stage0_damage(rom,*part,1u)==sm::Stage0DamageResult::Ignored);
+        assert(sm::apply_stage0_damage(rom,*part,0xffu)==sm::Stage0DamageResult::Ignored);
+        const auto hp=boss->raw[0x16];part->raw[4]=2u;
+        for(unsigned f=0;f<300u;++f) {
+            completion.step_60hz({});
+            assert(part->type()==0x3cu && part->raw[0x16]==1u);
+            assert(completion.stage_index()==1u && completion.music_playing());
+        }
+        assert(boss->type()==0x7au && boss->raw[0x16]==hp);
+        for(unsigned f=0;f<500u && !(boss->raw[0x14]&0x80u);++f) completion.step_60hz({});
+        assert(boss->raw[0x14]&0x80u);
         const unsigned death_frame=completion.frame();
-        assert(sm::apply_stage0_damage(rom,*boss,std::uint8_t(boss->raw[0x16]+1u))==
-               sm::Stage0DamageResult::Destroyed);
-        assert(boss->type()==0x6au);
-        bool saw_music_stop=false;
+        boss->raw[4]=std::uint8_t(boss->raw[0x16]+1u);
+        bool saw_music_stop=false,saw_side_destruction=false;
         while(completion.stage_index()==1u && completion.frame()-death_frame<300u) {
             completion.step_60hz({});
             saw_music_stop|=!completion.music_playing();
+            saw_side_destruction|=part->type()==0x6au && part->raw[0x3f]==0xd3u;
         }
+        assert(saw_side_destruction);
         assert(saw_music_stop && completion.stage_index()==2u);
         assert(completion.music_playing() && !completion.boss_music_active());
     }
@@ -529,8 +573,13 @@ int main(int argc,char** argv) {
         assert(sm::instantiate_stage0_spawn(rom,*boss_record,game,1));
         auto& boss=game.enemies[0];
         assert(boss.state()==0u && boss.raw[0x0a]==0x20u && boss.raw[0x08]==8u && boss.raw[0x34]==0x80u);
+        assert((boss.raw[0x14]&0x80u)==0u);
+        assert(sm::apply_stage0_damage(rom,boss,1u)==sm::Stage0DamageResult::Ignored);
         enemies.step_15hz(rom,game,0,0,false,nullptr);
         assert(boss.state()==1u && boss.raw[0x16]==0x20u && boss.raw[0x06]==4u);
+        auto single_hit=boss;
+        assert(sm::apply_stage0_damage(rom,single_hit,1u)==sm::Stage0DamageResult::Hit);
+        assert(single_hit.type()==0x7au && single_hit.raw[0x16]==0x1fu);
         assert((boss.raw[0x14]&0x80u)!=0u && boss.raw[0x37]==6u && boss.raw[0x3b]==7u);
         assert(!sm::decode_stage0_tile_visuals(rom,boss).empty());
         static constexpr std::array<int,7> ox{-3,-7,-10,-13,-16,-18,-21};

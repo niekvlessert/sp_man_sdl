@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
-"""Render the user-supplied ROM's original PSG/SCC driver into SDL WAV assets."""
-import hashlib,json,os,subprocess,tempfile,wave
+"""Render original-ROM PSG/SCC sound effects into SDL WAV assets; music uses libkss."""
+import argparse,hashlib,json,os,subprocess,tempfile,wave
 from pathlib import Path
 
 def main():
+    parser=argparse.ArgumentParser();parser.add_argument('--clips',help='Comma-separated clips to regenerate')
+    args=parser.parse_args()
     project=Path(__file__).resolve().parent.parent
     out=project/'assets/audio';out.mkdir(parents=True,exist_ok=True)
     (out/'complete.txt').unlink(missing_ok=True)
@@ -14,13 +16,14 @@ def main():
         env=dict(os.environ,OPENMSX_HOME=str(user),OPENMSX_USER_DATA=str(user/'share'),
             OPENMSX_SYSTEM_DATA=str(project.parent/'third_party/openMSX/share'),
             SDL_VIDEODRIVER='dummy',SDL_AUDIODRIVER='dummy',SM_PCM_OUT=str(out))
+        if args.clips:env['SM_PCM_CLIPS']=args.clips
         result=subprocess.run([str(binary),'-machine','Panasonic_FS-A1WSX','-cart',str(project/'space_manbow.rom'),
             '-script',str(project/'tools/export_play_audio.tcl')],env=env,capture_output=True,text=True,timeout=60)
         (out/'export.log').write_text(result.stdout+result.stderr)
         if result.returncode or not (out/'complete.txt').exists():
             raise RuntimeError('PCM export incomplete: '+result.stdout+result.stderr)
     clips=[]
-    for name in ('stage0','stage1','boss','shot','wave_shot','power_shot','explosion','hit','enemy_shot','pickup','powerup','option_mode','missile_launch','tower_explosion','turret_explosion','heavy_vehicle_explosion','large_cannon_explosion','boss_hit','platform_explosion','platform_burst','platform_rumble','cannon_shot','claw_close','claw_open','terrain_hit','terrain_break','bomb_expand','bomb_blast','carrier_launch','hatch_shot','stage3_arm_extend','stage3_arm_retract','stage6_open','stage6_close','stage7_arrive','stage7_break'):
+    for name in ('shot','wave_shot','power_shot','explosion','hit','enemy_shot','pickup','powerup','option_mode','missile_launch','tower_explosion','turret_explosion','heavy_vehicle_explosion','large_cannon_explosion','boss_hit','platform_explosion','platform_burst','platform_rumble','cannon_shot','claw_close','claw_open','terrain_hit','terrain_break','bomb_expand','bomb_blast','carrier_launch','hatch_shot','stage3_arm_extend','stage3_arm_retract','stage6_open','stage6_close','stage7_arrive','stage7_break','stage8_break','stage4_laser','stage8_wall'):
         path=out/f'{name}.wav'
         with wave.open(str(path)) as w:
             frames=w.readframes(w.getnframes())
@@ -28,6 +31,6 @@ def main():
             clips.append(dict(name=name,rate=w.getframerate(),channels=w.getnchannels(),
                 seconds=w.getnframes()/w.getframerate(),sha256=hashlib.sha256(path.read_bytes()).hexdigest()))
     (out/'manifest.json').write_text(json.dumps(dict(rom_sha256=hashlib.sha256((project/'space_manbow.rom').read_bytes()).hexdigest(),
-        method='Original bank1C 6000/6003/6006, isolated driver at 60 Hz; OpenMSX PSG/SCC PCM recording',clips=clips),indent=2)+'\n')
+        method='Original bank1C 6000/6003/6006, isolated driver at 60 Hz; OpenMSX PSG/SCC SFX recording. Music uses live libkss from the ROM.',clips=clips),indent=2)+'\n')
     print('Original-ROM PCM export PASS: '+', '.join(c['name'] for c in clips))
 if __name__=='__main__':main()

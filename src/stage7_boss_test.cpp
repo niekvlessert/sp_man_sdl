@@ -35,6 +35,7 @@ int main(int argc,char** argv) {
     assert((meta.bytes==std::array<std::uint8_t,4>{4u,4u,0xbdu,0u}));
 
     sm::GameState game;
+    game.difficulty=2u; // CA19 in the independent original entrance/attack trace.
     sm::Stage0Enemies logic;
     std::vector<sm::PlaySound> sounds;
     assert(logic.spawn(rom,record,game,1u));
@@ -123,9 +124,19 @@ int main(int argc,char** argv) {
     live->raw[4]=1u;
     for(unsigned f=0;f<20u && live->state()==1u;++f) route.step_60hz({});
     assert(live->state()==2u);
+    assert(!route.music_playing());
     for(const auto& e:route.state().enemies) assert(e.type()!=0x23u);
     for(unsigned f=0;f<300u && route.stage_index()==6u;++f) route.step_60hz({});
     assert(route.stage_index()==7u);
+    assert(route.music_playing());
 
-    std::cout<<"Stage 7 boss PASS: Warp Machine custom HP, bouncing bubbles and Stage-8 handoff\n";
+    for(const auto difficulty:std::array<std::uint8_t,3>{1u,2u,15u}) {
+        sm::GameState fight;fight.difficulty=difficulty;sm::Stage0Enemies controller;
+        assert(controller.spawn(rom,record,fight,1u));
+        auto& warp=fight.enemies[0];warp.state()=1u;warp.set_x_fixed(0x1900u);
+        warp.raw[0x17]=1u;warp.raw[0x18]=0x2du;
+        controller.step_gate_20hz(rom,fight,0u,nullptr);
+        assert(warp.raw[0x18]==0x2au && warp.raw[0x17]==0x44u-difficulty);
+    }
+    std::cout<<"Stage 7 boss PASS: Warp Machine custom HP, difficulty, bubbles and Stage-8 handoff\n";
 }

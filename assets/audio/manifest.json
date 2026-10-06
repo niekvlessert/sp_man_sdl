@@ -1,28 +1,7 @@
 {
   "rom_sha256": "bca5696ebbf4a3493bb226baa03ba8f8c5cc4876a4ad0eaa9722f583a42192b0",
-  "method": "Original bank1C 6000/6003/6006, isolated driver at 60 Hz; OpenMSX PSG/SCC PCM recording",
+  "method": "Original bank1C 6000/6003/6006, isolated driver at 60 Hz; OpenMSX PSG/SCC SFX recording. Music is live libkss from the ROM and has no WAV assets.",
   "clips": [
-    {
-      "name": "stage0",
-      "rate": 44100,
-      "channels": 1,
-      "seconds": 180.00562358276645,
-      "sha256": "dff012d35ff2a017fd6287dc3cb32ced2ff904fa46b371fb8b70991dfcecab46"
-    },
-    {
-      "name": "stage1",
-      "rate": 44100,
-      "channels": 1,
-      "seconds": 180.00507936507935,
-      "sha256": "62ce50b90a144192a3730ad465a772290e375de4f047691673366857a560401d"
-    },
-    {
-      "name": "boss",
-      "rate": 44100,
-      "channels": 1,
-      "seconds": 180.00671201814058,
-      "sha256": "19db520fd8b57c97f30c5e8799a8b385e1933445b3c7a8ffb541a5739758f815"
-    },
     {
       "name": "shot",
       "rate": 44100,
@@ -253,6 +232,27 @@
       "channels": 1,
       "seconds": 2.995374149659864,
       "sha256": "13a8b2454b8c2b0e641835a080ce043cdb566714a40702112d404e52c62de5ab"
+    },
+    {
+      "name": "stage8_break",
+      "rate": 44100,
+      "channels": 1,
+      "seconds": 3.00702947845805,
+      "sha256": "bd18abb6d4dfa5d0ce74a03f65be8a53c2164f091b986cfe829f5768d4808a3a"
+    },
+    {
+      "name": "stage4_laser",
+      "rate": 44100,
+      "channels": 1,
+      "seconds": 1.9969160997732427,
+      "sha256": "6ded722589ccde08342481451fd72f5ea128dc3c3cd6c8601d2ef3d7ca964741"
+    },
+    {
+      "name": "stage8_wall",
+      "rate": 44100,
+      "channels": 1,
+      "seconds": 2.00297052154195,
+      "sha256": "5a7f44da407c6b37443f06fee9bc0091bc85b4f48fe57a3d5def8ca1647b9906"
     }
   ]
 }

@@ -102,42 +102,7 @@ void upload(std::vector<std::uint8_t>& vram, unsigned address,
         vram[(address + unsigned(i)) & 0x1ffffu] = data[i];
 }
 
-void install_stage8_resident_boss_tiles(std::vector<std::uint8_t>& vram) {
-    // Gameplay startup bank03:$A600 builds a persistent SCREEN-5 work area
-    // from the $B40A records, then $A68F/$AEA6 converts 205 8x8 regions into
-    // the SCREEN-4 pattern/color pages later reused by Stage 8. The normal
-    // Stage-8 $801F graphics load deliberately leaves $10000-$13FFF intact.
-    //
-    // Replaying the entire title/startup bitmap engine here would pull a large
-    // unrelated VDP-command interpreter into the native port. Instead keep the
-    // exact persistent 16 KiB result, PackBits-style compressed. This region is
-    // byte-identical from early Stage 8 through the type-$78 boss fight.
-    static constexpr std::uint8_t packed[] = {
-#include "stage8_resident_vram.inc"
-    };
-    std::size_t p=0;
-    unsigned dst=0x10000u;
-    while(p<sizeof(packed)) {
-        const auto control=packed[p++];
-        if(control==0u) break;
-        const unsigned count=control&0x7fu;
-        if(!count || dst+count>0x14000u)
-            throw std::runtime_error("bad Stage-8 resident VRAM RLE");
-        if(control&0x80u) {
-            if(p+count>sizeof(packed))
-                throw std::runtime_error("truncated Stage-8 resident VRAM RLE");
-            std::copy_n(packed+p,count,vram.begin()+dst);
-            p+=count;dst+=count;
-        } else {
-            if(p>=sizeof(packed))
-                throw std::runtime_error("truncated Stage-8 resident VRAM RLE");
-            std::fill_n(vram.begin()+dst,count,packed[p++]);
-            dst+=count;
-        }
-    }
-    if(dst!=0x14000u)
-        throw std::runtime_error("incomplete Stage-8 resident VRAM");
-}
+
 
 void process_group(const Rom& rom, unsigned resolved,
                    std::vector<std::uint8_t>& vram) {
@@ -246,7 +211,52 @@ std::array<std::uint16_t, 16> apply_boss_palette_entries(
 }
 }
 
+std::array<std::uint8_t,256> decode_stage_terrain_properties(const Rom& rom,unsigned stage,
+                                                          bool boss_context) {
+    if(stage>=9u) throw std::out_of_range("stage terrain index");
+    std::array<std::uint8_t,256> out{};
+    auto apply=[&](unsigned root) {
+        // $8046 skips the command preamble, then $818F/$81C2 consume the
+        // destination lists and eight-byte upload records. The final FF is
+        // followed by $8209's (property, first tile, last tile) triples.
+        unsigned p=root;
+        while(bank10(rom,p)!=0xffu) ++p;
+        ++p;
+        for(;;) {
+            p=parse_lists(rom,p).next;
+            while(bank10(rom,p)!=0xfeu && bank10(rom,p)!=0xffu) p+=8u;
+            if(bank10(rom,p++)==0xffu) break;
+        }
+        while(bank10(rom,p)!=0xffu) {
+            const auto value=bank10(rom,p++),first=bank10(rom,p++),last=bank10(rom,p++);
+            if(first>last) throw std::runtime_error("invalid ROM terrain property range");
+            std::fill(out.begin()+first,out.begin()+unsigned(last)+1u,value);
+        }
+    };
+    apply(0x83fdu); // $803B: shared weapon/actor tiles CE..E9 survive context loads.
+    const unsigned entry=(boss_context?0x8177u:0x8165u)+stage*2u;
+    apply(unsigned(bank10(rom,entry))|(unsigned(bank10(rom,entry+1u))<<8u));
+    return out;
+}
+
 Stage0VideoAssets decode_stage0_video(const Rom& rom) { return decode_stage_video(rom,0); }
+std::array<std::uint16_t,16> decode_stage_boss_palette(const Rom& rom,unsigned stage) {
+    if(stage>=9u) throw std::out_of_range("stage palette index");
+    const unsigned entry=0x8177u+stage*2u;
+    const unsigned root=unsigned(bank10(rom,entry))|(unsigned(bank10(rom,entry+1u))<<8u);
+    return apply_palette_script(rom,decode_stage_video(rom,stage).palette_grb,root,10u,0x8000u);
+}
+std::array<std::uint16_t,16> decode_stage_boss_damage_palette(const Rom& rom,unsigned stage,bool flash) {
+    auto palette=decode_stage_boss_palette(rom,stage);
+    const auto bank=rom.bank(7);
+    const unsigned entry=(flash?0x6c0u:0x6d2u)+stage*2u;
+    const unsigned address=unsigned(bank[entry])|(unsigned(bank[entry+1u])<<8u);
+    if(!flash) return apply_boss_palette_entries(rom,palette,address);
+    // $AA22 flashes only the eight indices named by the normal boss table.
+    for(unsigned n=0;n<8u;++n)
+        palette[bank[address-0x8000u+n*2u+1u]>>4u]=0x0666u;
+    return palette;
+}
 Stage0VideoAssets decode_stage_video(const Rom& rom,unsigned stage) {
     if(stage>=9u) throw std::out_of_range("stage graphics index");
     Stage0VideoAssets result;
@@ -261,14 +271,29 @@ Stage0VideoAssets decode_stage_video(const Rom& rom,unsigned stage) {
     process_group(rom,0x840bu,result.vram);
     process_group(rom,end,result.vram);
     if(stage==0u) process_group(rom,0x8666u,result.vram);
-    if(stage==7u) install_stage8_resident_boss_tiles(result.vram);
+    if(stage==7u) {
+        // Stage 8 retains Stage 7's graphics atlas. A direct F0FC stage
+        // start retains title work pixels instead and is not a valid reference.
+        const auto inherited=decode_stage_video(rom,6u);
+        std::copy(inherited.vram.begin()+0x8000u,inherited.vram.begin()+0xc000u,result.vram.begin()+0x8000u);
+        std::copy(inherited.vram.begin()+0x10000u,inherited.vram.begin()+0x14000u,result.vram.begin()+0x10000u);
+        // $74 and $78 reuse already resident sprite families, including their
+        // loader offsets. Stage 8's sprite table only replaces selected types.
+        result.object_pattern_base=inherited.object_pattern_base;
+        result.object_pattern_page=inherited.object_pattern_page;
+        std::copy(inherited.vram.begin()+0xc800u,inherited.vram.begin()+0xe000u,result.vram.begin()+0xc800u);
+    }
 
     // $8371: global sprite patterns, then the stage-0 table selected through
     // the pointer list at $83C0. These also build the original $DFxx table.
-    process_sprite_table(rom, 0x92b8u, result);
+    // Stage 8 has an empty loader and retains Stage 7's sprite RAM.
+    if(stage!=7u) process_sprite_table(rom, 0x92b8u, result);
     const unsigned sprites=unsigned(bank10(rom,0x83c0u+stage*2u))|
         (unsigned(bank10(rom,0x83c1u+stage*2u))<<8u);
     process_sprite_table(rom,sprites,result);
+    // Fixed $4F0D resets DF0D at projectile birth. The table's provisional
+    // $3C base wraps pattern $D0 onto player art unless this write is applied.
+    result.object_pattern_base[0x0d]=0u;
     // Bank02's weapon renderer maintains sprite bitmaps outside the compressed
     // stage tables.  $871E/$8749 installs the O-direction patterns at $C9A0
     // (and the second R6 page at $D1A0); $8732 installs the primary shot at

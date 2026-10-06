@@ -28,6 +28,8 @@ struct Entity64 {
 
 struct GameState {
     Entity64 player{}; // original structure base: $CA40
+    std::array<Entity64,18> lasers{}; // original 18-record secondary pool at $D460
+    std::array<Entity64,48> stage3_lattice{}; // native shadow of committed Stage-3 D988 A7 lines
     std::array<Entity64, 20> enemies{}; // original pool base: $CE80
     bool tower_destroyed=false, platform_chain_active=false; // CE4C/CE4D
     std::uint8_t difficulty = 1; // CA19 from the active weapon records

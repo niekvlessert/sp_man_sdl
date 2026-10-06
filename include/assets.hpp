@@ -21,4 +21,9 @@ struct Stage0VideoAssets {
 // banked RLE -> $D800 staging -> SCREEN 4 tiles plus stage sprite patterns.
 Stage0VideoAssets decode_stage0_video(const Rom& rom);
 Stage0VideoAssets decode_stage_video(const Rom& rom,unsigned stage);
+std::array<std::uint16_t,16> decode_stage_boss_palette(const Rom& rom,unsigned stage);
+std::array<std::uint16_t,16> decode_stage_boss_damage_palette(const Rom& rom,unsigned stage,bool flash=false);
+// Original DE00 map: common weapon tiles plus the stage/encounter graphics tail.
+std::array<std::uint8_t,256> decode_stage_terrain_properties(const Rom& rom,unsigned stage,
+                                                          bool boss_context=false);
 }

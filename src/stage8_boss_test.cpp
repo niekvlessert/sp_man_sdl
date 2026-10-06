@@ -25,17 +25,8 @@ int main(int argc,char** argv) {
     if(argc!=2) return 2;
     sm::Rom rom(argv[1]);
 
-    // Stage 8 reuses a 16-KiB SCREEN-4 pattern/color region produced by the
-    // gameplay-startup SCREEN-5 conversion and preserved by the stage loader.
-    // Lock the exact resident image used by the original boss presentation.
-    const auto video=sm::decode_stage_video(rom,7u);
-    std::uint32_t resident_hash=0x811c9dc5u;
-    for(unsigned p=0x10000u;p<0x14000u;++p) {
-        resident_hash^=video.vram[p];
-        resident_hash*=0x01000193u;
-    }
-    assert(resident_hash==0x217ed24fu);
-
+    // Stage 8 keeps the preceding Stage-7 atlas. The natural-transition
+    // pixel fixture lives in boss_visual_test, not a direct-start title dump.
     const auto s8=sm::StageSpawnStream::decode_stage(rom,7u);
     const auto& record=find_type(s8,0x78u);
     assert(record.trigger==0x2000u && record.control==5u);
@@ -105,6 +96,7 @@ int main(int argc,char** argv) {
     }
     for(unsigned i=0;i<13u;++i)
         logic.step_15hz(rom,game,i,0u,false,&sounds);
+    assert(std::count(sounds.begin(),sounds.end(),sm::PlaySound::Stage8Wall)==1);
     static constexpr std::array<std::uint8_t,8> wall_tile{
         0xccu,0xcdu,0xcbu,0xcbu,0xcbu,0xcbu,0xcdu,0xccu};
     for(unsigned i=0;i<8u;++i) {
@@ -144,10 +136,16 @@ int main(int argc,char** argv) {
     for(unsigned i=0;i<20u && boss.state()==7u;++i)
         logic.step_gate_20hz(rom,game,tick++,&sounds);
     assert(boss.state()==8u && boss.raw[0x06]==9u);
-    for(unsigned i=0;i<17u;++i) {
+    assert(std::count(sounds.begin(),sounds.end(),sm::PlaySound::Stage8Break)==1);
+    // Completion depends on the player's position, not a captured duration.
+    game.player.set_x_fixed(std::uint16_t(boss.x_fixed()-0x0200u+0x0140u));
+    game.player.set_y_fixed(std::uint16_t(boss.y_fixed()+0x0600u-0x0060u));
+    for(unsigned i=0;i<10u;++i) {
         logic.step_gate_20hz(rom,game,tick++,&sounds);
         assert(!logic.stage_complete());
     }
+    assert((game.player.x_fixed()>>5u)==((boss.x_fixed()-0x0200u)>>5u));
+    assert((game.player.y_fixed()>>5u)==((boss.y_fixed()+0x0600u)>>5u));
     logic.step_gate_20hz(rom,game,tick++,&sounds);
     assert(logic.stage_complete());
 
@@ -172,8 +170,10 @@ int main(int argc,char** argv) {
     live->raw[4]=0x41u;
     for(unsigned f=0;f<40u && live->state()<6u;++f) route.step_60hz({});
     assert(live->type()==0x78u && live->state()>=6u);
+    assert(!route.music_playing());
     for(unsigned f=0;f<600u && route.stage_index()==7u;++f) route.step_60hz({});
     assert(route.stage_index()==8u);
+    assert(route.music_playing());
 
     std::cout<<"Stage 8 boss PASS: $78 attack cycle, gated damage, custom death and Stage-9 handoff\n";
 }

@@ -113,7 +113,7 @@ enum class Stage0DamageResult { Ignored, Hit, Destroyed };
 void append_stage0_damage_sounds(const Rom& rom,std::uint8_t original_type,
     Stage0DamageResult damage,std::vector<PlaySound>& sounds);
 Stage0DamageResult apply_stage0_damage(const Rom& rom, Entity64& entity,
-                                       std::uint8_t damage) noexcept;
+                                       std::uint8_t damage,bool scripted=false) noexcept;
 
 SpawnTypeMetadata decode_spawn_type_metadata(const Rom& rom, std::uint8_t type);
 bool instantiate_stage0_spawn(const Rom& rom, const SpawnRecord& record,

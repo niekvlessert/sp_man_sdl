@@ -43,6 +43,44 @@ int main(int argc,char** argv) {
     assert(boss.raw[0x17]==0x38u && boss.raw[0x25]==0u &&
            boss.raw[0x26]==6u && boss.raw[0x27]==1u);
 
+    // Independent original Z80 fixture: all 64 launch angles, sampled after
+    // $B6F3..$B745 with CA26=$0E. Hash VY/VX/AY/AX, including signed rounding.
+    std::uint32_t vector_hash=2166136261u;
+    for(unsigned angle=0;angle<64u;++angle) {
+        sm::GameState projectile_game;sm::Stage0Enemies projectile_logic;
+        auto& projectile=projectile_game.enemies[0];projectile.type()=0x5eu;
+        projectile_game.random_value=std::uint8_t(angle^rom.bank(0)[0x600]^rom.bank(0)[0x700]);
+        projectile_logic.step_gate_20hz(rom,projectile_game,0u);
+        for(unsigned p=11;p<19;++p) vector_hash=(vector_hash^projectile.raw[p])*16777619u;
+        const auto before=projectile;
+        for(unsigned f=0;f<3u;++f) projectile_logic.move_60hz(projectile_game,f);
+        auto velocity=[](const sm::Entity64& e,unsigned p) {
+            return std::int16_t(std::uint16_t(e.raw[p])|(std::uint16_t(e.raw[p+1])<<8u));
+        };
+        assert(std::int16_t(projectile.x_fixed()-before.x_fixed())==velocity(before,13));
+        assert(std::int16_t(projectile.y_fixed()-before.y_fixed())==velocity(before,11));
+        projectile_logic.step_gate_20hz(rom,projectile_game,7u);
+        assert(velocity(projectile,11)==velocity(before,11));
+        projectile_logic.step_gate_20hz(rom,projectile_game,8u);
+        assert(velocity(projectile,11)==velocity(before,11)+velocity(before,15));
+        assert(velocity(projectile,13)==velocity(before,13)+velocity(before,17));
+        assert(projectile.raw[0x17]==11u);
+    }
+    assert(vector_hash==0x57035b4du);
+    for(unsigned difficulty:{4u,5u,8u}) {
+        sm::GameState hard;hard.difficulty=std::uint8_t(difficulty);sm::Stage0Enemies controller;
+        assert(controller.spawn(rom,record,hard,1u));
+        assert(hard.enemies[0].raw[0x16]==(difficulty<5u?48u:64u));
+        hard.enemies[0].clear();auto& obstacle=hard.enemies[0];obstacle.type()=0x66u;
+        hard.player.set_y_fixed(0x0400u);controller.step_gate_20hz(rom,hard,0u);
+        const auto x=obstacle.x_fixed();
+        for(unsigned f=0;f<3u;++f) controller.move_60hz(hard,f);
+        assert(std::int16_t(obstacle.x_fixed()-x)==-0x80);
+        controller.step_gate_20hz(rom,hard,1u);
+        assert(std::int16_t(std::uint16_t(obstacle.raw[13])|(std::uint16_t(obstacle.raw[14])<<8u))==-0x90);
+        assert(std::int16_t(std::uint16_t(obstacle.raw[11])|(std::uint16_t(obstacle.raw[12])<<8u))==(difficulty<5u?0:-8));
+    }
+
     // $97C5 points at eight one-matrix placement scripts. The final frame
     // deliberately shifts +2 X / -3 Y while expanding to 8x13.
     static constexpr std::array<std::pair<unsigned,unsigned>,8> size{{
@@ -129,11 +167,43 @@ int main(int argc,char** argv) {
     assert(live && route.boss_music_active());
     for(unsigned f=0;f<5000u && live->raw[0x06]!=1u;++f) route.step_60hz({});
     assert(live->raw[0x06]==1u && (live->raw[0x14]&0x80u));
+    // The visible 4x7 tile core extends well below the stale sprite proxy.
+    // Test a real primary shot inside its lower half, and one outside it.
+    sm::Entity64 shot;sm::Entity64 player;player.set_x_fixed(200u*32u);
+    player.set_y_fixed(96u*32u);sm::initialize_basic_shot(rom,player,shot);
+    const auto core=sm::decode_stage0_tile_visuals(rom,*live).front();
+    shot.set_x_fixed(std::uint16_t((core.x+8)*32));
+    shot.set_y_fixed(std::uint16_t((core.y+32)*32));
+    assert(sm::stage0_sprite_overlap(rom,shot,*live));
+    shot.set_y_fixed(150u*32u);
+    assert(!sm::stage0_sprite_overlap(rom,shot,*live));
+
+    // Exercise interactive firing, not only injected pending damage. Keep the
+    // ROM boss HP/attack script intact and place the ship in the core's lane.
+    auto& player_state=const_cast<sm::GameState&>(route.state()).player;
+    player_state.set_y_fixed(0x0c00u);
+    const auto hp=live->raw[0x16];
+    for(unsigned f=0;f<1600u && live->raw[0x16]==hp;++f)
+        route.step_60hz({false,false,false,false,true,f%5u==0u});
+    assert(live->raw[0x16]<hp);
+    // Drain the interactive shots before injecting a synthetic fatal hit:
+    // $76A9 can otherwise replace that pending byte with an in-flight shot.
+    for(unsigned f=0;f<60u;++f) route.step_60hz({});
+    // Wait for an open phase before the fatal test injection.
+    for(unsigned f=0;f<5000u && live->raw[0x06]!=1u;++f) route.step_60hz({});
     live->raw[0x04]=0x31u;
     for(unsigned f=0;f<80u && live->state()<2u;++f) route.step_60hz({});
     assert(live->type()==0x79u && live->state()>=2u);
-    for(unsigned f=0;f<300u && route.boss_music_active();++f) route.step_60hz({});
+    assert(!route.music_playing() && !route.campaign_complete());
+    assert(live->raw[0x3f]!=0xd1u);
+    bool held=false;
+    for(unsigned f=0;f<300u && !route.campaign_complete();++f) {
+        held|=live->type()==0x79u && live->state()==3u;
+        route.step_60hz({});
+    }
     assert(route.stage_index()==8u);
+    assert(held && route.campaign_complete());
+    assert(!live->active());
     assert(!route.boss_music_active());
 
     std::cout<<"Stage 9 boss PASS: $79 scripts, $5E/$66 attacks, gated damage, destruction and ending latch\n";

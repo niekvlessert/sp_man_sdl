@@ -78,16 +78,22 @@ See `notes/sdl_late_combat_fixes_2026-10-03.md` for implementation, exact ROM
 fixture comparisons and current scope. The corrected late visual audit is
 `notes/stage0_late_visual_audit_2026-10-03.md`.
 
-Music and firing/hit/explosion effects play through SDL's audio mixer. The
-WAV assets were recorded from the ROM's original PSG/SCC driver using the
-existing sibling OpenMSX build. This playback requires no libvgm. Regenerate
-the assets after supplying the ROM with `python3 tools/export_play_audio.py`.
-This is PCM playback, with independent effects mixed over music; chip channel
-priority is not yet reproduced; music changes after the first boss. The 180-second
-stage music capture covers the route to the fight gate and then wraps.
-Audio assets are loaded from `assets/audio` beside the ROM.
-The carrier takeoff ($1A) and hatch projectile launch ($17) use their own
-original-ROM recordings. Boss music state is restored by rewind/replay.
+Music and firing/hit/explosion effects play through SDL's audio mixer, but they
+now use separate paths. **Music is generated live by libkss from the supplied
+256 KiB Space Manbow ROM**: a small in-memory KSS wrapper maps the original
+bank-$1C PSG/SCC driver, calls its untouched `$6000/$6003/$6006` entry points,
+and exposes all 32 original 8 KiB cartridge banks to libkss. Stage tracks use
+the original requests 59,60,61,62,63,64,65,67,58; boss music uses request 57.
+There are no looping stage/boss WAVs in the playback path anymore, and seeking
+replays the original driver silently to the requested timeline position.
+
+Sound effects remain independent WAV voices recorded from the same ROM driver;
+this is intentional so gameplay SFX can be iterated without reimplementing the
+original channel-stealing/priority rules. Regenerate those reference/effect
+assets with `python3 tools/export_play_audio.py`. The carrier takeoff ($1A) and
+hatch projectile launch ($17) therefore still use their original-ROM WAV
+recordings. Boss music state is restored by rewind/replay. libkss is vendored
+under `third_party/libkss`; no libvgm dependency is required.
 
 Level jumps replay the simulation without input to reconstruct scenery and
 enemy state, and seek the music to that time. Percentages refer to elapsed
@@ -116,7 +122,7 @@ Validation:
 ./build/space-manbow-continuous-scroll-test space_manbow.rom
 ./build/space-manbow-stage2-test space_manbow.rom
 ./build/space-manbow-title-test assets/title/title.anim
-SDL_AUDIODRIVER=dummy ./build/space-manbow-audio-test assets/audio
+SDL_AUDIODRIVER=dummy ./build/space-manbow-audio-test assets/audio space_manbow.rom
 python3 tools/run_player_native_validation.py
 python3 tools/run_flyers_native_validation.py
 python3 tools/run_wave_native_validation.py

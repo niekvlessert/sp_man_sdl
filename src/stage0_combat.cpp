@@ -291,10 +291,16 @@ void Stage0Combat::step(const Rom& rom,GameState& game,unsigned frame,int dx,int
             }
             if(action&1u) shot=fire(rom,e,game.player,difficulty)||shot;
         }
-        if(e.type()==0x19u && e.raw[0x26]) {
+        if((e.type()==0x19u || e.type()==0x1bu) && e.raw[0x26]) {
             // Fixed $5624 -> $7143: one standard aimed enemy round after the
             // four-tick pivot/fire countdown.
             e.raw[0x26]=0u;shot=fire(rom,e,game.player,game.difficulty) || shot;
+        }
+        if(e.type()==0x32u && e.raw[0x26]) {
+            // Stage-3 sentry $87E8->$72F6: +26 is the explicit projectile
+            // speed (8,10,12,14,16), while $714A aims it at the player.
+            const unsigned speed=e.raw[0x26];e.raw[0x26]=0u;
+            shot=fire(rom,e,game.player,game.difficulty,0,0,int(speed))||shot;
         }
         if(e.type()==0x2cu && e.raw[0x24]) {
             // $83EA->$8420 queues one fixed-heading shot. The enemy handler
@@ -333,6 +339,15 @@ void Stage0Combat::step(const Rom& rom,GameState& game,unsigned frame,int dx,int
             // handler. Consume that queued speed exactly once.
             const unsigned speed=e.raw[0x26];e.raw[0x26]=0u;
             shot=fire(rom,e,game.player,game.difficulty,0,0,int(speed))||shot;
+        }
+        if(e.type()==0x1du && e.raw[0x26]) {
+            // Bank06 $BB48 -> bank05 $9CAD/$9CDE. The return-turn shot uses
+            // heading 0 or 8, selected by which side of the enemy the player
+            // occupies, at the already prepared CA26 speed (+3 over $9D15).
+            const std::array<std::uint8_t,1> heading{
+                std::uint8_t(e.raw[0x26]-1u)};
+            const unsigned speed=e.raw[0x27];e.raw[0x26]=0u;e.raw[0x27]=0u;
+            shot=fire_fixed_pattern(rom,e,speed,heading,0)||shot;
         }
         if(e.type()==0x1eu && step_stage0_blue_enemy(game,e)) {
                 for(auto offset:std::array<std::pair<int,int>,3>{{{-8,8},{16,0},{40,8}}})
@@ -391,7 +406,12 @@ void Stage0Combat::step(const Rom& rom,GameState& game,unsigned frame,int dx,int
                 }
             }
         }
-        if(shot) sounds.push_back(e.type()==0x1f ? PlaySound::CannonShot : PlaySound::EnemyShot);
+        // Stage-3 type $32 fires through fixed-bank $72F6->$714A. That path
+        // allocates/aims the projectile but does not queue an SFX request.
+        // The generic native EnemyShot here made every sentry round audible,
+        // unlike the original game.
+        if(shot && e.type()!=0x32u)
+            sounds.push_back(e.type()==0x1f ? PlaySound::CannonShot : PlaySound::EnemyShot);
     }
 }
 }

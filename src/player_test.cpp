@@ -75,8 +75,8 @@ int main(int argc,char** argv) {
     assert(session.state().player.x_fixed()==0x052a);
     assert(session.shots()[0].active());
     for(unsigned i=0;i<4;++i) session.step_60hz({false,false,false,false,true});
-    assert(!session.shots()[1].active()); // held key cannot manufacture rising edges
-    session.step_60hz({});session.step_60hz({false,false,false,false,true});
+    // Original $801B reads FIRE as a level. Holding the button refills the
+    // next primary slot as soon as it is free; no release/re-press is needed.
     assert(session.shots()[1].active());
     for(unsigned i=0;i<100;++i) session.step_60hz({true,false,false,false,false});
     assert(session.state().player.y_fixed()==0);

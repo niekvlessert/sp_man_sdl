@@ -2,6 +2,7 @@
 #include "stage0_enemies.hpp"
 #include "spawn.hpp"
 #include "rom.hpp"
+#include "assets.hpp"
 #ifdef NDEBUG
 #undef NDEBUG
 #endif
@@ -95,7 +96,21 @@ int main(int argc,char** argv) {
     auto& boss=game.enemies[0];
     assert(boss.type()==0x7bu && boss.state()==0u);
     assert(boss.x_fixed()==0x0700u && boss.y_fixed()==0x1400u);
-    assert(boss.raw[0x16]==0xa0u && (boss.flags15()&1u));
+    assert(boss.raw[0x16]==0xa0u && !(boss.flags15()&1u));
+
+    // A closed shell must not accept shots anywhere across its tile body.
+    sm::Entity64 probe;probe.type()=2u;
+    for(unsigned y=0;y<192u;y+=4u) for(unsigned x=0;x<256u;x+=4u) {
+        probe.set_x_fixed(std::uint16_t(x*32u));probe.set_y_fixed(std::uint16_t(y*32u));
+        assert(!sm::stage0_sprite_overlap(rom,probe,boss));
+    }
+    auto open=boss;open.set_y_fixed(0x0800u);open.raw[0x21]=1u;open.raw[6]=2u;
+    unsigned hits=0;
+    for(unsigned y=0;y<192u;y+=4u) for(unsigned x=0;x<256u;x+=4u) {
+        probe.set_x_fixed(std::uint16_t(x*32u));probe.set_y_fixed(std::uint16_t(y*32u));
+        hits+=sm::stage0_sprite_overlap(rom,probe,open);
+    }
+    assert(hits>0u && hits<50u); // the centre, not the 144-pixel-wide shell
 
     logic.step_15hz(rom,game,0u,0u,false,&sounds);
     assert(boss.state()==1u && boss.raw[0x18]==0x1eu);
@@ -108,29 +123,29 @@ int main(int argc,char** argv) {
     for(unsigned tick=36;tick<=40u;++tick) logic.step_15hz(rom,game,tick,0u,false,&sounds);
     assert(boss.state()==3u && boss.raw[0x22]==2u && boss.raw[0x17]==5u);
 
-    // $B638 permits only one active type-$0D beam at a time. It spawns at
+    // $B638 permits only one active type-$0D ball at a time. It spawns at
     // boss (+8,+2), with the exact $FF80 Y vector and ROM SFX $17.
     for(unsigned tick=41;tick<=45u;++tick) logic.step_15hz(rom,game,tick,0u,false,&sounds);
     assert(boss.raw[0x21]==1u && boss.raw[0x17]==0x14u);
-    auto beam=std::find_if(game.enemies.begin(),game.enemies.end(),
+    auto ball=std::find_if(game.enemies.begin(),game.enemies.end(),
         [](const auto& e){return e.type()==0x0du;});
-    assert(beam!=game.enemies.end());
-    assert(beam->x_fixed()==0x0f00u && beam->y_fixed()==0x1600u);
-    assert(std::int16_t(std::uint16_t(beam->raw[0x0b]) |
-                        (std::uint16_t(beam->raw[0x0c])<<8))==-0x80);
-    assert((beam->flags15()&1u)!=0u);
+    assert(ball!=game.enemies.end());
+    assert(ball->x_fixed()==0x0f00u && ball->y_fixed()==0x1600u);
+    assert(std::int16_t(std::uint16_t(ball->raw[0x0b]) |
+                        (std::uint16_t(ball->raw[0x0c])<<8))==-0x80);
+    assert((ball->flags15()&1u)!=0u);
     assert(std::count(sounds.begin(),sounds.end(),sm::PlaySound::HatchShot)==1);
 
-    // Native 60-Hz splitting of the beam's $FF80 velocity: four video frames
+    // Native 60-Hz splitting of the ball's $FF80 velocity: four video frames
     // equal one original -$80 object step.
-    const auto y0=beam->y_fixed();
+    const auto y0=ball->y_fixed();
     for(unsigned f=0;f<4u;++f) logic.move_60hz(game,f);
-    assert(std::int16_t(beam->y_fixed()-y0)==-0x80);
+    assert(std::int16_t(ball->y_fixed()-y0)==-0x80);
 
-    // Continue the controller without letting the old beam block later launch
+    // Continue the controller without letting the old ball block later launch
     // points. Four 20-tick state-3 phases open into state 4, then state 5/6
     // closes the boss and returns to the 30-tick wait.
-    beam->clear();
+    ball->clear();
     unsigned tick=46u;
     while(boss.state()==3u && tick<140u) {
         logic.step_15hz(rom,game,tick++,0u,false,&sounds);
@@ -147,7 +162,7 @@ int main(int argc,char** argv) {
 
     // Full native route: Stage 6 must naturally spawn the boss before the
     // final scenery gate, switch to boss music, destroy through $6A, clean its
-    // active beam and advance to Stage 7.
+    // active ball and advance to Stage 7.
     sm::PlaySession route(rom);route.reset(5u);
     sm::Entity64* live=nullptr;bool escorts=false;
     for(unsigned f=0;f<26000u && (!live || !escorts);++f) {
@@ -166,7 +181,29 @@ int main(int argc,char** argv) {
     for(unsigned f=0;f<600u && !route.at_fight_gate();++f) route.step_60hz({});
     assert(route.at_fight_gate());
 
-    // Force one live boss beam so the fatal cleanup path is covered.
+    // Stage 6 enables the common CE47/CE48 palette service (+3F=1).
+    // It turns red at 160/4=40 HP, rather than its separate <16 death gate.
+    auto rgb=[](std::uint16_t c) {
+        auto channel=[](unsigned q){return (q*255u+3u)/7u;};
+        return 0xff000000u|(channel((c>>4u)&7u)<<16u)|
+            (channel((c>>8u)&7u)<<8u)|channel(c&7u);
+    };
+    const auto normal=sm::decode_stage_boss_palette(rom,5u);
+    const auto red=sm::decode_stage_boss_damage_palette(rom,5u);
+    unsigned palette_index=16u;auto image=route.render();
+    for(unsigned i=0;i<16u;++i) if(normal[i]!=red[i] &&
+        std::count(image.begin()+28u*256u,image.end(),rgb(normal[i]))>100) {palette_index=i;break;}
+    assert(palette_index<16u && live->raw[0x3f]==1u);
+    live->raw[4]=119u;
+    for(unsigned f=0;f<24u;++f) route.step_60hz({});
+    assert(live->raw[0x16]==41u);image=route.render();
+    assert(std::count(image.begin()+28u*256u,image.end(),rgb(normal[palette_index]))>100);
+    live->raw[4]=1u;
+    for(unsigned f=0;f<24u;++f) route.step_60hz({});
+    assert(live->raw[0x16]==40u);image=route.render();
+    assert(std::count(image.begin()+28u*256u,image.end(),rgb(red[palette_index]))>100);
+
+    // Force one live boss ball so the fatal cleanup path is covered.
     {
         auto& state=const_cast<sm::GameState&>(route.state());
         auto* b=state.allocate_enemy();assert(b);
@@ -190,5 +227,5 @@ int main(int argc,char** argv) {
     for(unsigned f=0;f<500u && route.stage_index()==5u;++f) route.step_60hz({});
     assert(route.stage_index()==6u);
 
-    std::cout<<"Stage 6 boss PASS: $7B cycle, $0D beam, damage cleanup and Stage-7 handoff\n";
+    std::cout<<"Stage 6 boss PASS: $7B cycle, $0D ball, damage cleanup and Stage-7 handoff\n";
 }

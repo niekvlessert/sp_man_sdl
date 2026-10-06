@@ -2,6 +2,7 @@
 #include "stage0_enemies.hpp"
 #include "spawn.hpp"
 #include "rom.hpp"
+#include "assets.hpp"
 #ifdef NDEBUG
 #undef NDEBUG
 #endif
@@ -54,11 +55,57 @@ int main(int argc,char** argv) {
         e4.step_gate_20hz(rom,g4,tick);
         for(const auto& e:g4.enemies) if(e.type()==0x58u) {
             saw58=true;
-            assert(e.x_fixed()==0x0f00u);
-            assert(e.y_fixed()==0x0a00u || e.y_fixed()==0x1600u);
+            assert(e.x_fixed()==std::uint16_t(std::uint8_t(b4.raw[0x0a]-5u))<<8u);
+            assert(e.y_fixed()==std::uint16_t(std::uint8_t(b4.raw[0x08]+((tick&1u)?-3:9)))<<8u);
         }
     }
     assert(saw58);
+
+    // Original B085..B0C0 vectors, all 128 angles across both rails.
+    std::uint32_t vector_hash=2166136261u;
+    for(unsigned angle=0;angle<128u;++angle) {
+        sm::GameState g;sm::Stage0Enemies logic;
+        auto& shot=g.enemies[0];shot.type()=0x58u;
+        shot.raw[0x20]=angle<64u?1u:0u;
+        g.random_value=std::uint8_t((angle&63u)^rom.bank(0)[0x600]^rom.bank(0)[0x700]);
+        logic.step_gate_20hz(rom,g,0u);
+        for(unsigned p=11;p<19;++p) vector_hash=(vector_hash^shot.raw[p])*16777619u;
+        auto velocity=[](const sm::Entity64& e,unsigned p) {
+            return std::int16_t(std::uint16_t(e.raw[p])|(std::uint16_t(e.raw[p+1])<<8u));
+        };
+        for(unsigned tick=1;tick<=9u;++tick) {
+            logic.step_gate_20hz(rom,g,tick);
+            assert(velocity(shot,11)==int(tick)*velocity(shot,15));
+            assert(velocity(shot,13)==int(tick)*velocity(shot,17));
+        }
+        assert(shot.state()==2u);
+        const auto before=shot;
+        for(unsigned f=0;f<3u;++f) logic.move_60hz(g,f);
+        assert(std::int16_t(shot.x_fixed()-before.x_fixed())==velocity(before,13));
+        assert(std::int16_t(shot.y_fixed()-before.y_fixed())==velocity(before,11));
+    }
+    assert(vector_hash==0x3e6ee3efu);
+    // AEAB/9157: two lasers (growth limit eight cells) with a 20-tick warning, alternating
+    // CC/CD cells and original sound request $2C at the growth transition.
+    sm::GameState lasers;sm::Stage0Enemies laser_logic;std::vector<sm::PlaySound> laser_sounds;
+    auto& owner=lasers.enemies[0];owner.type()=0x14u;owner.state()=2u;
+    owner.set_x_fixed(0x1440u);owner.set_y_fixed(0x0900u);
+    owner.raw[0x22]=8u;owner.raw[0x11]=10u;owner.raw[0x21]=0u;
+    laser_logic.step_gate_20hz(rom,lasers,0u,&laser_sounds);
+    unsigned rails=0;
+    for(const auto& q:lasers.enemies) if(q.type()==0x46u) {
+        ++rails;assert(q.x_fixed()==owner.x_fixed());
+        assert(q.y_fixed()==owner.y_fixed() || q.y_fixed()==owner.y_fixed()+0x0700u);
+        assert(q.raw[0x03]==1u && q.raw[0x11]==0u);
+    }
+    assert(rails==2u);owner.clear();
+    for(unsigned tick=1;tick<=26;++tick) laser_logic.step_15hz(rom,lasers,tick,0u,false,&laser_sounds);
+    assert(std::count(laser_sounds.begin(),laser_sounds.end(),sm::PlaySound::Stage4Laser)==1);
+    for(const auto& q:lasers.enemies) if(q.type()==0x46u) {
+        const auto v=sm::decode_stage0_tile_visuals(rom,q);
+        assert(v.size()==1u && v[0].cols==10u);
+        for(unsigned n=1;n<v[0].tiles.size();++n) assert(v[0].tiles[n]!=v[0].tiles[n-1]);
+    }
 
     // Stage 5 boss: extended type $77 record.  State 1 builds the exact
     // twelve-object $76 pool seen in the original: eight root armour records
@@ -101,7 +148,8 @@ int main(int argc,char** argv) {
     for(unsigned i=0;i<live.size();++i) {
         const auto& e=g5.enemies[i+1u];
         const auto& q=live[i];
-        assert(e.type()==0x76u && e.x_fixed()==q.x && e.y_fixed()==q.y);
+        assert(e.type()==0x76u && e.x_fixed()==q.x+0x0f00u && e.y_fixed()==q.y);
+        assert((e.flags15()&1u)==0u); // tile armour, never a SAT sprite
         assert(e.raw[5]==q.f5 && e.raw[6]==q.f6 && e.raw[0x34]==q.link);
         assert(e.state()==q.state && e.raw[0x37]==q.children);
     }
@@ -118,9 +166,36 @@ int main(int argc,char** argv) {
         if(it!=state.enemies.end()) live4=&*it;
     }
     assert(live4 && route4.boss_music_active());
+    while(live4->state()<2u) route4.step_60hz({});
+    assert(live4->raw[0x16]==0xf0u);
+    auto rgb=[](std::uint16_t c) {
+        auto channel=[](unsigned q){return (q*255u+3u)/7u;};
+        return 0xff000000u|(channel((c>>4u)&7u)<<16u)|
+            (channel((c>>8u)&7u)<<8u)|channel(c&7u);
+    };
+    const auto normal=sm::decode_stage_boss_palette(rom,3u);
+    const auto red=sm::decode_stage_boss_damage_palette(rom,3u);
+    unsigned palette_index=16u;
+    auto image=route4.render();
+    for(unsigned i=0;i<16u;++i) if(normal[i]!=red[i] &&
+        std::count(image.begin()+28u*256u,image.end(),rgb(normal[i]))>100) {palette_index=i;break;}
+    assert(palette_index<16u);
+    // At 61 HP the white flash expires back to normal. At the ROM quarter
+    // threshold (60) it expires to red and that colour persists without hits.
+    live4->raw[4]=179u;
+    for(unsigned f=0;f<24u;++f) route4.step_60hz({});
+    assert(live4->raw[0x16]==61u);
+    image=route4.render();
+    assert(std::count(image.begin()+28u*256u,image.end(),rgb(normal[palette_index]))>100);
+    live4->raw[4]=1u;
+    for(unsigned f=0;f<24u;++f) route4.step_60hz({});
+    assert(live4->raw[0x16]==60u);
+    image=route4.render();
+    assert(std::count(image.begin()+28u*256u,image.end(),rgb(red[palette_index]))>100);
     live4->raw[4]=0xffu;
     for(unsigned f=0;f<30u && live4->type()!=0x6au;++f) route4.step_60hz({});
     assert(live4->type()==0x6au);
+    for(const auto& e:route4.state().enemies) assert(e.type()!=0x58u && !(e.type()==0x46u && e.raw[0x03]));
     for(unsigned f=0;f<500u && route4.stage_index()==3u;++f) route4.step_60hz({});
     assert(route4.stage_index()==4u);
 
@@ -138,6 +213,17 @@ int main(int argc,char** argv) {
         if(it!=state.enemies.end()) live5=&*it;
     }
     assert(live5 && route5.boss_music_active() && live5->raw[0x37]==8u);
+    // Let the complete entrance scroll finish. These are independently
+    // captured ROM fight positions, not just descriptor offsets at birth.
+    for(unsigned f=0;f<150u;++f) route5.step_60hz({});
+    assert(live5->x_fixed()==0x1000u);
+    for(const auto& e:route5.state().enemies) if(e.type()==0x76u) {
+        assert((e.flags15()&1u)==0u);
+        bool matched=false;
+        for(const auto& q:live) if(e.raw[5]==q.f5 && e.raw[6]==q.f6 &&
+            e.x_fixed()==q.x && e.y_fixed()==q.y) matched=true;
+        assert(matched);
+    }
     {
         auto& state=const_cast<sm::GameState&>(route5.state());
         const auto id=live5->raw[0x2d];

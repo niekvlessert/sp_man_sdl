@@ -32,8 +32,8 @@ int main(int argc,char** argv) try {
     const auto asset_root=std::filesystem::absolute(argv[1]).parent_path();
     sm::TitleAnimation title_animation(asset_root/"assets/title/title.anim");
     std::unique_ptr<sm::PlayAudio> audio;
-    try {audio=std::make_unique<sm::PlayAudio>(asset_root/"assets/audio");audio->set_music_playing(false);}
-    catch(const std::exception& e) {std::cerr<<"Audio unavailable: "<<e.what()<<"\nRun python3 tools/export_play_audio.py to regenerate ROM audio.\n";}
+    try {audio=std::make_unique<sm::PlayAudio>(asset_root/"assets/audio",argv[1]);audio->set_music_playing(false);}
+    catch(const std::exception& e) {std::cerr<<"Audio unavailable: "<<e.what()<<"\nWAV assets are only required for sound effects; music is played live from the ROM through libkss.\n";}
     auto* window=SDL_CreateWindow("Space Manbow - native play",SDL_WINDOWPOS_CENTERED,
         SDL_WINDOWPOS_CENTERED,1024,848,SDL_WINDOW_RESIZABLE|SDL_WINDOW_ALLOW_HIGHDPI);
     if(!window) throw std::runtime_error(SDL_GetError());
@@ -173,8 +173,9 @@ int main(int argc,char** argv) try {
             const auto pixels=session_ptr().render_continuous();SDL_UpdateTexture(texture,nullptr,pixels.data(),1024*4);
             SDL_RenderCopy(renderer,texture,nullptr,&dst);
             char title[160];std::snprintf(title,sizeof(title),
-                "Space Manbow - native play - frame %u%s%s%s",session_ptr().frame(),paused?" PAUSED":"",turbo?" | TURBO 500%":"",
-                session_ptr().at_fight_gate()?" | boss":(session_ptr().stage_index()?" | stage 2":""));
+                "Space Manbow - native play - stage %u - frame %u%s%s%s",session_ptr().stage_index()+1u,session_ptr().frame(),paused?" PAUSED":"",turbo?" | TURBO 500%":"",
+                session_ptr().campaign_complete()?" | complete":
+                (session_ptr().at_fight_gate()?" | boss":""));
             SDL_SetWindowTitle(window,title);
         }
         SDL_RenderPresent(renderer);

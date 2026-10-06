@@ -19,6 +19,7 @@ public:
     void reset();
     void reset_stage(unsigned stage);
     void step_15hz();
+    void step_60hz();
     void seek_world_x(unsigned x);
     void set_tower_destroyed(bool value) noexcept { tower_destroyed_=value; }
     // Fixed $6C75: final-sector type $3C selector 0 derives the raster fine
@@ -74,7 +75,15 @@ public:
     Stage0PresentationState presentation_state() const noexcept;
     std::uint8_t view_tile(unsigned x, unsigned y) const noexcept;
     bool gated() const noexcept { return gated_; }
+    std::uint8_t palette_fade_ticks() const noexcept { return palette_fade_ticks_; }
+    bool palette_fade_active() const noexcept { return palette_fade_active_; }
+    bool stage3_stars_enabled() const noexcept { return !(stage_index_==2u && gated_); }
     std::uint8_t tile(unsigned x, unsigned y) const noexcept;
+    // Fixed $76D0->$76F1->$4E3A: object name-table writes use only the
+    // low CA1A/CA1C fine-scroll bytes to select the coarse object cell, then
+    // add integrated C0CC/C0CD to address the physical 64x32 E000 ring.
+    bool write_object_tile(std::uint16_t x_fixed,std::uint16_t y_fixed,
+                           std::uint8_t tile) noexcept;
     std::uint8_t ring_tile(unsigned col, unsigned row) const noexcept { return ring_[(row & 31u) * 64u + (col & 63u)]; }
 
 private:
@@ -108,6 +117,9 @@ private:
     unsigned metatile_base_=0;
     bool tower_destroyed_=false;
     bool gated_ = false;
+    std::uint8_t palette_fade_ticks_ = 0; // original EF60 low-6 fade countdown for stage-3 A94A
+    bool palette_fade_active_ = false;
+    bool frame_service_seen_ = false;
     bool suppress_prefetch_ = false;
     bool object_raster_anchor_ = false;
     std::uint8_t anchor_ca1a_low_ = 0;
