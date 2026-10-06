@@ -1051,6 +1051,17 @@ SpawnTypeMetadata decode_spawn_type_metadata(const Rom& rom, std::uint8_t type) 
     return out;
 }
 
+Entity64* allocate_stage_entity(const Rom& rom,GameState& game,std::uint8_t type) {
+    auto* entity=game.allocate_enemy();
+    if(!entity) return nullptr;
+    entity->clear();
+    entity->type()=type;
+    const auto meta=decode_spawn_type_metadata(rom,type);
+    std::copy(meta.bytes.begin(),meta.bytes.end(),entity->raw.begin()+0x13u);
+    entity->raw[0x2d]=std::uint8_t(entity-game.enemies.data()+1u);
+    return entity;
+}
+
 bool instantiate_stage0_spawn(const Rom& rom, const SpawnRecord& r, GameState& game,
                               std::uint8_t spawn_direction) {
     const bool special26 = r.type == 0x26u && r.control_flag();
@@ -1089,14 +1100,9 @@ bool instantiate_stage0_spawn(const Rom& rom, const SpawnRecord& r, GameState& g
         r.type != 0x53u && r.type != 0x54u && r.type != 0x55u && r.type != 0x56u && r.type != 0x47u && r.type != 0x43u && r.type != 0x64u &&
         r.type != 0x72u && r.type != 0x73u && r.type != 0x77u && r.type != 0x78u && r.type != 0x79u && r.type != 0x7au && r.type != 0x7bu && r.type != 0x7cu) return false;
     if (r.payload.empty() || (r.type == 0x24u && r.payload.size() < 2u)) return false;
-    auto* e = game.allocate_enemy();
-    if (!e) return false;
-    e->clear();
-    e->type() = r.type;
-    const auto meta = decode_spawn_type_metadata(rom, r.type);
-    for (unsigned i = 0; i < 4; ++i) e->raw[0x13u + i] = meta.bytes[i];
-    for (unsigned i = 0; i < game.enemies.size(); ++i)
-        if (&game.enemies[i] == e) e->raw[0x2d] = std::uint8_t(i + 1u);
+    auto* e=allocate_stage_entity(rom,game,r.type);
+    if(!e) return false;
+    const auto meta=decode_spawn_type_metadata(rom,r.type);
 
     // Original $6754 initializer. The same payload byte is interpreted on a
     // different axis depending on C0D5, so it is NOT an absolute Y value.

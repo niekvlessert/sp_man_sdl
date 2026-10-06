@@ -12,6 +12,7 @@ add_subdirectory(third_party/libkss EXCLUDE_FROM_ALL)
 add_library(smcore
     src/rom.cpp
     src/rom_tile_script.cpp
+    src/entity_runtime.cpp
     src/graphics.cpp
     src/level.cpp
     src/assets.cpp
@@ -36,6 +37,9 @@ target_link_libraries(space-manbow-level-preview PRIVATE smcore PkgConfig::SDL2)
 
 add_executable(space-manbow-runtime-test src/runtime_test.cpp)
 target_link_libraries(space-manbow-runtime-test PRIVATE smcore)
+
+add_executable(space-manbow-entity-runtime-test src/entity_runtime_test.cpp)
+target_link_libraries(space-manbow-entity-runtime-test PRIVATE smcore)
 
 add_executable(space-manbow-game src/game_main.cpp src/play_audio.cpp src/title_animation.cpp)
 target_include_directories(space-manbow-game PRIVATE third_party/libkss/src third_party/libkss/modules)
@@ -113,3 +117,41 @@ target_link_libraries(space-manbow-stage89-presentation-test PRIVATE smcore)
 
 add_executable(space-manbow-stage2-presentation-test src/stage2_presentation_test.cpp)
 target_link_libraries(space-manbow-stage2-presentation-test PRIVATE smcore)
+
+
+# Register the regression executables with CTest so every future level-port
+# refactor can run the full ROM-backed suite with one command.
+enable_testing()
+function(add_sm_test name target)
+    add_test(NAME ${name} COMMAND ${target} ${ARGN})
+    set_tests_properties(${name} PROPERTIES WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+endfunction()
+
+set(SM_ROM ${CMAKE_SOURCE_DIR}/space_manbow.rom)
+add_sm_test(entity-runtime space-manbow-entity-runtime-test ${SM_ROM})
+add_sm_test(runtime space-manbow-runtime-test ${SM_ROM})
+add_sm_test(player space-manbow-player-test ${SM_ROM})
+add_sm_test(play-features space-manbow-play-features-test ${SM_ROM})
+add_sm_test(combat space-manbow-combat-test ${SM_ROM})
+add_sm_test(audio space-manbow-audio-test ${CMAKE_SOURCE_DIR}/assets/audio ${SM_ROM})
+add_sm_test(title space-manbow-title-test ${CMAKE_SOURCE_DIR}/assets/title/title.anim)
+add_sm_test(late-combat space-manbow-late-combat-test ${SM_ROM})
+add_sm_test(feedback space-manbow-feedback-test ${SM_ROM})
+add_sm_test(timeline space-manbow-timeline-test ${SM_ROM})
+add_sm_test(scroll-feedback space-manbow-scroll-feedback-test ${SM_ROM})
+add_sm_test(continuous-scroll space-manbow-continuous-scroll-test ${SM_ROM})
+add_sm_test(stage2 space-manbow-stage2-test ${SM_ROM})
+add_sm_test(stage34 space-manbow-stage34-test ${SM_ROM})
+add_sm_test(stage59 space-manbow-stage59-test ${SM_ROM})
+add_sm_test(stage45-boss space-manbow-stage45-boss-test ${SM_ROM})
+add_sm_test(boss-visual space-manbow-boss-visual-test ${SM_ROM})
+add_sm_test(stage6-boss space-manbow-stage6-boss-test ${SM_ROM})
+add_sm_test(stage7-boss space-manbow-stage7-boss-test ${SM_ROM})
+add_sm_test(stage8-boss space-manbow-stage8-boss-test ${SM_ROM})
+add_sm_test(stage9-boss space-manbow-stage9-boss-test ${SM_ROM})
+add_sm_test(late-level-enemies space-manbow-late-level-enemies-test ${SM_ROM})
+add_sm_test(stage67-enemies space-manbow-stage67-enemies-test ${SM_ROM})
+add_sm_test(boss-palette space-manbow-boss-palette-test ${SM_ROM})
+add_sm_test(boss-regressions space-manbow-boss-regressions-test ${SM_ROM})
+add_sm_test(stage89-presentation space-manbow-stage89-presentation-test ${SM_ROM})
+add_sm_test(stage2-presentation space-manbow-stage2-presentation-test ${SM_ROM})

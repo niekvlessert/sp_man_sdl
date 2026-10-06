@@ -116,6 +116,11 @@ Stage0DamageResult apply_stage0_damage(const Rom& rom, Entity64& entity,
                                        std::uint8_t damage,bool scripted=false) noexcept;
 
 SpawnTypeMetadata decode_spawn_type_metadata(const Rom& rom, std::uint8_t type);
+// Common child/object allocator used by ROM handlers after $6754-style
+// metadata setup. It owns the slot index byte (+2D), so child state machines
+// do not have to repeat pool bookkeeping.
+Entity64* allocate_stage_entity(const Rom& rom,GameState& game,
+                                std::uint8_t type);
 bool instantiate_stage0_spawn(const Rom& rom, const SpawnRecord& record,
                               GameState& game, std::uint8_t spawn_direction = 1u);
 }

@@ -1,32 +1,10 @@
 #include "stage0_combat.hpp"
 #include "stage0_enemies.hpp"
+#include "entity_runtime.hpp"
 #include <algorithm>
 #include <cstdlib>
 
 namespace sm {
-namespace {
-void put(Entity64& e,unsigned p,int value) {
-    e.raw[p]=std::uint8_t(value);e.raw[p+1]=std::uint8_t(unsigned(value)>>8);
-}
-int velocity(const Entity64& e,unsigned p) {return std::int16_t(unsigned(e.raw[p])|(unsigned(e.raw[p+1])<<8));}
-bool timer(Entity64& e,unsigned field) {
-    if(e.raw[field]==1) return true;
-    --e.raw[field];return false;
-}
-std::uint8_t direction8(const Entity64& target,const Entity64& source) {
-    // Fixed $6B94-$6BE5, using the high position bytes exactly like the ROM.
-    auto sm=[](std::uint8_t t,std::uint8_t s) {
-        const int d=int(t)-int(s);
-        return std::pair<unsigned,bool>{unsigned(d<0?-d:d)&0x7fu,d<0};
-    };
-    const auto [dx,left]=sm(target.raw[0x0a],source.raw[0x0a]);
-    const auto [dy,above]=sm(target.raw[0x08],source.raw[0x08]);
-    std::uint8_t c=left?(above?0u:6u):(above?2u:4u);
-    const bool same=left==above;
-    if((dy>=(dx>>1u) && same) || (dy<(dx>>1u) && !same)) ++c;
-    return std::uint8_t(c&7u);
-}
-}
 unsigned PlayerUpgrades::difficulty(const Rom& rom) const {
     // Bank02 $83E7: sum the five active weapon record weights, divide by 16,
     // add the power tier ($4E79), and cap at $0F. Speed is independent.
@@ -47,23 +25,16 @@ bool Stage0Combat::fire(const Rom& rom,const Entity64& source,const Entity64& ta
     auto& b=*it;b.clear();b.type()=0x60;b.state()=0;b.raw[5]=0;b.flags15()=0x21;b.raw[0x17]=4;
     b.set_x_fixed(std::uint16_t(source.x_fixed()+xo*32));
     b.set_y_fixed(std::uint16_t(source.y_fixed()+yo*32));
-    const int dx=int(std::uint8_t(target.x_fixed()/32))-int(std::uint8_t(b.x_fixed()/32));
-    const int dy=int(std::uint8_t(target.y_fixed()/32))-int(std::uint8_t(b.y_fixed()/32));
     const auto bank=rom.bank(4);
-    const unsigned angle=bank[0x13ed+(unsigned(std::abs(dy))&0xf0)+(unsigned(std::abs(dx))>>4)];
     const unsigned speed=speed_override>=0 ? unsigned(speed_override) :
         unsigned(bank[0x11a8+difficulty]); // $7197/CA19 unless caller already set CA26
-    put(b,11,(dy<0?-1:1)*int(unsigned(bank[0x13ad+angle])*speed/32));
-    put(b,13,(dx<0?-1:1)*int(unsigned(bank[0x13ad+63-angle])*speed/32));
+    rom_set_aimed_velocity(rom,b,target,speed);
     if(source.type()==0x1f || source.type()==0x1e) {
         // $9CC0 -> $7362: the large cannon fires along its five discrete
         // barrel directions, rather than re-aiming between burst shots.
         const unsigned heading=rom.bank(5)[0x1d0d+unsigned(source.type()==0x1e?0:source.raw[5])];
-        const unsigned p=0x138d+heading*2;
-        const auto signs=bank[p];const unsigned a=bank[p+1];
         const unsigned cannon_speed=rom.bank(5)[0x1d15+difficulty/2];
-        put(b,11,(signs&1?-1:1)*int(unsigned(bank[0x13ad+a])*cannon_speed/32));
-        put(b,13,(signs&2?-1:1)*int(unsigned(bank[0x13ad+63-a])*cannon_speed/32));
+        rom_set_heading_velocity(rom,b,heading,cannon_speed);
         b.set_x_fixed(std::uint16_t((source.x_fixed()&0xff00u)+xo*32));
         b.set_y_fixed(std::uint16_t((source.y_fixed()&0xff00u)+yo*32));
         b.type()=0x67;b.state()=0;b.raw[5]=std::uint8_t(heading/2);b.flags15()=0x35;
@@ -72,11 +43,8 @@ bool Stage0Combat::fire(const Rom& rom,const Entity64& source,const Entity64& ta
         // Bank05 $8420 -> $9CB5 uses BC=0, therefore heading entry 0 from
         // $9D0D. It shares the type-$67 projectile speed table with cannons.
         constexpr unsigned heading=0u;
-        const unsigned p=0x138d+heading*2u;
-        const auto signs=bank[p];const unsigned a=bank[p+1u];
         const unsigned speed=rom.bank(5)[0x1d15u+difficulty/2u];
-        put(b,11,(signs&1u?-1:1)*int(unsigned(bank[0x13ad+a])*speed/32u));
-        put(b,13,(signs&2u?-1:1)*int(unsigned(bank[0x13ad+63u-a])*speed/32u));
+        rom_set_heading_velocity(rom,b,heading,speed);
         b.type()=0x67u;b.state()=0u;b.raw[5]=0u;b.flags15()=0x35u;b.raw[0x17]=4u;
     }
     return true;
@@ -85,7 +53,7 @@ bool Stage0Combat::fire_fixed_pattern(const Rom& rom,const Entity64& source,unsi
         std::span<const std::uint8_t> headings,int y_cells) {
     // Fixed $7306. Each list byte selects a (signs,angle) pair from $738D;
     // $737C then adds the caller's BC offset to the projectile high bytes.
-    bool fired=false;const auto bank=rom.bank(4);
+    bool fired=false;
     for(const auto heading:headings) {
         auto it=std::find_if(bullets_.begin(),bullets_.end(),[](auto& b){return !b.active();});
         if(it==bullets_.end()) break;
@@ -94,10 +62,7 @@ bool Stage0Combat::fire_fixed_pattern(const Rom& rom,const Entity64& source,unsi
         b.flags15()=0x21u;b.raw[0x17]=4u;
         b.set_x_fixed(source.x_fixed());
         b.set_y_fixed(std::uint16_t(source.y_fixed()+y_cells*0x100));
-        const unsigned p=0x138du+unsigned(heading)*2u;
-        const auto signs=bank[p];const unsigned a=bank[p+1u];
-        put(b,11,(signs&1u?-1:1)*int(unsigned(bank[0x13adu+a])*speed/32u));
-        put(b,13,(signs&2u?-1:1)*int(unsigned(bank[0x13adu+63u-a])*speed/32u));
+        rom_set_heading_velocity(rom,b,heading,speed);
         fired=true;
     }
     return fired;
@@ -116,7 +81,7 @@ bool Stage0Combat::fire_type15_pair(const Entity64& source) {
         b.flags15()=0x31;b.raw[0x17]=6;
         b.set_x_fixed(std::uint16_t(source.raw[0x0a])<<8u);
         b.set_y_fixed(std::uint16_t(source.raw[0x08])<<8u);
-        put(b,11,vy);put(b,13,0);fired=true;
+        entity_set_word(b,11,vy);entity_set_word(b,13,0);fired=true;
     }
     return fired;
 }
@@ -212,13 +177,13 @@ void Stage0Combat::step(const Rom& rom,GameState& game,unsigned frame,int dx,int
                 if(--b.raw[0x17]==0u) {b.state()=1;b.flags15()=0x31;}
             } else if(b.type()==0x61u && b.state()==0u && b.raw[0x17]) {
                 if(--b.raw[0x17]==0u) {
-                    b.state()=1;put(b,11,0);put(b,13,-0x0080);
+                    b.state()=1;entity_set_word(b,11,0);entity_set_word(b,13,-0x0080);
                 }
             }
         }
         // Spread each original 15-Hz velocity over four presentation ticks.
         for(unsigned p:{7u,9u}) {
-            const int v=velocity(b,p+4);
+            const int v=entity_word(b,p+4);
             const int phase=int(frame&3);
             const int delta=v*(phase+1)/4-v*phase/4;
             if(p==7) b.set_y_fixed(std::uint16_t(b.y_fixed()+delta));
@@ -374,7 +339,7 @@ void Stage0Combat::step(const Rom& rom,GameState& game,unsigned frame,int dx,int
             // signed high-byte muzzle offsets from $5A11, then $7143 creates
             // a standard aimed type-$60 projectile. Keep the low 8.8 bytes.
             const auto fixed=rom.bank(0);
-            const unsigned i=(direction8(game.player,e)>>1u)&3u;
+            const unsigned i=(rom_direction8(game.player,e)>>1u)&3u;
             const int yo=std::int8_t(fixed[0x1a11u+i*2u]);
             const int xo=std::int8_t(fixed[0x1a12u+i*2u]);
             auto muzzle=e;
@@ -397,7 +362,7 @@ void Stage0Combat::step(const Rom& rom,GameState& game,unsigned frame,int dx,int
                 const unsigned quadrant=flags==0?192:(flags==1?0:(flags==2?128:64));
                 e.raw[5]=b6[0x1cdc+((a+quadrant)>>4)];
             }
-            if(timer(e,0x17) && timer(e,0x18)) {
+            if(rom_timer_expired(e,0x17) && rom_timer_expired(e,0x18)) {
                 e.raw[0x18]=4;const auto phase=e.raw[0x24]++;
                 if(phase==3) {e.raw[0x24]=0;e.raw[0x17]=32;++e.raw[0x18];}
                 else if(phase!=1) {

@@ -1,4 +1,5 @@
 #include "play_session.hpp"
+#include "entity_runtime.hpp"
 #include "assets.hpp"
 #include <algorithm>
 #include <stdexcept>
@@ -72,12 +73,6 @@ void apply_stage3_exit_fade(std::array<std::uint32_t,16>& palette,
              fade_channel(c&255u);
     }
 }
-std::uint16_t word(std::span<const std::uint8_t> b, unsigned p) {
-    return std::uint16_t(b[p]) | (std::uint16_t(b[p+1]) << 8);
-}
-void set_word(Entity64& e, unsigned p, std::uint16_t value) {
-    e.raw[p]=std::uint8_t(value); e.raw[p+1]=std::uint8_t(value>>8);
-}
 bool native_stage0_tile_actor(std::uint8_t type) noexcept {
     switch(type) {
     case 0x1e: case 0x1f: case 0x20: case 0x22: case 0x24: case 0x26:
@@ -104,11 +99,11 @@ void draw_entity(const Rom& rom, const Screen4Snapshot& video,
     if(entity.type()==3) return; // pickup icons use the ROM tile matrices
     if (entity.type()>9 && (entity.flags15()&1)==0) return;
     const auto table=rom.bank(7), frames=rom.bank(8), colors=rom.bank(9);
-    const auto list=word(table,0x496+(entity.type()-1)*2);
+    const auto list=raw_u16(table,0x496+(entity.type()-1)*2);
     if (list<0xa000 || list>=0xc000) return;
     const unsigned entry=list-0xa000+unsigned(entity.raw[5])*2;
     if (entry+1>=frames.size()) return;
-    const auto def=word(frames,entry);
+    const auto def=raw_u16(frames,entry);
     if (def<0xa000 || def>=0xc000) return;
     const unsigned off=def-0xa000, count=frames[off]&127;
     if (count>32 || off+1+count*6>frames.size()) return;
@@ -228,11 +223,11 @@ void draw_type8_pair(const Rom& rom,const Screen4Snapshot& video,
                              video.vram[sprite_base+pattern*8u+row+16u]);
     };
     auto append=[&](const Entity64& entity,int sy) {
-        const auto list=word(table,0x496+(entity.type()-1)*2);
+        const auto list=raw_u16(table,0x496+(entity.type()-1)*2);
         if(list<0xa000 || list>=0xc000) return;
         const unsigned entry=list-0xa000+unsigned(entity.raw[5])*2;
         if(entry+1>=frames.size()) return;
-        const auto def=word(frames,entry);if(def<0xa000 || def>=0xc000) return;
+        const auto def=raw_u16(frames,entry);if(def<0xa000 || def>=0xc000) return;
         const unsigned off=def-0xa000,count=frames[off]&127u;
         if(count>32u || off+1u+count*6u>frames.size()) return;
         const int ey=(int(std::int16_t(entity.y_fixed()))>>5)+sprite_origin_y+1;
@@ -472,12 +467,12 @@ void move_player(const Rom& rom, Entity64& p, std::uint8_t directions,
     directions &= 15;
     // $820D: up wins when both vertical buttons are pressed.
     p.raw[5]=(directions&1)?1:((directions&2)?2:0);
-    if (!directions) { set_word(p,11,0); set_word(p,13,0); return; }
+    if (!directions) { entity_set_word(p,11,0); entity_set_word(p,13,0); return; }
     const auto b=rom.bank(2);
     const unsigned offset=0x17d+unsigned(directions)*9;
-    const auto vy=std::uint16_t(word(b,offset+1)+speed_level*word(b,offset+3));
-    const auto vx=std::uint16_t(word(b,offset+5)+speed_level*word(b,offset+7));
-    set_word(p,11,vy); set_word(p,13,vx);
+    const auto vy=std::uint16_t(raw_u16(b,offset+1)+speed_level*raw_u16(b,offset+3));
+    const auto vx=std::uint16_t(raw_u16(b,offset+5)+speed_level*raw_u16(b,offset+7));
+    entity_set_word(p,11,vy); entity_set_word(p,13,vx);
     const auto y=std::uint16_t(p.y_fixed()+vy), x=std::uint16_t(p.x_fixed()+vx);
     // ROM rejects out-of-bounds candidates; it does not clamp them.
     if ((y>>8)<0x14) p.set_y_fixed(y);
@@ -491,7 +486,7 @@ void initialize_basic_shot(const Rom& rom, const Entity64& player, Entity64& sho
     const unsigned row=0xddc;
     shot.type()=4; shot.raw[3]=1; shot.raw[5]=12; shot.raw[6]=1;
     shot.raw[0x13]=3; shot.raw[0x14]=3;
-    set_word(shot,11,word(b,row)); set_word(shot,13,word(b,row+2));
+    entity_set_word(shot,11,raw_u16(b,row)); entity_set_word(shot,13,raw_u16(b,row+2));
     shot.set_y_fixed(std::uint16_t(player.y_fixed()+std::int8_t(b[row+4])*32));
     shot.set_x_fixed(std::uint16_t(player.x_fixed()+std::int8_t(b[row+5])*32));
 }
@@ -504,7 +499,7 @@ void initialize_directional_shot(const Rom& rom,const Entity64& source,Entity64&
     const unsigned row=0xddc+(weapon_type-1u)*6u; // original $8DDC rows
     shot.type()=4;shot.raw[3]=std::uint8_t(weapon_type);
     shot.raw[0x13]=3;shot.raw[0x14]=3;shot.raw[6]=std::uint8_t(power_level+1u);
-    set_word(shot,11,word(b,row));set_word(shot,13,word(b,row+2));
+    entity_set_word(shot,11,raw_u16(b,row));entity_set_word(shot,13,raw_u16(b,row+2));
     // Live ROM trace of CCA0/CCC0: $863C adds weapon-specific muzzle
     // placement on top of the six-byte velocity table.
     const int xoff_px = weapon_type==8 ? 16 : (weapon_type==6 ? -16 : 0);
@@ -518,7 +513,7 @@ void select_ground_missile_velocity(Entity64& missile,bool below,bool lower,bool
     // Bank02 $8EBB-$8F10. Only DE00 property $03 counts as a surface.
     const unsigned vx=below && lower?0x0200u:0u;
     const unsigned vy=!below?0x0100u:(!lower?0x0200u:(!ahead?0x0100u:0u));
-    set_word(missile,13,std::uint16_t(vx));set_word(missile,11,std::uint16_t(vy));
+    entity_set_word(missile,13,std::uint16_t(vx));entity_set_word(missile,11,std::uint16_t(vy));
 }
 
 void advance_shot(Entity64& shot) noexcept {
@@ -527,8 +522,8 @@ void advance_shot(Entity64& shot) noexcept {
     // object cadence (for W, vy=$0100 changes Y by $0100 every ~60 ms). Native
     // presentation interpolates that velocity over four 60-Hz frames so the
     // path is faithful but visually smooth instead of running 4x too fast.
-    const int vy=std::int16_t(word(shot.raw,11));
-    const int vx=std::int16_t(word(shot.raw,13));
+    const int vy=std::int16_t(raw_u16(shot.raw,11));
+    const int vx=std::int16_t(raw_u16(shot.raw,13));
     shot.set_y_fixed(std::uint16_t(shot.y_fixed()+vy/4));
     shot.set_x_fixed(std::uint16_t(shot.x_fixed()+vx/4));
     if (shot.raw[4] || (shot.y_fixed()>>8)>=0x18 || (shot.x_fixed()>>8)>=0x20)
@@ -630,8 +625,8 @@ void PlaySession::step_60hz(PlayerInput input) {
     game_.player.raw[5]=moved.raw[5];
     const int move_phase=int((frame_-1u)%3u);
     auto delta=[&](unsigned p) {
-        const int v=std::int16_t(word(moved.raw,p));
-        set_word(game_.player,p,std::uint16_t(v));
+        const int v=std::int16_t(raw_u16(moved.raw,p));
+        entity_set_word(game_.player,p,std::uint16_t(v));
         return v*(move_phase+1)/3-v*move_phase/3;
     };
     const auto y=std::uint16_t(game_.player.y_fixed()+delta(11));
@@ -656,7 +651,7 @@ void PlaySession::step_60hz(PlayerInput input) {
         // both. The ship and option sprite origins differ, so this is
         // deliberately asymmetric in anchor coordinates.
         const auto b2=rom_.bank(2);
-        const int radius=int(word(b2,0x39c));
+        const int radius=int(raw_u16(b2,0x39c));
         const int local_y=(i==0?-radius:radius)+0xe0;
         option.raw[0x17]=std::uint8_t((local_y-0xe0)&0xff);
         option.raw[0x18]=std::uint8_t(std::uint16_t(local_y-0xe0)>>8);
@@ -681,14 +676,14 @@ void PlaySession::step_60hz(PlayerInput input) {
                 shot.raw[0x13]=3;shot.raw[0x14]=3;shot.flags15()=5;shot.raw[0x17]=5;
                 shot.set_x_fixed(std::uint16_t(game_.player.x_fixed()+12*32));
                 shot.set_y_fixed(game_.player.y_fixed());
-                set_word(shot,11,0);set_word(shot,13,0x0180);
+                entity_set_word(shot,11,0);entity_set_word(shot,13,0x0180);
             }
             combat_.consume_missile();fired=true;missile_fired=true;
         } else if(upgrades.wave) {
             if(pool_empty) {
                 for(unsigned i=0;i<3;++i) {
                     auto& shot=shots_[i];initialize_primary_shot(rom_,game_.player,shot,upgrades.power_level(),true);
-                    set_word(shot,11,i==0?0:(i==1?256:std::uint16_t(-256)));
+                    entity_set_word(shot,11,i==0?0:(i==1?256:std::uint16_t(-256)));
                 }
                 fired=true;
             }
@@ -713,7 +708,7 @@ void PlaySession::step_60hz(PlayerInput input) {
             m.raw[0x13]=3;m.raw[0x14]=3;m.flags15()=5;m.raw[0x17]=1;
             m.set_y_fixed(std::uint16_t(game_.player.y_fixed()+0x0180));
             m.set_x_fixed(game_.player.x_fixed());
-            set_word(m,11,0x0100);set_word(m,13,0);
+            entity_set_word(m,11,0x0100);entity_set_word(m,13,0);
             fired=true;
         }
         if(fired) {
@@ -837,7 +832,7 @@ void PlaySession::step_60hz(PlayerInput input) {
             auto detonate=[&] {
                 shot.raw[0x17]=3;
                 shot.raw[5]=std::uint8_t((shot.raw[5]&4u)+1u);
-                set_word(shot,13,0);
+                entity_set_word(shot,13,0);
                 shot.state()=3;
             };
             if(shot.state()<=2u) {
@@ -848,8 +843,8 @@ void PlaySession::step_60hz(PlayerInput input) {
                 if(contact) detonate();
                 else if(shot.raw[0x17] && --shot.raw[0x17]==0) {
                     shot.raw[0x17]=5;
-                    if(shot.state()==0u) {set_word(shot,13,0x00c0);shot.state()=1;}
-                    else if(shot.state()==1u) {set_word(shot,13,0x0040);shot.state()=2;}
+                    if(shot.state()==0u) {entity_set_word(shot,13,0x00c0);shot.state()=1;}
+                    else if(shot.state()==1u) {entity_set_word(shot,13,0x0040);shot.state()=2;}
                     else detonate();
                 }
             } else if(shot.state()==3u) {
@@ -883,8 +878,8 @@ void PlaySession::step_60hz(PlayerInput input) {
             }
         }
         if(!shot.active()) return;
-        const int vy=std::int16_t(word(shot.raw,11));
-        const int vx=std::int16_t(word(shot.raw,13));
+        const int vy=std::int16_t(raw_u16(shot.raw,11));
+        const int vx=std::int16_t(raw_u16(shot.raw,13));
         shot.set_y_fixed(std::uint16_t(shot.y_fixed()+vy/4));
         shot.set_x_fixed(std::uint16_t(shot.x_fixed()+vx/4));
     };
@@ -921,9 +916,9 @@ void PlaySession::step_60hz(PlayerInput input) {
         }
         if(missile_shot_.active()) {
             missile_shot_.set_y_fixed(std::uint16_t(missile_shot_.y_fixed()+
-                std::int16_t(word(missile_shot_.raw,11))/4));
+                std::int16_t(raw_u16(missile_shot_.raw,11))/4));
             missile_shot_.set_x_fixed(std::uint16_t(missile_shot_.x_fixed()+
-                std::int16_t(word(missile_shot_.raw,13))/4));
+                std::int16_t(raw_u16(missile_shot_.raw,13))/4));
             if((missile_shot_.x_fixed()>>8)>=0x20 || (missile_shot_.y_fixed()>>8)>=0x18) missile_shot_.clear();
         }
     }
@@ -1823,11 +1818,16 @@ std::vector<std::uint32_t> PlaySession::render() {
     }
     if(!render_subpixel_) {
     for(unsigned i=0;i<combat_.bullets().size();++i) draw_entity(rom_,video_,combat_.bullets()[i],pixels,palette,combat_.opening_bullet(i)?20:sprite_origin_y);
-    draw_player_shots(rom_,video_,shots_,pixels,palette,sprite_origin_y);
-    for(const auto& e:option_shots_) draw_entity(rom_,video_,e,pixels,palette,sprite_origin_y);
+    // Player, options and forward shots are screen-space SAT actors. The
+    // scenery's late R23/C0D2 raster shift must not move them down with the
+    // streamed enemy layer; the smooth presenter has always kept this origin
+    // at 20. Keeping the coarse renderer identical also makes render()/wide
+    // A/B comparisons meaningful again.
+    draw_player_shots(rom_,video_,shots_,pixels,palette,20);
+    for(const auto& e:option_shots_) draw_entity(rom_,video_,e,pixels,palette,20);
     draw_entity(rom_,video_,missile_shot_,pixels,palette,sprite_origin_y);
-    for(const auto& e:options_) draw_entity(rom_,video_,e,pixels,palette,sprite_origin_y);
-    draw_entity(rom_,video_,game_.player,pixels,palette,sprite_origin_y);
+    for(const auto& e:options_) draw_entity(rom_,video_,e,pixels,palette,20);
+    draw_entity(rom_,video_,game_.player,pixels,palette,20);
     }
     // Stage-0 HUD layout follows the original top-border composition:
     // POWER + 16 cells, then SCORE and HI score labels on the second row.

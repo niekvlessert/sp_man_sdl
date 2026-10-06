@@ -8,13 +8,29 @@ The decoder is stage-agnostic: it takes a ROM bank, CPU-window base, pointer-tab
 
 Type `$2E` intentionally remains separate. Its stream is a related but different delta-accumulating grammar with repeat commands (`$80..$FD`), so forcing it through the simple placement decoder would hide real ROM behavior.
 
-## Good next extraction: entity runtime primitives
+## Implemented: entity runtime primitives
 
-There are still duplicated low-level helpers in `stage0_enemies.cpp`, `stage0_combat.cpp` and `play_session.cpp`: 16-bit entity field read/write (`put`, `set_word`, `signed_word`, `velocity`), ROM timer semantics (`expired` and `timer` are the same leave-at-1 countdown primitive), 8-direction target calculation, and angle-table to velocity conversion. These are strong candidates for a small `entity_runtime.hpp` module. It would make new enemy handlers shorter and reduce the chance of accidentally using ordinary C++ countdown semantics where the Z80 helper has special behavior.
+The duplicated low-level helpers from `stage0_enemies.cpp`, `stage0_combat.cpp` and `play_session.cpp` now share `entity_runtime`:
 
-## Medium priority: declarative projectile emitters
+- 16-bit raw/entity reads and writes
+- exact `$6AD2/$6ADF` leave-at-1 timer semantics
+- `$6A7F` velocity integration
+- `$6A9A` acceleration integration
+- `$6B94-$6BE5` 8-direction target classification
+- target-angle and global-angle velocity services
+- `$7362/$737C` fixed heading-to-velocity conversion
 
-Many remaining enemy/boss handlers repeat: countdown/reload, allocate a bullet record, inherit source position plus offset, aim/select heading, install speed/flags/type, and optionally emit sound. A small descriptor-driven emitter would help port regular enemies without moving state-machine timing out of the individual handler.
+Child allocation is also centralized as `allocate_stage_entity()`, including metadata copy and the +2D pool index byte. This removes another repeated source of subtle object-init mistakes.
+
+These primitives are intentionally ROM-semantic rather than generic game-engine helpers: when a remaining enemy handler calls one of the same original fixed-bank routines, the SDL port should call the matching shared primitive too.
+
+## Also fixed while validating the refactor
+
+The old `play-features` late-render regression was a real renderer inconsistency: coarse `render()` moved the player/options with the late scenery raster while `render_wide()` correctly kept them screen-relative. The coarse renderer now uses the same player SAT origin, and the regression passes again.
+
+## Next useful extraction: projectile emitters
+
+Many remaining enemy/boss handlers still repeat: countdown/reload, allocate projectile record, inherit source position plus offset, aim/select heading, install speed/flags/type, and optionally emit sound. The new angle/heading primitives already remove the arithmetic duplication. A small descriptor-driven projectile allocator is the next sensible extraction, but state-machine timing should remain in each enemy handler.
 
 ## Medium priority: boss lifecycle
 
@@ -22,8 +38,8 @@ Stages 3-9 repeat linked-child ownership, weak-state damage gates, palette flash
 
 ## Low priority: test helpers
 
-Boss regression tests repeat `find_type()`, ROM setup and pool searches. A shared test header would reduce noise, but it does not help the game port itself and should come after runtime primitives.
+Boss regression tests repeat `find_type()`, ROM setup and pool searches. A shared test header would reduce noise, but it does not help the game port itself and should come after runtime primitives/projectile construction.
 
 ## Rule for remaining ports
 
-Before adding level-specific code, check whether the ROM routine is one of the already mapped common engines: packed tile compositor, angle/velocity tables, object timer, bullet allocator, or damage service. Genericize when the ROM itself is generic; keep truly custom object state machines local.
+Before adding level-specific code, check whether the ROM routine is one of the already mapped common engines: packed tile compositor, angle/velocity tables, object timer, motion integrator, bullet allocator, or damage service. Genericize when the ROM itself is generic; keep truly custom object state machines local.
