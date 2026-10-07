@@ -77,8 +77,15 @@ int main(int argc,char** argv) {
             const auto c=previous[y*1024+x+2];
             // Blue hull faces, excluding stars and the independent rock strip.
             bool unchanged=true;
-            for(int offset:{-1024,-1,0,1,1024})
-                unchanged&=next_original[y*1024+x+offset]==previous_original[y*1024+x+2+offset];
+            // The HD background now uses a true two-pass Scale2x reconstruction,
+            // whose filter footprint reaches across neighbouring MSX pixels.
+            // Verify continuity only where that complete source neighbourhood
+            // translated by the expected two output samples.
+            for(int dy=-8;dy<=8;dy+=4) for(int dx=-8;dx<=8;dx+=4) {
+                const auto a=(int(y)+dy)*1024+int(x)+dx;
+                unchanged&=next_original[std::size_t(a)]==
+                           previous_original[std::size_t(a+2)];
+            }
             if(unchanged && (c&255u)>((c>>16)&255u)*1.5 && (c&255u)>((c>>8)&255u)*1.2) {
                 assert(next[y*1024+x]==c);++checked;
             }
