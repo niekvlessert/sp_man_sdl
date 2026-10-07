@@ -529,6 +529,38 @@ int main(int argc,char** argv) {
         const auto px=parent.x_fixed(),py=parent.y_fixed();
         sm::step_stage0_object_scroll_15hz(game,0x0100,0x0100,&rom);
         assert(parent.x_fixed()==std::uint16_t(px-0x20u) && parent.y_fixed()==py);
+        // Original $9984 waits for CA18 != 1, rather than an X threshold.
+        parent.set_x_fixed(0x0c40u);
+        enemies.step_15hz(rom,game,70,0,false,nullptr);
+        assert(parent.x_fixed()==0x0c40u && parent.raw[0x20]==0u);
+        const auto old_children=game.enemies;
+        parent.set_x_fixed(0x0e40u);parent.raw[0x18]=1u;
+        enemies.step_15hz(rom,game,71,0,false,nullptr,{},{},{},3u);
+        assert(parent.x_fixed()==0x0d40u && parent.raw[0x20]==1u);
+        bool shifted_child=false;
+        for(unsigned i=0;i<game.enemies.size();++i) {
+            const auto& c=game.enemies[i];
+            if(old_children[i].type()==0x2au) assert(c.x_fixed()==old_children[i].x_fixed());
+            else if(c.type()==0x2au) shifted_child=c.x_fixed()==0x0d00u;
+        }
+        assert(shifted_child);
+        enemies.step_15hz(rom,game,72,0,false,nullptr,{},{},{},3u);
+        enemies.step_15hz(rom,game,73,0,false,nullptr,{},{},{},1u);
+        enemies.step_15hz(rom,game,74,0,false,nullptr,{},{},{},3u);
+        assert(parent.x_fixed()==0x0d40u && parent.raw[0x20]==1u);
+    }
+
+    // Natural OpenMSX captures 101..134 hold the shifted $53 at X=$0D00
+    // through direction 3. Check the actual session transition as well.
+    {
+        sm::PlaySession session(rom);session.reset(1);bool shifted=false;
+        while(session.stage_frame()<8000u && !shifted) {
+            session.step_60hz({});
+            for(const auto& e:session.state().enemies) if(e.type()==0x53u && e.raw[0x20]) {
+                assert(e.x_fixed()==0x0d00u);shifted=true;
+            }
+        }
+        assert(shifted);
     }
 
     // Live unmodified OpenMSX boss trace at matching X positions. These

@@ -52,6 +52,18 @@ int main(int argc,char** argv) try {
             assert(audio.music_position_==music.size());
         }
 
+        // Options music player: every exposed ROM request produces music,
+        // stopping freezes playback, and returning to gameplay resets its ID.
+        for(unsigned track=57u;track<=68u;++track) {
+            audio.set_music_track(track);assert(audio.current_track_==track);
+            std::fill(music.begin(),music.end(),0);
+            sm::PlayAudio::callback(&audio,reinterpret_cast<Uint8*>(music.data()),int(music.size()*sizeof(Sint16)));
+            assert(std::any_of(music.begin(),music.end(),[](auto s){return s!=0;}));
+        }
+        audio.set_music_playing(false);
+        const auto stopped=audio.music_position_;
+        sm::PlayAudio::callback(&audio,reinterpret_cast<Uint8*>(music.data()),int(music.size()*sizeof(Sint16)));
+        assert(audio.music_position_==stopped);
         audio.set_stage(0);assert(audio.current_track_==59u);
         audio.set_boss_music(true);assert(audio.boss_music_active_ && audio.current_track_==57u);
         std::fill(music.begin(),music.end(),0);

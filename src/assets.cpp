@@ -244,7 +244,12 @@ std::array<std::uint16_t,16> decode_stage_boss_palette(const Rom& rom,unsigned s
     if(stage>=9u) throw std::out_of_range("stage palette index");
     const unsigned entry=0x8177u+stage*2u;
     const unsigned root=unsigned(bank10(rom,entry))|(unsigned(bank10(rom,entry+1u))<<8u);
-    return apply_palette_script(rom,decode_stage_video(rom,stage).palette_grb,root,10u,0x8000u);
+    const auto video=decode_stage_video(rom,stage);
+    // Stage 2's $8709 boss asset preamble contains no palette writes. The
+    // live stream has already installed bank27 $A95D after its black fade;
+    // inherit that green scene rather than restoring the blue level palette.
+    const auto& scene=stage==1u?video.tower_palette_grb:video.palette_grb;
+    return apply_palette_script(rom,scene,root,10u,0x8000u);
 }
 std::array<std::uint16_t,16> decode_stage_boss_damage_palette(const Rom& rom,unsigned stage,bool flash) {
     auto palette=decode_stage_boss_palette(rom,stage);

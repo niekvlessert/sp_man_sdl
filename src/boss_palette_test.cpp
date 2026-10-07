@@ -39,6 +39,18 @@ int main(int argc,char** argv) {
             sm::decode_stage_boss_palette(rom,stage);
         const auto red=stage==0u?sm::decode_stage0_video(rom).tower_red_palette_grb:
             sm::decode_stage_boss_damage_palette(rom,stage);
+        if(stage==1u) {
+            // Independent physical VDP palette from original OpenMSX Stage-2
+            // capture 170. $8709 has no writes: $A95D stays active at the gate.
+            constexpr std::array<std::uint16_t,16> original{
+                0x000,0x131,0x242,0x353,0x210,0x320,0x070,0x117,
+                0x445,0x430,0x770,0x050,0x333,0x333,0x777,0x000};
+            assert(normal==original);
+            for(const auto& image:{session.render(),session.render_continuous()}) {
+                assert(std::count(image.begin(),image.end(),rgb(0x131u))>100);
+                assert(std::count(image.begin(),image.end(),rgb(0x000u))>10000);
+            }
+        }
         auto hit=[&](unsigned remaining) {
             boss->raw[0x16]=std::uint8_t(remaining+1u);
             boss->raw[0x14]|=0x80u;

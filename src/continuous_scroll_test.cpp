@@ -104,6 +104,106 @@ int main(int argc,char** argv) {
         assert(saw_clipped && retired);
     }
 
+    // Stage 4's mode-6 shaft is a pure vertical camera move at world X
+    // about $03F8, well below Stage 1's old $0C00 renderer threshold.  The
+    // Stage-1 shortcut must not inject a +2px X motion there, and the -1px
+    // coarse Y step must be distributed over all four 60-Hz frames. At 4x
+    // presentation that is exactly one output sample downward per frame.
+    {
+        sm::PlaySession vertical(rom);vertical.reset(3u);
+        while(vertical.background_.mode()!=6u) vertical.step_60hz({});
+        assert(vertical.camera_pixels()<3072u);
+        assert(vertical.background_.x_velocity_fp()==0);
+        assert(vertical.background_.y_velocity_fp()==-256);
+        clear_actors(vertical,false);
+        // R23 exposes one name-table row immediately above/below
+        // D988 during the fine phase. That row is already present in E000 and
+        // must never become an all-black strip while waiting for the next
+        // coarse-row carry.
+        bool saw_vertical_edge=false;
+        sm::Stage0Screen4Presenter edge_presenter;
+        for(unsigned n=0;n<64u;++n) {
+            const auto ps=vertical.background_.presentation_state();
+            auto d988=vertical.background_.compose_d988_base();
+            const auto right=vertical.background_.compose_right_edge();
+            const auto layer=edge_presenter.render(vertical.background_,vertical.video_,
+                d988,&ps,0,0,&right);
+            const unsigned start_row=(unsigned(vertical.background_.scroll_row())&0xf8u)>>3u;
+            for(unsigned sy=0u;sy<212u;++sy) {
+                const unsigned display_y=(sy+unsigned(ps.r23))&255u;
+                const unsigned logical=((display_y>>3u)+32u-start_row)&31u;
+                if(logical!=31u && logical!=24u) continue;
+                const unsigned edge_y=logical==31u?unsigned(-1):24u;
+                unsigned tiles=0u;
+                for(unsigned x=0;x<32u;++x)
+                    tiles+=vertical.background_.view_tile(x,edge_y)!=0u;
+                if(tiles<8u) continue;
+                unsigned nonblack=0u;
+                for(unsigned x=0;x<256u;++x)
+                    nonblack+=layer[sy*256u+x]!=0xff000000u;
+                assert(nonblack>32u);
+                saw_vertical_edge=true;
+            }
+            vertical.step_60hz({});
+        }
+        assert(saw_vertical_edge);
+
+        // Restart at the same shaft entrance for the exact 60-Hz motion test.
+        vertical.reset(3u);
+        while(vertical.background_.mode()!=6u) vertical.step_60hz({});
+        clear_actors(vertical,false);
+        auto previous=vertical.render_continuous();
+        for(unsigned n=0;n<96u;++n) {
+            vertical.step_60hz({});clear_actors(vertical,false);
+            const auto next=vertical.render_continuous();
+            unsigned colored=0u;
+            for(unsigned y=112u;y<700u;++y) for(unsigned x=80u;x<944u;++x) {
+                colored+=previous[y*width+x]!=0xff000000u;
+                assert(previous[y*width+x]==next[(y+1u)*width+x]);
+            }
+            assert(colored>10000u);
+            // The complete fixed border must stay unchanged while successive
+            // scanlines, including those crossing 8px row carries, enter below it.
+            assert(std::equal(previous.begin(),previous.begin()+112u*width,next.begin()));
+            previous=next;
+        }
+    }
+
+    // Stage-4 $39 uses the same horizontal raster origin as the scenery.
+    // Compare the native matrix bounds to the original D988/R18 compositor,
+    // rather than accepting the direct object anchor as a screen coordinate.
+    {
+        sm::PlaySession machine(rom);machine.reset(3u);
+        while(machine.background_.mode()!=6u) machine.step_60hz({});
+        clear_actors(machine,false);
+        machine.frame_=(machine.frame_&~3u)+3u;
+        sm::Entity64 actor;actor.type()=0x39u;actor.state()=1u;
+        const auto meta=sm::decode_spawn_type_metadata(rom,actor.type());
+        std::copy(meta.bytes.begin(),meta.bytes.end(),actor.raw.begin()+0x13);
+        actor.set_x_fixed(0x0800u);actor.set_y_fixed(0x0800u);
+        std::array<std::uint8_t,24u*32u> original{};
+        for(const auto& v:sm::decode_stage0_tile_visuals(rom,actor))
+            for(unsigned y=0;y<v.rows;++y) for(unsigned x=0;x<v.cols;++x)
+                original[(8u+v.tile_y_offset+y)*32u+8u+v.tile_x_offset+x]=v.tiles[y*v.cols+x];
+        sm::Stage0Screen4Presenter raster;
+        const auto empty=raster.render(machine.background_,machine.video_,{});
+        const auto reference=raster.render(machine.background_,machine.video_,original);
+        unsigned expected_left=256u;
+        for(unsigned y=28;y<212;++y) for(unsigned x=0;x<256;++x)
+            if(reference[y*256u+x]!=empty[y*256u+x]) expected_left=std::min(expected_left,x);
+        const auto scenery=machine.render_continuous();
+        machine.game_.enemies[0]=actor;
+        const auto shown=machine.render_continuous();
+        unsigned actual_left=width;
+        for(unsigned y=112;y<height;++y) for(unsigned x=0;x<width;++x)
+            if(shown[y*width+x]!=scenery[y*width+x]) actual_left=std::min(actual_left,x);
+        assert(expected_left<256u && actual_left==expected_left*4u);
+        // An actor arriving above the playfield cannot overwrite SCORE/POWER.
+        machine.game_.enemies[0].set_y_fixed(0xfc00u);
+        const auto entering=machine.render_continuous();
+        assert(std::equal(scenery.begin(),scenery.begin()+112u*width,entering.begin()));
+    }
+
     // The $12 renderer handoff retains the same 0.5px/frame direction.
     s.reset();while(s.frame()<5647u)s.step_60hz({});
     auto before=s.render_continuous();s.step_60hz({});auto after=s.render_continuous();
@@ -263,6 +363,22 @@ int main(int argc,char** argv) {
         --sx;assert(next[124u*width+unsigned(sx)]==star);
         assert(next[124u*width+unsigned(sx+4)]!=star);
     }
+    // Stage 3 drifts stars in the opposite ROM direction. Isolate its sky
+    // and verify each video frame, including coarse camera tile carries.
+    {
+        sm::PlaySession sky(rom);sky.reset(2);
+        while(sky.frame()<100u) sky.step_60hz({});
+        auto clear_sky=[&] {clear_actors(sky,false);sky.background_.ring_.fill(0);};
+        clear_sky();auto stars=sky.render_continuous();const auto color=sky.video_.palette[8];
+        int x=-1;
+        for(unsigned i=150;i<900;++i) if(stars[124u*width+i]==color) {x=int(i);break;}
+        assert(x>=0);
+        for(unsigned f=0;f<32;++f) {
+            sky.step_60hz({});clear_sky();stars=sky.render_continuous();
+            x-=2;assert(stars[124u*width+unsigned(x)]==color);
+            assert(stars[124u*width+unsigned(x+4)]!=color);
+        }
+    }
     // Tile-based pickup icons remain visible in the new opening compositor.
     auto& pickup=s.game_.enemies[0];pickup.type()=3;pickup.flags15()=0x56;
     pickup.raw[3]=3;pickup.raw[6]=3;pickup.set_x_fixed(0x0d00);pickup.set_y_fixed(0x0c00);
@@ -279,6 +395,43 @@ int main(int argc,char** argv) {
             assert(chassis[y*width+x]==floor[y*width+x]);
         s.step_60hz({});clear_actors(s,true);
     }
+    // The terminal boss wheel stamps a second rock patch. Across all eight
+    // ROM wheel phases and the intervening 60-Hz frames, every ground pixel
+    // must still match the unobstructed strip. The blue contact edge survives.
+    s.reset();while(!s.at_fight_gate()) s.step_60hz({});
+    for(unsigned f=0;f<300u;++f) s.step_60hz({});
+    unsigned wheel_phases=0,contact_pixels=0;
+    for(unsigned f=0;f<64u;++f) {
+        const auto actors=s.game_.enemies;s.game_.player.clear();
+        for(auto& actor:s.game_.enemies) {
+            if(actor.type()==0x3du) wheel_phases|=1u<<(actor.raw[6]&7u);
+            else actor.clear();
+        }
+        const auto wheel=s.render_continuous();s.game_.enemies={};
+        const auto floor=s.render_continuous();s.game_.enemies=actors;
+        for(unsigned y=788u;y<height;++y) for(unsigned x=0;x<width;++x) {
+            const auto i=y*width+x;
+            if(wheel[i]!=floor[i]) {assert(blue(wheel[i]));++contact_pixels;}
+        }
+        s.step_60hz({});
+    }
+    assert(wheel_phases==0xffu);
+    // Bring the wheel's rightmost contact edge into view as well (the usual
+    // fight position clips it beyond the right border).
+    sm::Entity64 wheel_actor;
+    for(const auto& actor:s.game_.enemies) if(actor.type()==0x3du) wheel_actor=actor;
+    s.game_.enemies={};const auto floor=s.render_continuous();
+    wheel_actor.set_x_fixed(0x0800);
+    for(unsigned phase=0;phase<8u;++phase) {
+        wheel_actor.raw[6]=std::uint8_t(phase);
+        s.game_.enemies[0]=wheel_actor;s.previous_gate_actors_[0]=wheel_actor;
+        const auto wheel=s.render_continuous();
+        for(unsigned y=788u;y<height;++y) for(unsigned x=0;x<width;++x) {
+            const auto i=y*width+x;
+            if(wheel[i]!=floor[i]) {assert(blue(wheel[i]));++contact_pixels;}
+        }
+    }
+    assert(contact_pixels>0u);
     // A destroyed large cannon retains its original frame9 head. Check its
     // attachment to the actual blue pedestal, not merely head velocity: the
     // latter passed even while the whole head was one tile left of the mount.

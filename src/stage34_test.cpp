@@ -1,4 +1,5 @@
 #include "play_session.hpp"
+#include "entity_runtime.hpp"
 #ifdef NDEBUG
 #undef NDEBUG
 #endif
@@ -570,6 +571,135 @@ int main(int argc,char** argv) {
     while(boss_route.stage_index()==2u && boss_route.frame()-death_frame<400u)
         boss_route.step_60hz({});
     assert(boss_route.stage_index()==3u);
+
+    // Regular Stage-4 families reconstructed from the guarded OpenMSX
+    // Stage-4 trace (internal stage $03) and their original handlers.
+    const auto find4=[&](std::uint8_t type,std::uint16_t trigger=0u) {
+        return std::find_if(s4.records().begin(),s4.records().end(),[&](const auto& r) {
+            return r.type==type && (!trigger || r.trigger==trigger);
+        });
+    };
+    {
+        // Generic native tile ownership: Stage-4's moving $39 machinery and
+        // later $38 orb are both normal +15:$02 matrix actors. Presentation
+        // must not leave a quantized D988 copy behind, otherwise the whole
+        // object jumps left/right every coarse scroll tick.
+        sm::Stage0BackgroundStream overlay(rom);overlay.reset_stage(3u);
+        for(const auto type:{0x39u,0x38u}) {
+            const auto rec=find4(std::uint8_t(type));assert(rec!=s4.records().end());
+            sm::GameState g;assert(sm::instantiate_stage0_spawn(rom,*rec,g,1u));
+            auto e=std::find_if(g.enemies.begin(),g.enemies.end(),
+                [&](const auto& q){return q.type()==type;});
+            assert(e!=g.enemies.end() && sm::stage0_native_tile_overlay(overlay,*e));
+            e->set_x_fixed(0x0800u);e->set_y_fixed(0x0600u);
+            std::array<std::uint8_t,24u*32u> coarse{};
+            sm::stamp_stage0_tile_objects(rom,overlay,g,coarse);
+            assert(std::none_of(coarse.begin(),coarse.end(),[](auto t){return t!=0u;}));
+            sm::stamp_stage0_tile_objects(rom,overlay,g,coarse,true);
+            assert(std::any_of(coarse.begin(),coarse.end(),[](auto t){return t!=0u;}));
+        }
+    }
+    {
+        const auto rec=find4(0x17u,0x102cu);assert(rec!=s4.records().end());
+        sm::GameState g;g.player.set_x_fixed(0x0800u);g.player.set_y_fixed(0x0800u);
+        sm::Stage0Enemies logic;assert(sm::instantiate_stage0_spawn(rom,*rec,g,1u));
+        auto& e=g.enemies[0];assert(e.state()==0u && e.y_fixed()==0x0300u);
+        logic.step_15hz(rom,g,0u,0u,false);
+        assert(e.state()==1u && e.raw[0x17]==0x20u &&
+               sm::entity_word(e,11)==0x20 && sm::entity_word(e,13)==0);
+        e.raw[0x17]=1u;logic.step_15hz(rom,g,1u,0u,false);
+        assert(e.state()==2u && e.raw[0x22]==5u && sm::entity_word(e,11)==0x00c0);
+        e.raw[0x21]=1u;e.raw[0x22]=0u;
+        logic.step_15hz(rom,g,2u,0u,false);
+        assert(e.state()==4u && e.raw[0x26]==1u && e.raw[0x17]==8u &&
+               sm::entity_word(e,11)==0 && sm::entity_word(e,13)==0x00c0);
+    }
+    {
+        const auto rec=find4(0x38u,0x3010u);assert(rec!=s4.records().end());
+        sm::GameState g;g.difficulty=1u;sm::Stage0Enemies logic;
+        assert(sm::instantiate_stage0_spawn(rom,*rec,g,1u));auto& e=g.enemies[0];
+        logic.step_15hz(rom,g,0u,0u,false);
+        assert(e.state()==1u && e.raw[0x17]==0x12u && e.raw[0x3e]==0x0du);
+        const auto old_frame=e.raw[0x06];e.raw[0x17]=1u;
+        logic.step_15hz(rom,g,1u,0u,false);
+        auto child=std::find_if(g.enemies.begin(),g.enemies.end(),
+            [](const auto& q){return q.type()==0x6eu;});
+        assert(child!=g.enemies.end() && child->state()==1u &&
+               child->raw[0x20]==std::uint8_t((old_frame+1u)&3u) &&
+               child->raw[0x17]==8u);
+        const unsigned dir=child->raw[0x20]&3u;
+        static constexpr std::array<int,4> vy{0,-0x80,0,0x80};
+        static constexpr std::array<int,4> vx{0x80,0,-0x80,0};
+        assert(sm::entity_word(*child,11)==vy[dir] && sm::entity_word(*child,13)==vx[dir]);
+    }
+    {
+        const auto rec=find4(0x39u,0x102eu);assert(rec!=s4.records().end());
+        sm::GameState g;g.difficulty=1u;g.player.set_x_fixed(0x0800u);g.player.set_y_fixed(0x0800u);
+        sm::Stage0Enemies logic;assert(sm::instantiate_stage0_spawn(rom,*rec,g,1u));
+        auto& e=g.enemies[0];logic.step_15hz(rom,g,0u,0u,false);
+        assert(e.state()==1u && e.raw[0x17]==0x38u && e.raw[0x18]==1u &&
+               e.raw[0x22]==1u && e.raw[0x21]==0u &&
+               sm::entity_word(e,11)==-0x80 && sm::entity_word(e,13)==0);
+        e.raw[0x17]=1u;e.raw[0x18]=1u;
+        logic.step_15hz(rom,g,1u,0u,false);
+        std::array<sm::Entity64*,2> pair{};unsigned n=0;
+        for(auto& q:g.enemies) if(q.type()==0x6fu && n<pair.size()) pair[n++]=&q;
+        assert(n==2u && pair[0]->state()==1u && pair[1]->state()==1u);
+        assert(sm::entity_word(*pair[0],11)==-0x80 && sm::entity_word(*pair[1],11)==0x80);
+        pair[0]->raw[0x17]=1u;logic.step_15hz(rom,g,2u,0u,false);
+        assert(pair[0]->state()==2u);
+        const auto vx_before=sm::entity_word(*pair[0],13);
+        logic.step_15hz(rom,g,3u,0u,false);
+        assert(sm::entity_word(*pair[0],13)!=vx_before);
+
+        const auto silent=find4(0x39u,0x1050u);assert(silent!=s4.records().end());
+        sm::GameState h;h.difficulty=1u;sm::Stage0Enemies quiet;
+        assert(sm::instantiate_stage0_spawn(rom,*silent,h,1u));
+        assert(h.enemies[0].raw[0x23]==1u);
+        quiet.step_15hz(rom,h,0u,0u,false);
+        h.enemies[0].raw[0x17]=1u;h.enemies[0].raw[0x18]=1u;
+        quiet.step_15hz(rom,h,1u,0u,false);
+        assert(std::none_of(h.enemies.begin(),h.enemies.end(),
+            [](const auto& q){return q.type()==0x6fu;}));
+    }
+    {
+        const auto rec=find4(0x37u,0x1070u);assert(rec!=s4.records().end());
+        sm::GameState g;sm::Stage0Enemies logic;
+        assert(sm::instantiate_stage0_spawn(rom,*rec,g,1u));
+        assert(std::count_if(g.enemies.begin(),g.enemies.end(),
+            [](const auto& q){return q.type()==0x37u;})==15);
+        auto parent=std::find_if(g.enemies.begin(),g.enemies.end(),
+            [](const auto& q){return q.type()==0x37u && q.state()==2u && q.raw[0x34]==0u;});
+        assert(parent!=g.enemies.end() && parent->x_fixed()==0x2000u &&
+               parent->y_fixed()==0x0b00u && parent->flags15()==0x04u);
+        auto child=std::find_if(g.enemies.begin(),g.enemies.end(),
+            [](const auto& q){return q.type()==0x37u && q.raw[0x38]==1u;});
+        assert(child!=g.enemies.end() && child->raw[0x03]==0x05u &&
+               child->raw[0x17]==3u && child->raw[0x21]==0x35u);
+
+        logic.step_15hz(rom,g,0u,0u,false);
+        logic.step_15hz(rom,g,1u,0u,false);
+        logic.step_15hz(rom,g,2u,0u,false);
+        assert(child->state()==1u);
+        logic.step_15hz(rom,g,3u,0u,false);
+        // First live orbit sample matches the ROM orientation: phase +5 moves
+        // mostly right and only slightly down from the $2000/$0B00 anchor.
+        assert(child->raw[0x17]==5u && child->x_fixed()>=0x2600u &&
+               child->y_fixed()>=0x0b00u && child->y_fixed()<0x0c00u);
+
+        // Linked formation children are intentionally born offscreen and the
+        // longest stagger survives beyond the generic $FE00 scenery cull.
+        // OpenMSX keeps ord=$08 alive at X=$FDC0 before it joins the orbit;
+        // culling these records early removes visible quadrants later.
+        sm::GameState hold;
+        assert(sm::instantiate_stage0_spawn(rom,*rec,hold,1u));
+        auto late=std::find_if(hold.enemies.begin(),hold.enemies.end(),
+            [](const auto& q){return q.type()==0x37u && q.raw[0x38]==8u;});
+        assert(late!=hold.enemies.end() && late->state()==0u && late->raw[0x17]==0x18u);
+        for(unsigned n=0;n<18u;++n)
+            sm::step_stage0_object_scroll_15hz(hold,0x0100,0,&rom);
+        assert(late->active() && std::int16_t(late->x_fixed())<std::int16_t(0xfe00u));
+    }
 
     // Public session/timeline entry points can now start stages 3 and 4
     // directly; this used to collapse every non-zero reset onto stage 2.

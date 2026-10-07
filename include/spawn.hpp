@@ -90,6 +90,13 @@ bool decode_stage0_tile_visual(const Rom& rom, const Entity64& entity,
                                Stage0TileVisual& out);
 std::vector<Stage0TileVisual> decode_stage0_tile_visuals(const Rom& rom,
                                                          const Entity64& entity);
+// SDL presentation ownership for matrix-backed actors. ROM bit +15:$02 marks
+// the normal $7A43/$7B65 tile compositor; custom large actors that bypass that
+// bit are listed in the implementation. Native ownership keeps them out of the
+// quantized D988 name-table pass and draws the same ROM matrices at sub-tile
+// coordinates instead.
+bool stage0_native_tile_overlay(const Stage0BackgroundStream& stream,
+                                const Entity64& entity) noexcept;
 std::vector<Stage0TileVisual> decode_stage0_t24_visuals_phase(const Rom& rom,
                                                                const Entity64& entity,
                                                                unsigned phase);

@@ -24,8 +24,11 @@ ROM spawn catalog totals:
 - Stage 8: 40 records — `$1B×1 $42×4 $46×16 $50×15 $5F×3 $78×1`
 - Stage 9: 11 records — `$4E×7 $51×1 $5A×2 $79×1`
 
-These records are decoded exactly. Stage-specific handlers not already shared
-with earlier stages are deliberately not approximated yet.
+These records are decoded exactly. The late regular spawn families are now
+connected to native handlers rather than being silently dropped. In particular,
+Stage 6's fixed-bank type `$0E` barrier and high-difficulty direct `$2A`
+record, and Stage 9's paired type-`$5A` growth walls, are restored from their
+ROM handlers and guarded by late-level regression tests.
 
 ## Stage 5
 
@@ -63,8 +66,8 @@ is limited to one live beam exactly as `$B638` does. ROM SFX `$2E/$2F` for the
 open/close phases are exported as `stage6_open.wav`/`stage6_close.wav`; launch
 uses the existing ROM `$17` clip. Fatal damage clears the live beam, runs the
 shared `$6A` destruction countdown and advances to stage 7. The two separate
-stage-end `$7C` scene controllers remain a later environment/controller port;
-they are not children of `$7B`.
+stage-end `$7C` escort controllers are also restored independently of `$7B`,
+including both linked eight-record chains and their staggered death cascade.
 
 ## Stages 7–9
 
@@ -120,22 +123,47 @@ OpenMSX A/B also confirms the `$1700/$0800` fight anchor, the exact selector-2
 presentation. The native port stops at the verified final-boss ending latch;
 full credits/ending-sequence reproduction remains separate work.
 
-A first late-level regular-enemy batch is now native and covered by
-`space-manbow-late-level-enemies-test`:
+Stage 5's regular spawn families are now all accounted for and covered by
+`space-manbow-late-level-enemies-test` plus the shared earlier-stage tests:
 
+- Stage 5 type `$21`: fixed-bank `$4FF1` three-flyer formation controller,
+  including selectors `0/1/2 -> Y $04/$0B/$11`, `$0A/$0E` spawn cadence,
+  `-$E0` entry, `+$60` turn-back and the original player-vector attack.
+- Stage 5 type `$27`: shared bank05 `$8170` aimed-mover family.
 - Stage 5 type `$41`: the `$8D2C` timed tile-hazard controller plus its
   explicit `$8DBC` multi-matrix compositor.
 - Stage 5 type `$49`: the `$92E4` vertical patrol with terrain-triggered
   pause, saved velocity and exact direction reversal.
+- Stage 5 type `$51`: the shared wave controller, verified here with the
+  Stage-5 type-`$18` child record and original linked-controller slot.
+- Stage 5 type `$5F`: parser command selector 3 (clear objects), not a live enemy.
+- Stage 5 type `$77`: the already-restored boss/armour tree described above.
+- Stage 6 type `$0E`: fixed-bank `$4F1C/$4F33` expanding barrier, including
+  the `$32` closed hold, six-tick growth phases and its custom fatal states 4–6.
+- Stage 6 type `$2A`: the high-difficulty direct stream instance of the
+  `$8338` downward mover (in addition to `$53`-generated children).
 - Stage 6 type `$73`: the ROM's direct `JP $82CA` reuse of the aimed turret
   family, including tile rendering, staggered aim, firing and fourth-turret
   pickup accounting.
+- Stage 6 type `$2F`: the full `$86D0->$8708` terrain-avoidance search is
+  restored. A guarded Stage-6 trace confirms direct heading, heading+2 and the
+  unconditional heading+6 fallback, using the ROM's asymmetric `$873F`
+  footprint and exact `$874F` movement table.
+- Stage 7 type `$16` (emitted by `$4F`): fixed `$5479` now honours the
+  normal-route CA04=0 early return. Guarded Stage-7 traces show state 3 holding
+  +17=`$C0`, +18=`$18`, the aimed vector and camera bit; the former native
+  synthetic state-4 steering has been removed.
+- Stage 6 `$4A/$4D/$48` and Stage 7 `$4F/$54->$1A` have dedicated native
+  handlers and regression coverage in `space-manbow-stage67-enemies-test`.
 - Stage 8 type `$50`: the fixed `$5AA2` signed vertical accumulator and
-  four-entry speed table.
+  four-entry speed table; the `$46` scripted wall family is also covered.
 - Stage 9 type `$4E`: the `$9655 -> $9477` PRNG start table, timed animation,
   vulnerability handoff and accelerating fall.
+- Stage 9 type `$5A`: the paired `$9805` growth walls, with the traced
+  frame-10→17 upper and frame-0→9 lower growth sequences.
 
-The next work for these stages is the remaining regular object/enemy/controller
-restoration—especially the more involved Stage-6 `$4A/$4D/$48` and Stage-7
-`$54` controller families—and, separately, the post-boss ending/credits
-sequence. The stage-5/6/7/8/9 bosses themselves have native regression coverage.
+At this point every ordinary Stage-5–9 spawn-table family is either a native
+actor/controller, the shared `$51` wave controller, or a decoded scene command.
+Further late-level work is therefore fidelity work (collision, timing,
+presentation and stage-specific transitions), plus the post-boss
+ending/credits sequence, rather than a missing regular spawn family.

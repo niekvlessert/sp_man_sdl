@@ -24,6 +24,7 @@ public:
     void mute(bool muted);
     void set_speed(unsigned speed);
     void set_music_playing(bool playing);
+    void set_music_track(unsigned track);
 private:
     struct Voice { unsigned clip=0;std::size_t position=0;bool active=false; };
     inline static constexpr std::array<std::uint8_t,9> stage_track_ids_{

@@ -169,9 +169,18 @@ std::vector<std::uint32_t> render_stage0_page(
     for (unsigned sy = 0; sy < 212u; ++sy) {
         const unsigned display_y = unsigned(int(sy) + r23) & 255u;
         const unsigned physical_row = display_y >> 3u;
-        // Only these 24 rows were composed. The other eight belong to the
-        // backdrop; old page contents must not reappear during upward scroll.
-        if (((physical_row + 32u - start_row) & 31u) >= 24u) continue;
+        const unsigned logical_row=(physical_row+32u-start_row)&31u;
+        // Fine vertical scrolling can expose exactly one row just outside the
+        // 24-row D988 window. Modes 1/4/5/6/7 explicitly stream that entering
+        // row into the canonical E000 ring before R23 reveals it. Treating all
+        // eight non-D988 rows as backdrop made the new top/bottom edge appear
+        // as a black 8px band until the next coarse-row carry. Use the real
+        // ring neighbour for logical -1/24; keep the other six page rows blank
+        // so stale page contents can never leak back into the playfield.
+        const bool vertical_top_edge=logical_row==31u;
+        const bool vertical_bottom_edge=logical_row==24u;
+        if(logical_row>=24u && !vertical_top_edge && !vertical_bottom_edge) continue;
+        const int logical_y=vertical_top_edge?-1:(vertical_bottom_edge?24:int(logical_row));
         const unsigned py = display_y & 7u;
         const unsigned quarter = (physical_row / 8u) * 0x800u;
         // R18 moves the complete display. Ground motion is already encoded
@@ -179,26 +188,27 @@ std::vector<std::uint32_t> render_stage0_page(
         const int row_x_sub = x_sub;
         for (unsigned sx = 0; sx < 256u; ++sx) {
             const int xq = row_x_sub + int(sx);
-            const unsigned logical_row=(physical_row+32u-start_row)&31u;
             unsigned px=0;
             std::uint8_t tile=0;
-            if(xq<0 && xq>=-8 && logical_row<24u) {
-                // The preceding ring column is distinct from column0. Repeating
-                // column0 duplicated the left rim of the late tower structure.
-                tile=left_edge[logical_row];
+            if(xq<0 && xq>=-8) {
+                // The preceding ring column is distinct from column0. For the
+                // vertical overscan row read both axes from E000 directly.
+                tile=logical_row<24u?left_edge[logical_row]:
+                    stream.view_tile(unsigned(-1),unsigned(logical_y));
                 px=unsigned(xq+8);
             } else if(xq>=0 && xq<256) {
                 const unsigned tx=unsigned(xq)>>3;
                 px=unsigned(xq)&7u;
-                tile=page[physical_row*32u+tx];
-            } else if(xq>=256 && xq<264 && logical_row<24u && right_edge) {
+                tile=logical_row<24u?page[physical_row*32u+tx]:
+                    stream.view_tile(tx,unsigned(logical_y));
+            } else if(xq>=256 && xq<264) {
                 // Native right-edge extension. The background streamer already
                 // exposes the real successor column (logical x=32); use it
-                // instead of repeating tile 31. Repeating the final visible
-                // tile produced the 1..7px-wide vertical fragments at the
-                // right edge whenever R18 exposed the next column.
+                // instead of repeating tile 31. Vertical overscan uses the
+                // same canonical ring neighbour on both axes.
                 px=unsigned(xq-256);
-                tile=(*right_edge)[logical_row];
+                tile=logical_row<24u && right_edge?(*right_edge)[logical_row]:
+                    stream.view_tile(32u,unsigned(logical_y));
             } else continue;
             const unsigned index = quarter + tile * 8u + py;
             if (pattern_base + index >= video.vram.size() ||

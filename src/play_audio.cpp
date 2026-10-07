@@ -160,6 +160,14 @@ void PlayAudio::set_stage(unsigned stage) {
     current_stage_=stage;boss_music_active_=false;reset_music_unlocked();voices_={};music_playing_=true;
     SDL_UnlockAudioDevice(device_);
 }
+void PlayAudio::set_music_track(unsigned track) {
+    if(track<57u || track>68u) return;
+    SDL_LockAudioDevice(device_);
+    boss_music_active_=false;current_track_=std::uint8_t(track);
+    if(kss_player_) KSSPLAY_reset(kss_player_,current_track_,0u);
+    music_position_=0u;voices_={};
+    SDL_UnlockAudioDevice(device_);
+}
 void PlayAudio::set_boss_music(bool active) {
     SDL_LockAudioDevice(device_);
     if(active!=boss_music_active_) {boss_music_active_=active;reset_music_unlocked();}

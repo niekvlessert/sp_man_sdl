@@ -4,6 +4,7 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(SDL2 REQUIRED IMPORTED_TARGET sdl2)
+find_package(PNG REQUIRED)
 
 # Original PSG/SCC music is executed directly from the cartridge ROM through
 # libkss. WAV assets remain only for sound effects.
@@ -23,10 +24,14 @@ add_library(smcore
     src/stage0_background.cpp
     src/play_session.cpp
     src/play_timeline.cpp
+    src/title_menu.cpp
+    src/enhanced_ship.cpp
+    src/enhanced_background.cpp
     src/stage0_enemies.cpp
     src/stage0_combat.cpp
 )
 target_include_directories(smcore PUBLIC include)
+target_link_libraries(smcore PUBLIC PNG::PNG)
 target_compile_options(smcore PRIVATE -Wall -Wextra -Wpedantic)
 
 add_executable(space-manbow-sdl src/main.cpp)
@@ -57,6 +62,10 @@ target_include_directories(space-manbow-audio-test PRIVATE include third_party/l
 target_link_libraries(space-manbow-audio-test PRIVATE PkgConfig::SDL2 kss)
 
 add_executable(space-manbow-title-test src/title_animation_test.cpp src/title_animation.cpp)
+add_executable(space-manbow-title-menu-test src/title_menu_test.cpp src/title_animation.cpp)
+add_executable(space-manbow-enhanced-ship-test src/enhanced_ship_test.cpp)
+target_link_libraries(space-manbow-enhanced-ship-test PRIVATE smcore)
+target_link_libraries(space-manbow-title-menu-test PRIVATE smcore)
 target_include_directories(space-manbow-title-test PRIVATE include)
 
 add_executable(space-manbow-late-combat-test src/late_combat_test.cpp)
@@ -135,6 +144,8 @@ add_sm_test(play-features space-manbow-play-features-test ${SM_ROM})
 add_sm_test(combat space-manbow-combat-test ${SM_ROM})
 add_sm_test(audio space-manbow-audio-test ${CMAKE_SOURCE_DIR}/assets/audio ${SM_ROM})
 add_sm_test(title space-manbow-title-test ${CMAKE_SOURCE_DIR}/assets/title/title.anim)
+add_sm_test(title-menu space-manbow-title-menu-test ${SM_ROM} ${CMAKE_SOURCE_DIR}/assets/title/title.anim)
+add_sm_test(enhanced-ship space-manbow-enhanced-ship-test ${SM_ROM} ${CMAKE_SOURCE_DIR}/assets/enhanced/player-hd-source.png)
 add_sm_test(late-combat space-manbow-late-combat-test ${SM_ROM})
 add_sm_test(feedback space-manbow-feedback-test ${SM_ROM})
 add_sm_test(timeline space-manbow-timeline-test ${SM_ROM})

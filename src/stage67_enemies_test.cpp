@@ -1,5 +1,6 @@
 #include "play_session.hpp"
 #include "stage0_enemies.hpp"
+#include "entity_runtime.hpp"
 #include "stage0_combat.hpp"
 #include "spawn.hpp"
 #ifdef NDEBUG
@@ -28,6 +29,58 @@ int main(int argc,char** argv) {
     const auto s6=sm::StageSpawnStream::decode_stage(rom,5u);
     const auto s7=sm::StageSpawnStream::decode_stage(rom,6u);
 
+    // $2F: Stage-6 reuses the pursuer family. $8708 probes the direct
+    // heading's asymmetric footprint, then heading+2; if both are blocked it
+    // falls back to heading+6 without a third terrain read.
+    {
+        sm::GameState g;sm::Stage0Enemies logic;
+        assert(logic.spawn(rom,first_type(s6,0x2fu),g,1u));
+        auto& e=g.enemies[0];
+        e.state()=2u;e.set_x_fixed(0x1000u);e.set_y_fixed(0x1000u);
+        g.player.set_x_fixed(0x1000u);g.player.set_y_fixed(0x0800u);
+        std::vector<std::pair<int,int>> probes;
+        sm::Stage0Enemies::TerrainProbe turn=[&](const sm::Entity64&,int xo,int yo) {
+            probes.emplace_back(xo,yo);
+            return std::uint8_t(probes.size()==1u?3u:0u);
+        };
+        logic.step_15hz(rom,g,0u,0u,true,nullptr,turn,{});
+        assert(probes.size()==2u);
+        assert(probes[0].first==0 && probes[0].second==-0x0100);
+        assert(probes[1].first==0x0300 && probes[1].second==0);
+        assert(e.raw[0x20]==4u && sw(e,11)==0 && sw(e,13)==0x60);
+
+        e.state()=2u;probes.clear();
+        sm::Stage0Enemies::TerrainProbe blocked=[&](const sm::Entity64&,int xo,int yo) {
+            probes.emplace_back(xo,yo);return std::uint8_t(3u);
+        };
+        logic.step_15hz(rom,g,1u,0u,true,nullptr,blocked,{});
+        assert(probes.size()==2u); // third choice is unconditional in $86E3-$86EB
+        assert(e.raw[0x20]==0u && sw(e,11)==0 && sw(e,13)==-0x60);
+    }
+
+    // $17: guarded Stage-6 OpenMSX traces at trigger $30AE show the
+    // exact 1->2->3 path: $20-tick vertical wobble, player-Y distance copied
+    // to +22/+23, five state-2 calls for distance four, one shot, then the
+    // mirrored $C0 return vector.
+    {
+        sm::GameState g;sm::Stage0Enemies logic;
+        assert(logic.spawn(rom,first_type(s6,0x17u),g,1u));
+        auto& e=g.enemies[0];
+        assert(e.state()==0u);
+        logic.step_15hz(rom,g,0u,0u,true,nullptr);
+        assert(e.state()==1u && e.raw[0x17]==0x20u && sw(e,11)==0x20);
+        g.player.set_x_fixed(std::uint16_t(e.x_fixed()-0x0800u));
+        g.player.set_y_fixed(std::uint16_t(e.y_fixed()-0x0400u));
+        e.raw[0x17]=1u;
+        logic.step_15hz(rom,g,1u,0u,true,nullptr);
+        assert(e.state()==2u && e.raw[0x20]==1u &&
+               e.raw[0x22]==4u && e.raw[0x23]==4u && sw(e,11)==-0xc0);
+        for(unsigned t=2u;t<7u;++t) logic.step_15hz(rom,g,t,0u,true,nullptr);
+        assert(e.state()==3u && e.raw[0x20]==0u && e.raw[0x22]==0xffu &&
+               e.raw[0x23]==4u && e.raw[0x17]==0x20u && sw(e,11)==0xc0);
+        assert(e.raw[0x26]==1u); // $8106 -> $9CB5 native shot request
+    }
+
     // $4A: $14 entrance wait -> state 2 with ROM curve constants.
     {
         sm::GameState g;sm::Stage0Enemies logic;
@@ -42,7 +95,9 @@ int main(int argc,char** argv) {
     }
 
     // $4D: state 0 latches its world anchor. A one-cell displacement feeds
-    // back as (anchor-current)/32 on the next damped steering update.
+    // back as (anchor-current)/32 on the next damped steering update. $953C
+    // also injects a local +$40 X target every CA02&7==0 call and exposes the
+    // exact signed correction words/large-error flags.
     {
         sm::GameState g;sm::Stage0Enemies logic;
         assert(logic.spawn(rom,first_type(s6,0x4du),g,1u));
@@ -55,6 +110,22 @@ int main(int argc,char** argv) {
         e.set_x_fixed(std::uint16_t(ax+0x0100u));
         logic.step_15hz(rom,g,1u,0,true,nullptr);
         assert(sw(e,13)==-8 && sw(e,11)==0);
+        assert(sw(e,0x11)==-8 && sw(e,0x0f)==0);
+
+        // With anchor == position and zero velocity, CA02&7==0 contributes
+        // +$0040 before the five arithmetic shifts: exact X acceleration +2.
+        e.set_x_fixed(ax);e.set_y_fixed(ay);
+        sm::entity_set_word(e,13,0);sm::entity_set_word(e,11,0);
+        logic.step_15hz(rom,g,8u,0,true,nullptr);
+        assert(sw(e,0x11)==2 && sw(e,13)==2);
+        assert(((unsigned(e.raw[0x28])<<8u)|e.raw[0x29])==ax);
+
+        // Large correction sets $953C's orientation/error bit 2 while keeping
+        // the low two variant bits intact.
+        e.raw[3]=2u;e.set_x_fixed(std::uint16_t(ax-0x0c00u));
+        sm::entity_set_word(e,13,0);
+        logic.step_15hz(rom,g,9u,0,true,nullptr);
+        assert((e.raw[3]&7u)==6u && sw(e,0x11)==0x60 && sw(e,13)==0x60);
     }
 
     // $48: extended record creates a seven-record formation (one parent plus
@@ -119,6 +190,17 @@ int main(int argc,char** argv) {
         assert(child->x_fixed()==std::uint16_t(launcher.x_fixed()+0x0200u));
         assert(child->y_fixed()>=0x0400u);
         assert(launcher.raw[0x21]==1u && launcher.raw[0x22]==1u);
+
+        // Fixed:$5479 checks CA04 before touching either timer. Normal Stage 7
+        // keeps CA04=$00, so a child that reached state 3 must retain its aimed
+        // vector, +18=$18 and camera bit indefinitely until common culling.
+        child->state()=3u;child->raw[0x17]=0xc0u;child->raw[0x18]=0x18u;
+        child->flags15()|=0x04u;sm::entity_set_word(*child,11,0x0030);
+        sm::entity_set_word(*child,13,-0x0050);
+        for(unsigned t=31u;t<63u;++t) logic.step_15hz(rom,g,t,0u,true,nullptr);
+        assert(child->state()==3u && child->raw[0x17]==0xc0u &&
+               child->raw[0x18]==0x18u && (child->flags15()&0x04u));
+        assert(sw(*child,11)==0x30 && sw(*child,13)==-0x50);
     }
 
     // $54: first Stage-7 descriptor is 04 80 13 00 02 1A. It waits at X=$15,
@@ -189,16 +271,17 @@ int main(int argc,char** argv) {
     // Stage 7 must instantiate launchers and live $1A children.
     {
         sm::PlaySession s(rom);s.reset(5u);
-        unsigned best48=0,best_parent=0;
+        unsigned best48=0,best_parent=0;bool wave44=false;
         for(unsigned f=0;f<10000u;++f) {
             s.step_60hz({});
             unsigned n=0,p=0;
-            for(const auto& e:s.state().enemies) if(e.type()==0x48u) {
-                ++n;if(e.raw[0x34]&0x80u) ++p;
+            for(const auto& e:s.state().enemies) {
+                wave44|=e.type()==0x44u;
+                if(e.type()==0x48u) {++n;if(e.raw[0x34]&0x80u) ++p;}
             }
             if(n>best48){best48=n;best_parent=p;}
         }
-        assert(best48>=14u && best_parent>=2u);
+        assert(best48>=14u && best_parent>=2u && wave44);
     }
     {
         sm::PlaySession s(rom);s.reset(6u);

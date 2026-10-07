@@ -143,7 +143,16 @@ void scroll_stage0_objects(GameState& game, int dx, int dy,const Rom* native_vis
                 right_extent=std::max(right_extent,(matrix.tile_x_offset+int(matrix.cols))*8);
             if(right_extent) left_guard=std::min(left_guard,-(right_extent+16)*32);
         }
-        if (dx > 0 && nx < left_guard && e.type()!=0x53u) { e.clear(); continue; }
+        // Type $37's fourteen orbit children are born offscreen at
+        // Y=$18 and deliberately remain alive while their stagger timer runs.
+        // Guarded Stage-4 OpenMSX traces keep the later children at X=$FDC0
+        // (past the normal $FE00 cull point) until they join the formation.
+        // Once active they are controller-owned as well: the parent handler,
+        // not the viewport edge, determines their lifetime.
+        const bool linked_formation37=e.type()==0x37u && e.raw[0x34]!=0u;
+        if (dx > 0 && nx < left_guard && e.type()!=0x53u && !linked_formation37) {
+            e.clear(); continue;
+        }
         if(e.type()==0x4du && e.state()!=0u) {
             // Bank05 $9517->$953C->$6D2C keeps the type-$4D world anchor in
             // +28/+29 (X high/low) and +2A/+2B (Y high/low). It receives the
@@ -794,6 +803,36 @@ std::uint8_t stage0_t24_phase(const Entity64& entity,std::uint8_t ca3b,
     return std::uint8_t(d&7u); // RES 3,D in the original
 }
 
+bool stage0_native_tile_overlay(const Stage0BackgroundStream& stream,
+                                const Entity64& entity) noexcept {
+    if(!entity.active() || entity.type()==3u) return false;
+
+    // These are persistent/scenery writers, not movable actor overlays.
+    if(stream.stage_index()==2u && (entity.type()==0x75u || entity.type()==0x7du))
+        return false;
+    if(entity.type()==0x69u) return false;
+
+    // Generic $7A43/$7B65 ownership bit. This catches ordinary matrix-backed
+    // enemies in every stage, including Stage-4 $38/$39 and later families,
+    // without growing another per-level type list.
+    if(entity.flags15()&0x02u) return true;
+
+    // A handful of custom large actors use bespoke compositor entry points
+    // and therefore do not consistently carry +15 bit 1.
+    switch(entity.type()) {
+    case 0x14u: case 0x1eu: case 0x1fu: case 0x20u: case 0x22u:
+    case 0x24u: case 0x26u: case 0x29u: case 0x2eu: case 0x3du:
+    case 0x3eu: case 0x3fu: case 0x47u: case 0x55u: case 0x56u:
+    case 0x64u: case 0x6au: case 0x6bu: case 0x76u: case 0x77u:
+    case 0x7bu: case 0x78u: case 0x79u:
+        return true;
+    case 0x46u:
+        return entity.raw[0x03]!=0u;
+    default:
+        return false;
+    }
+}
+
 std::vector<Stage0TileVisual> decode_stage0_t24_visuals_phase(const Rom& rom,
                                                                const Entity64& entity,
                                                                unsigned phase) {
@@ -821,17 +860,12 @@ void stamp_stage0_tile_objects(const Rom& rom, const Stage0BackgroundStream& str
         // secondary record again here would render the same line in a second,
         // screen-relative coordinate domain.
         if(stream.stage_index()==2u && (entity.type()==0x75u || entity.type()==0x7du)) continue;
-        // Native SDL draws composed tile actors at their real sub-tile pixel
-        // position. The ROM D988 path quantizes these objects to 8x8 cells;
-        // that is correct for the VDP name table but visibly makes mixed
-        // tile+sprite actors (cannon body/barrel and type $64 core) jump at
-        // R18/tile carries. Keep scenery in D988, but render these actors once
-        // as native overlays in every stage-0 raster mode.
-        if(!include_native_overlays && ((stream.stage_index()==2u && (entity.type()==0x1cu || entity.type()==0x28u)) || (stream.stage_index()==1u && (entity.type()==0x2bu || entity.type()==0x31u || entity.type()==0x6bu)) || entity.type()==0x76u || (entity.type()==0x46u && entity.raw[0x03]) || entity.type()==0x1eu || entity.type()==0x1fu || entity.type()==0x20u || entity.type()==0x29u || entity.type()==0x22u || entity.type()==0x2eu ||
-           entity.type()==0x24u || entity.type()==0x26u || entity.type()==0x55u ||
-           entity.type()==0x47u || entity.type()==0x56u || entity.type()==0x64u || entity.type()==0x6au ||
-           entity.type()==0x6bu || entity.type()==0x3du || entity.type()==0x3eu ||
-           entity.type()==0x3fu || entity.type()==0x14u || entity.type()==0x77u || entity.type()==0x7bu || entity.type()==0x78u || entity.type()==0x79u)) continue;
+        // Movable matrix actors are owned by the native sub-tile overlay.
+        // The ROM D988/name-table path is still used for collision and when
+        // include_native_overlays=true, but presentation must not quantize
+        // them to 8x8 cells and then interpolate the camera around that stamp.
+        if(!include_native_overlays && stage0_native_tile_overlay(stream,entity))
+            continue;
         const auto visuals = decode_stage0_tile_visuals(rom, entity);
         if (visuals.empty()) continue;
 
@@ -872,13 +906,9 @@ void stamp_stage0_tile_objects_right_edge(const Rom& rom, const Stage0Background
     for(const auto& entity:pool) {
         if(!entity.active() || entity.type()==3u) continue;
         if(stream.stage_index()==2u && (entity.type()==0x75u || entity.type()==0x7du)) continue;
-        // Same ownership rule as the main D988 stamper: native overlays own
-        // these complete actors, including the successor edge.
-        if((stream.stage_index()==1u && (entity.type()==0x2bu || entity.type()==0x31u || entity.type()==0x6bu)) || entity.type()==0x1eu || entity.type()==0x1fu || entity.type()==0x20u || entity.type()==0x29u || entity.type()==0x22u || entity.type()==0x2eu ||
-           entity.type()==0x24u || entity.type()==0x26u || entity.type()==0x55u ||
-           entity.type()==0x47u || entity.type()==0x56u || entity.type()==0x64u || entity.type()==0x6au ||
-           entity.type()==0x6bu || entity.type()==0x3du || entity.type()==0x3eu ||
-           entity.type()==0x3fu || entity.type()==0x14u || entity.type()==0x77u || entity.type()==0x7bu || entity.type()==0x78u || entity.type()==0x79u) continue;
+        // Same ownership rule as the main D988 stamper: the native overlay
+        // also owns the logical successor column of movable matrix actors.
+        if(stage0_native_tile_overlay(stream,entity)) continue;
         const auto visuals=decode_stage0_tile_visuals(rom,entity);
         if(visuals.empty()) continue;
         const auto ax=std::uint16_t(entity.x_fixed()+fine_x);
@@ -939,6 +969,21 @@ Stage0DamageResult apply_stage0_damage(const Rom& rom, Entity64& entity,
     // only receive fatal damage when the core raises the CE52 death latch.
     if(entity.type()==0x3cu && !scripted) {
         entity.raw[4]=0u;return Stage0DamageResult::Ignored;
+    }
+    // Fixed $4F33 Stage-6 barrier owns its fatal path. $4F3F calls the
+    // ordinary subtraction helper, but carry enters states 4..6 on the same
+    // type-$0E record instead of replacing it with the generic $62 effect.
+    if(entity.active() && entity.type()==0x0eu) {
+        if(damage==0u || entity.state()>=4u || (entity.raw[0x14]&0x80u)==0u)
+            return Stage0DamageResult::Ignored;
+        const auto hp=entity.raw[0x16];entity.raw[0x04]=0u;
+        entity.raw[0x16]=std::uint8_t(hp-damage);
+        if(damage<=hp) return Stage0DamageResult::Hit;
+        entity.raw[0x05]=entity.raw[0x06];
+        entity.raw[0x06]=8u;
+        entity.raw[0x14]|=0x80u;
+        entity.state()=4u;
+        return Stage0DamageResult::Destroyed;
     }
     // Stage-7 Warp Machine ($8EF5) is the deliberate exception to the common
     // +14/+16 damage service. Its weak point is live only in state 1 and keeps
@@ -1001,6 +1046,10 @@ Stage0DamageResult apply_stage0_damage(const Rom& rom, Entity64& entity,
         const unsigned p = table + unsigned(entity.type()) * 3u;
         if (p >= bank.size()) return Stage0DamageResult::Destroyed;
         const auto replacement = bank[p];
+        // Native presentation provenance: $62 loses the matrix ownership bit
+        // when $7CC3 replaces its source. Keep the original family in +3A,
+        // unused by the ROM explosion handler, for its screen-origin choice.
+        if(replacement==0x62u) entity.raw[0x3a]=entity.type();
         // $3C machinery shares the $6A animation, but is not the stage
         // boss. Keep that provenance through the shared effect countdown.
         if(entity.type()==0x3cu && replacement==0x6au) entity.raw[0x3f]=0xd3u;
@@ -1071,6 +1120,7 @@ bool instantiate_stage0_spawn(const Rom& rom, const SpawnRecord& r, GameState& g
     const bool special53 = r.type == 0x53u && r.control_flag();
     const bool special54 = r.type == 0x54u && r.control_flag();
     const bool special3e = r.type == 0x3eu && r.control_flag();
+    const bool special37 = r.type == 0x37u && r.control_flag();
     const bool special77 = r.type == 0x77u && r.control_flag();
     const bool special7a = r.type == 0x7au && r.control_flag();
     const bool special7c = r.type == 0x7cu && r.control_flag();
@@ -1079,7 +1129,7 @@ bool instantiate_stage0_spawn(const Rom& rom, const SpawnRecord& r, GameState& g
     // type $64 from real gameplay, leaving only the scenery copy visible.
     const bool special64 = r.type == 0x64u && r.control_flag();
     const bool special1c = r.type == 0x1cu && r.control_flag();
-    if (r.control_flag() && !special1c && !special26 && !special2b && !special48 && !special4f && !special53 && !special54 && !special3e && !special77 && !special64 && !special7a && !special7c) return false;
+    if (r.control_flag() && !special1c && !special26 && !special2b && !special48 && !special4f && !special53 && !special54 && !special3e && !special37 && !special77 && !special64 && !special7a && !special7c) return false;
     if(r.type==0x46u && !r.payload.empty()) {
         // Script lasers use $915D: eight independent rows in the secondary
         // pool, rather than consuming the twenty ordinary enemy slots.
@@ -1095,9 +1145,9 @@ bool instantiate_stage0_spawn(const Rom& rom, const SpawnRecord& r, GameState& g
         }
         return true;
     }
-    if (r.type != 0x1bu && r.type != 0x42u && r.type != 0x14u && r.type != 0x19u && r.type != 0x1cu && r.type != 0x1eu && r.type != 0x1fu && r.type != 0x20u && r.type != 0x25u && r.type != 0x27u && r.type != 0x28u && r.type != 0x29u && r.type != 0x2bu && r.type != 0x2du && r.type != 0x2eu && r.type != 0x2fu && r.type != 0x31u && r.type != 0x32u && r.type != 0x33u && r.type != 0x3cu && r.type != 0x3eu && r.type != 0x22u &&
+    if (r.type != 0x0eu && r.type != 0x1bu && r.type != 0x42u && r.type != 0x14u && r.type != 0x17u && r.type != 0x19u && r.type != 0x1cu && r.type != 0x1eu && r.type != 0x1fu && r.type != 0x20u && r.type != 0x21u && r.type != 0x25u && r.type != 0x27u && r.type != 0x28u && r.type != 0x29u && r.type != 0x2au && r.type != 0x2bu && r.type != 0x2du && r.type != 0x2eu && r.type != 0x2fu && r.type != 0x31u && r.type != 0x32u && r.type != 0x33u && r.type != 0x37u && r.type != 0x38u && r.type != 0x39u && r.type != 0x3cu && r.type != 0x3eu && r.type != 0x22u &&
         r.type != 0x24u && r.type != 0x26u && r.type != 0x41u && r.type != 0x48u && r.type != 0x49u && r.type != 0x4au && r.type != 0x4du && r.type != 0x4eu && r.type != 0x4fu && r.type != 0x50u &&
-        r.type != 0x53u && r.type != 0x54u && r.type != 0x55u && r.type != 0x56u && r.type != 0x47u && r.type != 0x43u && r.type != 0x64u &&
+        r.type != 0x53u && r.type != 0x54u && r.type != 0x55u && r.type != 0x56u && r.type != 0x5au && r.type != 0x47u && r.type != 0x43u && r.type != 0x64u &&
         r.type != 0x72u && r.type != 0x73u && r.type != 0x77u && r.type != 0x78u && r.type != 0x79u && r.type != 0x7au && r.type != 0x7bu && r.type != 0x7cu) return false;
     if (r.payload.empty() || (r.type == 0x24u && r.payload.size() < 2u)) return false;
     auto* e=allocate_stage_entity(rom,game,r.type);
@@ -1107,7 +1157,7 @@ bool instantiate_stage0_spawn(const Rom& rom, const SpawnRecord& r, GameState& g
     // Original $6754 initializer. The same payload byte is interpreted on a
     // different axis depending on C0D5, so it is NOT an absolute Y value.
     // Extended records expose their first inline byte after the count byte.
-    const unsigned payload_index = (special1c || special26 || special2b || special48 || special4f || special54 || special77 || special7a || special7c) ? 1u : 0u;
+    const unsigned payload_index = (special1c || special26 || special2b || special48 || special4f || special54 || special37 || special77 || special7a || special7c) ? 1u : 0u;
     if (r.payload.size() <= payload_index) { e->clear(); return false; }
     const std::uint8_t pos = r.payload[payload_index] & 0x7fu;
     std::uint8_t xh = 0x20u, yh = pos;
@@ -1120,7 +1170,72 @@ bool instantiate_stage0_spawn(const Rom& rom, const SpawnRecord& r, GameState& g
     }
     e->set_x_fixed(std::uint16_t(xh) << 8);
     e->set_y_fixed(std::uint16_t(yh) << 8);
-    if(r.type==0x1bu) {
+    if(r.type==0x0eu) {
+        // Fixed $4F1C-$4F32: Stage-6 barrier. The common $6754 placement is
+        // followed by a 50-tick closed hold; lower-half records start on
+        // matrix 4, upper-half records on matrix 0.
+        e->raw[0x17]=0x32u;
+        e->raw[0x06]=e->raw[0x08]>=8u?4u:0u;
+        e->state()=0u;
+    } else if(r.type==0x2au) {
+        // Bank05 $8338: a direct Stage-6 record uses the same falling actor
+        // as the $53 generator children. Its handler has no state dispatch.
+        e->raw[0x0b]=0x40u;e->raw[0x0c]=0u;
+        e->state()=0u;
+    } else if(r.type==0x5au) {
+        // Bank05 $9805-$983A: Stage-9 paired growth walls. Bit 7 selects
+        // the downward-growing frame family 10..17; the lower record grows
+        // upward through frames 0..9. Growth begins only after X<$15.
+        const bool upper=(r.payload[0]&0x80u)!=0u;
+        e->raw[0x06]=upper?0x0au:0u;
+        e->raw[0x17]=upper?8u:0x0au;
+        e->state()=1u;
+    } else if(r.type==0x21u) {
+        // Fixed $4FF1/$5054: Stage-5 stream records are invisible three-shot
+        // formation controllers. The sole inline byte selects one of the
+        // original Y rows (04/0B/11). State 6 emits three real type-$21
+        // sprites at X=$1F, first after 10 ticks and then every 14 ticks.
+        if(r.payload[0]>2u) {e->clear();return false;}
+        e->raw[0x03]=r.payload[0];
+        e->flags15()=0u;e->state()=5u;
+        e->set_x_fixed(0u);e->set_y_fixed(0u);
+    } else if(r.type==0x37u) {
+        // Fixed $5161-$51F8. The Stage-4 formation record is extended:
+        //   03 <Y> <X> 02 37
+        // The controller itself is the fifteenth visible member. It creates
+        // eight clockwise and six counter-clockwise children with staggered
+        // phase delays, then becomes the inert state-2 orbit anchor.
+        if(r.payload.size()<5u || r.payload[0]!=3u || r.payload[3]!=2u ||
+           r.payload[4]!=0x37u) {e->clear();return false;}
+        e->set_y_fixed(std::uint16_t(r.payload[1])<<8u);
+        e->set_x_fixed(std::uint16_t(r.payload[2])<<8u);
+        e->flags15()&=0x04u;
+        const auto parent=e->raw[0x2d];
+        unsigned ordinal=1u;
+        auto family=[&](unsigned count,std::uint8_t step,std::uint8_t radius,
+                        std::uint8_t stagger) {
+            std::uint8_t delay=0u;
+            for(unsigned n=0;n<count;++n) {
+                auto* c=allocate_stage_entity(rom,game,0x37u);
+                if(!c) break;
+                delay=std::uint8_t(delay+stagger);
+                c->set_y_fixed(0x1800u);c->set_x_fixed(0u);
+                c->raw[0x03]=step;c->raw[0x17]=delay;
+                c->raw[0x18]=stagger;c->raw[0x21]=radius;
+                c->raw[0x34]=parent;c->raw[0x38]=std::uint8_t(ordinal++);
+            }
+        };
+        family(8u,0x05u,0x35u,0x03u);
+        family(6u,0xf6u,0x26u,0x02u);
+        e->raw[0x03]=0xf6u;e->raw[0x21]=0x26u;
+        e->raw[0x17]=1u;e->raw[0x18]=0u;e->state()=2u;
+    } else if(r.type==0x39u) {
+        // Bank05 $8C34 consumes a second inline byte through $6796. Preserve
+        // it here because the native entity no longer owns the stream cursor.
+        if(r.payload.size()<2u) {e->clear();return false;}
+        e->raw[0x21]=r.payload[1]&3u;
+        e->raw[0x23]=(r.payload[0]&0x80u)?1u:0u; // high bit disables firing
+    } else if(r.type==0x1bu) {
         // $5BB5 installs an invisible wave controller; $5C84 births the ships.
         e->state()=2u;e->flags15()=0u;e->raw[3]=0xffu;
         e->set_x_fixed(0u);e->set_y_fixed(0u);
@@ -1502,8 +1617,13 @@ bool instantiate_stage0_spawn(const Rom& rom, const SpawnRecord& r, GameState& g
     }
     // Type $64 must enter bank06:$A300 (state 0). Starting it at state 1
     // skips the ROM initializer that positions the tower at X=$2800/Y=$0C00.
-    if(!special48 && r.type!=0x1bu)
-        e->state() = (r.type == 0x14u || r.type == 0x43u || r.type == 0x64u || r.type==0x47u || r.type==0x1cu || r.type==0x25u || r.type==0x28u || r.type==0x2du || r.type==0x2eu || r.type==0x31u || r.type==0x33u || r.type==0x3eu || r.type==0x4du || r.type==0x4eu || r.type==0x53u || r.type==0x72u || r.type==0x77u || r.type==0x7au || r.type==0x7bu || r.type==0x7cu) ? 0u : 1u;
+    if(!special48 && !special37 && r.type!=0x1bu && r.type!=0x21u)
+        e->state() = (r.type == 0x0eu || r.type == 0x14u || r.type==0x17u || r.type==0x2au || r.type==0x38u || r.type==0x39u ||
+                      r.type == 0x43u || r.type == 0x64u || r.type==0x47u || r.type==0x1cu ||
+                      r.type==0x25u || r.type==0x28u || r.type==0x2du || r.type==0x2eu ||
+                      r.type==0x31u || r.type==0x33u || r.type==0x3eu || r.type==0x4du ||
+                      r.type==0x4eu || r.type==0x53u || r.type==0x72u || r.type==0x77u ||
+                      r.type==0x7au || r.type==0x7bu || r.type==0x7cu) ? 0u : 1u;
     return true;
 }
 }

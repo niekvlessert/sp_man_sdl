@@ -30,6 +30,26 @@ int main(int argc,char** argv) {
     const auto y=rock.y_fixed();
     for(unsigned f=0;f<4u;++f) logic.move_60hz(game,f);
     assert(rock.y_fixed()==y-16u);
+
+    // Fixed:$5A84 is deliberately a one-time constructor: after state 1 the
+    // handler returns immediately and common movement owns the +/-$0010 drift.
+    // Audit all four Stage-8 records so both vertical directions stay covered.
+    bool rock_up=false,rock_down=false;
+    for(const auto& rec:catalog.records()) if(rec.type==0x42u) {
+        sm::GameState rg;sm::Stage0Enemies rl;
+        assert(rl.spawn(rom,rec,rg,1u));
+        auto& q=rg.enemies[0];
+        const int vy=std::int16_t(unsigned(q.raw[11])|(unsigned(q.raw[12])<<8u));
+        rock_up|=vy<0;rock_down|=vy>0;
+        const auto qy=q.y_fixed();
+        rl.step_15hz(rom,rg,0u,rec.trigger,false);
+        assert(q.state()==1u);
+        assert(std::int16_t(unsigned(q.raw[11])|(unsigned(q.raw[12])<<8u))==vy);
+        for(unsigned f=0;f<4u;++f) rl.move_60hz(rg,f);
+        assert(q.y_fixed()==std::uint16_t(qy+vy));
+    }
+    assert(rock_up && rock_down);
+
     assert(logic.spawn(rom,record(0x46u),game,1u));
     assert(game.active_enemy_count()==1u); // lasers use their own pool
     for(unsigned row=0;row<8u;++row) {
@@ -111,6 +131,10 @@ int main(int argc,char** argv) {
     const auto steady=final.render_continuous();
     for(unsigned frame=0;frame<24u;++frame) {
         final.step_60hz({});
+        // The restored final-sector spawn stream can still introduce $51/$4C
+        // actors at the gate. This fixture measures the held boss pose, so
+        // exclude those unrelated moving actors on every presentation frame.
+        for(auto& e:final.game_.enemies) if(e.type()!=0x79u) e.clear();
         assert(final.render_continuous()==steady); // every 60-Hz presentation phase
     }
     std::cout<<"Stages 8/9 presentation PASS: original rocks/ships/16 laser events, inherited sprites, visible stars/walls, attached final-boss eye and stable fight\n";

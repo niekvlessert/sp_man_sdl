@@ -40,7 +40,7 @@ public:
     // frame while screen-space actors/HUD remain on the 256-pixel grid.
     std::vector<std::uint32_t> render_wide();
     std::vector<std::uint32_t> render_smooth(); // 512x848: quarter-pixel Y at 60 Hz
-    std::vector<std::uint32_t> render_continuous(); // 1024x848: quarter-pixel X/Y
+    std::vector<std::uint32_t> render_continuous(bool include_player=true,bool enhanced_background=false); // 1024x848: quarter-pixel X/Y
     const GameState& state() const noexcept { return game_; }
     std::span<const Entity64> shots() const noexcept { return shots_; }
     unsigned stage_index() const noexcept { return stage_index_; }
@@ -134,6 +134,7 @@ private:
     bool prev_world_phase_valid_=false;
     int render_fast_ground_phase_override_=-1;
     bool render_subpixel_=false;
+    bool render_enhanced_background_=false;
     bool render_native_wide_=false; // canonical world: no VDP R18/fallback presentation
     GameState game_;
     std::array<Entity64, 3> shots_{}; // $CC40/$CC60/$CC80, original basic weapon pool

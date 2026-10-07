@@ -1,4 +1,5 @@
 #include "play_session.hpp"
+#include "enhanced_background.hpp"
 #include "entity_runtime.hpp"
 #include "assets.hpp"
 #include <algorithm>
@@ -73,19 +74,49 @@ void apply_stage3_exit_fade(std::array<std::uint32_t,16>& palette,
              fade_channel(c&255u);
     }
 }
-bool native_stage0_tile_actor(std::uint8_t type) noexcept {
-    switch(type) {
-    case 0x1e: case 0x1f: case 0x20: case 0x22: case 0x24: case 0x26:
-    case 0x47: case 0x55: case 0x56: case 0x64: case 0x6a: case 0x6b: case 0x3d:
-        return true;
-    default:return false;
+void draw_play_hud(std::vector<std::uint32_t>& pixels,const Stage0Combat& combat) {
+    // Stage-0 HUD layout follows the original top-border composition:
+    // POWER + 16 cells, then SCORE and HI score labels on the second row.
+    static constexpr std::array<std::array<std::uint8_t,5>,10> digits{{
+        {{7,5,5,5,7}},{{2,6,2,2,7}},{{7,1,7,4,7}},{{7,1,7,1,7}},{{5,5,7,1,1}},
+        {{7,4,7,1,7}},{{7,4,7,5,7}},{{7,1,1,1,1}},{{7,5,7,5,7}},{{7,5,7,1,7}}}};
+    auto glyph=[&](unsigned ox,unsigned oy,const std::array<std::uint8_t,5>& rows,std::uint32_t c) {
+        for(unsigned y=0;y<5;++y) for(unsigned x=0;x<3;++x)
+            if(rows[y]&(1u<<(2-x))) pixels[(oy+y)*256+ox+x]=c;
+    };
+    auto letter=[&](unsigned ox,unsigned oy,char ch,std::uint32_t c) {
+        std::array<std::uint8_t,5> r{};
+        switch(ch) {
+        case 'P':r={6,5,6,4,4};break; case 'O':r={7,5,5,5,7};break;
+        case 'W':r={5,5,5,7,5};break; case 'E':r={7,4,6,4,7};break;
+        case 'R':r={6,5,6,5,5};break; case 'S':r={7,4,7,1,7};break;
+        case 'C':r={7,4,4,4,7};break; case 'H':r={5,5,7,5,5};break;
+        case 'I':r={7,2,2,2,7};break; case '-':r={0,0,7,0,0};break;
+        default:return;
+        } glyph(ox,oy,r,c);
+    };
+    auto text=[&](unsigned x,unsigned y,const char* t,std::uint32_t c) {
+        for(;*t;++t,x+=4) letter(x,y,*t,c);
+    };
+    constexpr auto white=0xffffffffu,yellow=0xffffff00u,red=0xffff2020u,gray=0xff8a8a8au;
+    text(43,4,"POWER",white);
+    for(unsigned bar=0;bar<16;++bar) {
+        const auto c=bar<combat.upgrades().power?(bar<8u?red:yellow):gray;
+        for(unsigned y=0;y<5;++y) for(unsigned x=0;x<7;++x)
+            pixels[(4+y)*256+89+bar*8+x]=c;
     }
+    text(92,15,"SCORE-",yellow); text(185,15,"HI",yellow);
+    auto number=[&](unsigned x,unsigned value) {
+        unsigned div=100000;
+        for(unsigned i=0;i<6;++i,div/=10) glyph(x+i*4,15,digits[(value/div)%10],white);
+    };
+    number(120,combat.score()); number(199,std::max(18000u,combat.score()));
+}
+bool stage2_shaft_sprite(unsigned stage,std::uint8_t type) noexcept {
+    return stage==1u && (type==0x2au || type==0x2cu);
 }
 // Sprite-frame components are six bytes: pattern, Y, X, colors, hitbox selector.
 // This uses the exported ROM's resident sprite assets, including CC color OR.
-bool native_stage2_tile_actor(std::uint8_t type) noexcept {
-    return type==0x29u || type==0x2bu || type==0x2eu || type==0x31u || type==0x6bu;
-}
 void draw_entity(const Rom& rom, const Screen4Snapshot& video,
                  const Entity64& entity, std::vector<std::uint32_t>& pixels,
                  const std::array<std::uint32_t,16>& palette, int sprite_origin_y,
@@ -298,10 +329,12 @@ void draw_tile_actor(const Rom& rom,const Screen4Snapshot& video,const Entity64&
                  std::uint16_t fine_x=0,int horizontal_shift=0,int raster_r23=-1,
                  int type24_phase=-1) {
     if(!e.active()) return;
-    if(pickup_only) { if(e.type()!=3) return; }
-    else if(e.type()==0x64u && e.state()==0u) return;
-    else if(e.type()!=0x76u && !(e.type()==0x46u && e.raw[0x03]) && e.type()!=0x1cu && e.type()!=0x1eu && e.type()!=0x1fu && e.type()!=0x20u && e.type()!=0x28u && e.type()!=0x29u && e.type()!=0x2bu && e.type()!=0x31u && e.type()!=0x32u && e.type()!=0x22u && e.type()!=0x2eu && e.type()!=0x24u && e.type()!=0x26u &&
-            e.type()!=0x14u && e.type()!=0x3eu && e.type()!=0x3fu && e.type()!=0x55u && e.type()!=0x47u && e.type()!=0x56u && e.type()!=0x64u && e.type()!=0x6au && e.type()!=0x6bu && e.type()!=0x77u && e.type()!=0x7bu && e.type()!=0x78u && e.type()!=0x79u && e.type()!=0x3du) return;
+    if(pickup_only) {
+        if(e.type()!=3u) return;
+    } else {
+        if(e.type()==3u) return;
+        if(e.type()==0x64u && e.state()==0u) return;
+    }
     // Do not cull large cannon tile actors by anchor position. Their matrix can
     // still overlap the left edge after the anchor itself has crossed x=0;
     // per-tile clipping below keeps the visible half on screen, matching the ROM.
@@ -327,7 +360,7 @@ void draw_tile_actor(const Rom& rom,const Screen4Snapshot& video,const Entity64&
             const int logical_row=object_row+v.tile_y_offset+int(ty);
             if(logical_row<0 || logical_row>=24) continue;
             const unsigned physical_row=(start_row+unsigned(logical_row))&31u;
-            int lx=v.x+int(tx*8u),ly=v.y+int(ty*8u)+screen_y_bias;
+            int lx=v.x+int(tx*8u)+horizontal_shift,ly=v.y+int(ty*8u)+screen_y_bias;
             unsigned fx=unsigned(e.x_fixed()&31u)*x_samples/32u;
             unsigned fy=unsigned(e.y_fixed()&31u)*y_samples/32u;
             if(raster_r23>=0) {
@@ -348,6 +381,14 @@ void draw_tile_actor(const Rom& rom,const Screen4Snapshot& video,const Entity64&
                     const int sx=lx+int(px);
                     if(sx<0 || sx>=256) continue;
                     const unsigned ci=(bits&(0x80u>>px))?color>>4:color&15u;
+                    // $3D's eight wheel frames also contain the ground contact
+                    // row. Let the continuous rock strip supply that row, just
+                    // as for $24 above. Only $95/$96 contain actual blue wheel
+                    // pixels there; the other colors belong to the stamped
+                    // rocks, including their black gaps. Test ROM indices,
+                    // not RGB, so palette flashes cannot change the mask.
+                    if(e.type()==0x3du && v.tile_y_offset+int(ty)==3 &&
+                       !((tile==0x95u || tile==0x96u) && ci>=1u && ci<=3u)) continue;
                     // A nonzero tile ID replaces the complete name-table cell.
                     // Palette index 0 is a real black/background pixel here,
                     // not alpha transparency. Only tile ID 0 is transparent.
@@ -787,14 +828,16 @@ void PlaySession::step_60hz(PlayerInput input) {
         const int col=int(std::int8_t(x>>8u)),row=int(std::int8_t(y>>8u));
         if(row<0||row>=24) return 0xff;
         if(late) {
-            // Type $31 starts its terrain probes while the two-cell shaft is
-            // still just outside the visible D988 window. The original reads
-            // that neighbouring ring column; treating col 32/-1 as a solid
-            // screen boundary makes the head reverse every logic tick while
-            // entering, and loses the real wall contact while leaving.
-            if(stage_index_==1u && e.type()==0x31u && (col<0 || col>=32))
+            // Terrain probes address the scrolling E000 ring, not the visible
+            // 32-column viewport. A movable actor may legitimately probe -1
+            // or 32 while only part of its matrix is on screen. Treating that
+            // as an artificial solid screen edge makes *every* such enemy
+            // reverse on alternate logic ticks while entering/leaving. Read
+            // the neighbouring ring column generically instead; view_tile()
+            // already owns the successor overscan for +32 and wraps the past
+            // columns through the original 64-column ring.
+            if(col<0 || col>=32)
                 return background_.view_tile(unsigned(col),unsigned(row));
-            if(col<0||col>=32) return 0xff;
             // A growing laser probes scenery before the ROM stamps its own
             // cells. Including last tick's wall makes it collide with itself.
             const auto& tiles=(e.type()==0x46u || e.type()==0x31u)?scenery_collision_tiles:collision_tiles;
@@ -1067,7 +1110,7 @@ void PlaySession::step_60hz(PlayerInput input) {
             [&](const Entity64& e,int xo,int yo){return terrain_tile(e,xo,yo);},
             [&](std::uint16_t x,std::uint16_t y,std::uint8_t tile) {
                 background_.write_object_tile(x,y,tile);
-            });
+            },background_.gated()?0u:background_.spawn_direction());
         bool have56=false,red56=false,white56=false;
         for(const auto& e:game_.enemies) if(e.active() && e.type()==0x56u) {
             have56=true;red56|=e.raw[0x3c]!=0u || e.state()>=2u;
@@ -1207,6 +1250,10 @@ void PlaySession::step_60hz(PlayerInput input) {
                 // states. A generic 12-tick effect timeout deletes $79 before
                 // its $20-tick final hold can raise the ending latch at $9717.
                 enemy.raw[0x3f]=0u;
+            } else if(original.type()==0x0eu && enemy.type()==0x0eu) {
+                // Fixed $4F33 keeps the Stage-6 barrier in-place after fatal
+                // damage and runs its own 4->5->6 open/wreck sequence.
+                enemy.raw[0x3e]=0u;enemy.raw[0x3f]=0u;
             } else {
                 enemy.flags15()|=1;
                 // Native fallback only for replacement handlers that are
@@ -1562,7 +1609,13 @@ std::vector<std::uint32_t> PlaySession::render() {
         const auto current_start_row=std::uint8_t((unsigned(background_.scroll_row())&0xf8u)>>3u);
 
         int tick_x=0,tick_y=0;
-        if(!background_.gated() && camera_pixels()<3072) tick_x=2;
+        // The fixed +2 px/tick shortcut belongs only to Stage 1 before its
+        // streamed-vehicle handoff. Later stages can have camera X below
+        // $0C00 while moving vertically (Stage 4 mode 6 is the obvious case).
+        // Reusing the Stage-1 shortcut there injected a fake horizontal shift
+        // into tile actors and left Y at the 15-Hz coarse cadence.
+        if(!background_.gated() && stage_index_==0u && camera_pixels()<3072u)
+            tick_x=2;
         else if(!background_.gated()) {
             tick_x=int(std::int16_t(background_.x_velocity_fp()))/256;
             tick_y=int(std::int16_t(background_.y_velocity_fp()))/256;
@@ -1732,7 +1785,7 @@ std::vector<std::uint32_t> PlaySession::render() {
             // Composed tile actors stay on this sub-tile overlay path for the
             // complete stage. This keeps their tile body phase-locked to the
             // SAT/sprite parts instead of snapping at D988/R18 carries.
-            if(render_subpixel_ && ((stage_index_==1u && native_stage2_tile_actor(source.type())) || source.type()==0x64u || source.type()==0x3du || source.type()==0x7bu || source.type()==0x78u || source.type()==0x79u)) continue;
+            if(render_subpixel_ && stage0_native_tile_overlay(background_,source)) continue;
             auto e=source;
             if(render_native_wide_ && (e.type()==0x64u || e.type()==0x3du)) {
                 const auto index=std::size_t(&source-game_.enemies.data());
@@ -1829,47 +1882,22 @@ std::vector<std::uint32_t> PlaySession::render() {
     for(const auto& e:options_) draw_entity(rom_,video_,e,pixels,palette,20);
     draw_entity(rom_,video_,game_.player,pixels,palette,20);
     }
-    // Stage-0 HUD layout follows the original top-border composition:
-    // POWER + 16 cells, then SCORE and HI score labels on the second row.
-    static constexpr std::array<std::array<std::uint8_t,5>,10> digits{{
-        {{7,5,5,5,7}},{{2,6,2,2,7}},{{7,1,7,4,7}},{{7,1,7,1,7}},{{5,5,7,1,1}},
-        {{7,4,7,1,7}},{{7,4,7,5,7}},{{7,1,1,1,1}},{{7,5,7,5,7}},{{7,5,7,1,7}}}};
-    auto glyph=[&](unsigned ox,unsigned oy,const std::array<std::uint8_t,5>& rows,std::uint32_t c) {
-        for(unsigned y=0;y<5;++y) for(unsigned x=0;x<3;++x)
-            if(rows[y]&(1u<<(2-x))) pixels[(oy+y)*256+ox+x]=c;
-    };
-    auto letter=[&](unsigned ox,unsigned oy,char ch,std::uint32_t c) {
-        std::array<std::uint8_t,5> r{};
-        switch(ch) {
-        case 'P':r={6,5,6,4,4};break; case 'O':r={7,5,5,5,7};break;
-        case 'W':r={5,5,5,7,5};break; case 'E':r={7,4,6,4,7};break;
-        case 'R':r={6,5,6,5,5};break; case 'S':r={7,4,7,1,7};break;
-        case 'C':r={7,4,4,4,7};break; case 'H':r={5,5,7,5,5};break;
-        case 'I':r={7,2,2,2,7};break; case '-':r={0,0,7,0,0};break;
-        default:return;
-        } glyph(ox,oy,r,c);
-    };
-    auto text=[&](unsigned x,unsigned y,const char* t,std::uint32_t c) {
-        for(;*t;++t,x+=4) letter(x,y,*t,c);
-    };
-    constexpr auto white=0xffffffffu,yellow=0xffffff00u,red=0xffff2020u,gray=0xff8a8a8au;
-    text(43,4,"POWER",white);
-    for(unsigned bar=0;bar<16;++bar) {
-        const auto c=bar<combat_.upgrades().power?(bar<8u?red:yellow):gray;
-        for(unsigned y=0;y<5;++y) for(unsigned x=0;x<7;++x)
-            pixels[(4+y)*256+89+bar*8+x]=c;
+    if(!render_subpixel_) {
+        std::fill_n(pixels.begin(),28u*256u,0xff000000u);
+        draw_play_hud(pixels,combat_);
     }
-    text(92,15,"SCORE-",yellow); text(185,15,"HI",yellow);
-    auto number=[&](unsigned x,unsigned value) {
-        unsigned div=100000;
-        for(unsigned i=0;i<6;++i,div/=10) glyph(x+i*4,15,digits[(value/div)%10],white);
-    };
-    number(120,combat_.score()); number(199,std::max(18000u,combat_.score()));
     return pixels;
 }
 std::vector<std::uint32_t> PlaySession::render_wide() { return render_presentation(2,1); }
 std::vector<std::uint32_t> PlaySession::render_smooth() { return render_presentation(2,4); }
-std::vector<std::uint32_t> PlaySession::render_continuous() { return render_presentation(4,4); }
+std::vector<std::uint32_t> PlaySession::render_continuous(bool include_player,bool enhanced_background) {
+    const bool old_enhanced=render_enhanced_background_;
+    render_enhanced_background_=enhanced_background;
+    const auto player=game_.player;if(!include_player) game_.player.clear();
+    try {
+        auto out=render_presentation(4,4);game_.player=player;render_enhanced_background_=old_enhanced;return out;
+    } catch(...) {game_.player=player;render_enhanced_background_=old_enhanced;throw;}
+}
 Entity64 PlaySession::present_carrier(const Entity64& source,unsigned frame) const {
     auto e=source;
     if(e.type()!=0x55u || e.state()!=2u) return e;
@@ -1919,6 +1947,9 @@ std::vector<std::uint32_t> PlaySession::render_early_presentation(unsigned x_sam
             out[y*width+x]=palette[(bits&(0x80u>>(source&7u)))?color>>4:color&15u];
         }
     }
+    if(render_enhanced_background_ && stage_index_==0u && x_samples==4u && y_samples==4u)
+        enhance_stage1_opening(out,camera_samples,camera_samples+(7u*8u+frame_*2u)*x_samples,
+            std::clamp((1536.0-double(camera))/128.0,0.0,1.0));
     // Stars move at half the scenery velocity. Quarter-pixel X samples make
     // even this slow layer advance on every 60-Hz frame.
     std::uint8_t rb=0;std::array<unsigned,25> seeds{};
@@ -1980,25 +2011,25 @@ std::vector<std::uint32_t> PlaySession::render_presentation(unsigned x_samples,u
     game_.player.clear(); shots_={}; option_shots_={}; missile_shot_.clear(); options_={}; combat_.reset();
     for(auto& e:game_.enemies) e.clear();
     auto background_only=render();
-    for(unsigned y=0;y<28u;++y) std::fill_n(background_only.begin()+std::ptrdiff_t(y*256u),256u,0xff000000u);
+
 
     // Pass 2: camera-relative world actors, over the exact same canonical background.
     game_.enemies=saved_enemies;
     for(auto& e:game_.enemies) if(e.active() &&
-        ((e.flags15()&0x04u)==0u || ((stage_index_==0u && native_stage0_tile_actor(e.type())) || (stage_index_==1u && native_stage2_tile_actor(e.type()))) ||
-         (stage_index_==2u && (e.type()==0x1cu || e.type()==0x28u || e.type()==0x32u || e.type()==0x3eu || e.type()==0x3fu)) || e.type()==0x76u || e.type()==0x7bu || e.type()==0x78u || e.type()==0x79u)) e.clear();
+        ((e.flags15()&0x04u)==0u || stage0_native_tile_overlay(background_,e) || stage2_shaft_sprite(stage_index_,e.type())))
+        e.clear();
     // Native tile actors are composed once, after the world interpolation.
     // Leaving them in this classification pass made D988 modes apply the
     // camera remainder here and then again below, producing doubled treads,
     // left/top fragments and displaced large cannons during vertical scroll.
     auto world=render();
-    for(unsigned y=0;y<28u;++y) std::fill_n(world.begin()+std::ptrdiff_t(y*256u),256u,0xff000000u);
+
 
     // Pass 3: complete screen-space composition.
     game_.player=saved_player; game_.enemies=saved_enemies;
     shots_=saved_shots; option_shots_=saved_option_shots; missile_shot_=saved_missile; options_=saved_options; combat_=saved_combat;
-    for(auto& e:game_.enemies) if(((stage_index_==0u && native_stage0_tile_actor(e.type())) || (stage_index_==1u && native_stage2_tile_actor(e.type()))) ||
-        (stage_index_==2u && (e.type()==0x1cu || e.type()==0x28u || e.type()==0x32u || e.type()==0x3eu || e.type()==0x3fu)) || e.type()==0x76u || e.type()==0x7bu || e.type()==0x78u || e.type()==0x79u) e.clear();
+    for(auto& e:game_.enemies)
+        if(stage0_native_tile_overlay(background_,e) || stage2_shaft_sprite(stage_index_,e.type())) e.clear();
     const auto full=render();
     render_fast_ground_phase_override_=saved_fg_override;
     render_native_wide_=saved_native_wide;render_subpixel_=false;
@@ -2006,7 +2037,13 @@ std::vector<std::uint32_t> PlaySession::render_presentation(unsigned x_samples,u
     game_.enemies=saved_enemies;
 
     int tick_x=0,tick_y=0;
-    if(camera_pixels()>=3072 && !background_.gated()) tick_y=int(std::int16_t(background_.y_velocity_fp()))/256;
+    // Every later stage can enter a vertical/diagonal streamer before the
+    // Stage-1 $0C00 camera threshold.  Restricting Y interpolation to
+    // camera>=3072 left Stage 4 mode-6 at its original 15-Hz coarse cadence:
+    // the top edge appeared one complete strip at a time.  X/Y presentation
+    // are independent; interpolate any live vertical camera velocity.
+    if(!background_.gated() && (stage_index_!=0u || camera_pixels()>=3072u))
+        tick_y=int(std::int16_t(background_.y_velocity_fp()))/256;
     // Only Stage 1's pre-vehicle horizontal stream has the fixed 2px coarse
     // cadence. Later stages use their actual CA1C velocity immediately. Using
     // the Stage-1 2px shortcut in Stage 3 (whose X velocity is 1px/tick here)
@@ -2195,9 +2232,10 @@ std::vector<std::uint32_t> PlaySession::render_presentation(unsigned x_samples,u
                     e.set_x_fixed(std::uint16_t(e.x_fixed()+std::int16_t(old.x_fixed()-e.x_fixed())*remaining/3));
                     e.set_y_fixed(std::uint16_t(e.y_fixed()+std::int16_t(old.y_fixed()-e.y_fixed())*remaining/3));
                 }
-            } else if(e.flags15()&4u) {
+            } else if((e.flags15()&4u) || (stage_index_==1u && e.type()==0x2au)) {
                 e.set_x_fixed(std::uint16_t(e.x_fixed()+remaining_samples*32/int(x_samples)));
-                e.set_y_fixed(std::uint16_t(e.y_fixed()+remaining_y_samples*32/int(y_samples)));
+                if(e.type()!=0x2au)
+                    e.set_y_fixed(std::uint16_t(e.y_fixed()+remaining_y_samples*32/int(y_samples)));
             }
             if(e.type()==0x55u) {
                 std::vector<std::uint32_t> layer(out.size(),0);
@@ -2241,8 +2279,8 @@ std::vector<std::uint32_t> PlaySession::render_presentation(unsigned x_samples,u
                 const int graphics=e.type()==0x7bu?5:(e.type()==0x78u?3:int(background_.graphics_set()));
                 draw_tile_actor(rom_,video_,e,out,wpalette,background_.pattern_base(graphics),background_.color_base(graphics),
                     29,start_row,background_.ca1a()&255u,false,x_samples,y_samples);
-            } else if((stage_index_==0u && native_stage0_tile_actor(e.type())) || (stage_index_==1u && native_stage2_tile_actor(e.type())) || (stage_index_==2u && (e.type()==0x1cu || e.type()==0x28u || e.type()==0x32u))) {
-                // Composed stage-1/2 actors are owned by this one
+            } else if(stage0_native_tile_overlay(background_,e)) {
+                // Matrix-backed movable actors in every stage are owned by this one
                 // high-resolution pass.  Their low-resolution copies were
                 // deliberately removed from the world/full classification
                 // passes above, so vertical/diagonal camera remainder cannot
@@ -2326,9 +2364,14 @@ std::vector<std::uint32_t> PlaySession::render_presentation(unsigned x_samples,u
                         background_.mode()==4u?28:29,start_row,background_.ca1a()&255u,
                         false,x_samples,y_samples,-1,0,0,-1,t24_phase);
                 } else {
+                    // Stage-4 matrices share the scenery's SCREEN4 X origin.
+                    // R18 supplies an eight-pixel border offset; the camera
+                    // velocity compensates its pre-integration raster phase.
+                    const int raster_x=stage_index_==3u && e.type()==0x39u
+                        ? 8+int(std::int16_t(background_.x_velocity_fp()))/256 : 0;
                     draw_tile_actor(rom_,video_,e,out,wpalette,wpattern,wcolor,
                         background_.mode()==4u?28:29,start_row,background_.ca1a()&255u,
-                        false,x_samples,y_samples);
+                        false,x_samples,y_samples,-1,0,raster_x);
                 }
             }
             int clip_bottom=212;
@@ -2351,7 +2394,9 @@ std::vector<std::uint32_t> PlaySession::render_presentation(unsigned x_samples,u
             // tube already uses screen coordinates, so retain the ROM frame
             // offsets without the SAT border origin that displaced the head
             // seven pixels to the right of its support.
-            const int actor_sprite_x=stage_index_==1u && (e.type()==0x2cu || e.type()==0x31u)?0:7;
+            const bool stage2_turret_explosion=stage_index_==1u && e.type()==0x62u && e.raw[0x3a]==0x29u;
+            const int actor_sprite_x=(stage2_shaft_sprite(stage_index_,e.type()) ||
+                (stage_index_==1u && e.type()==0x31u) || stage2_turret_explosion)?0:7;
             draw_entity(rom_,video_,e,out,wpalette,actor_sprite_y,x_samples,y_samples,clip_bottom,actor_sprite_x);
         };
         for(const auto& e:game_.enemies) present(e);
@@ -2367,6 +2412,12 @@ std::vector<std::uint32_t> PlaySession::render_presentation(unsigned x_samples,u
         for(const auto& e:options_) draw_entity(rom_,video_,e,out,wpalette,20,x_samples,y_samples);
         draw_entity(rom_,video_,game_.player,out,wpalette,20,x_samples,y_samples);
     }
+    // The raster border is a fixed screen-space HUD. Compose it after every
+    // scenery, tile and sprite layer, including actors entering from above.
+    std::vector<std::uint32_t> hud(256u*28u,0xff000000u);
+    draw_play_hud(hud,combat_);
+    for(unsigned y=0;y<28u*y_samples;++y) for(unsigned x=0;x<width;++x)
+        out[y*width+x]=hud[(y/y_samples)*256u+x/x_samples];
     return out;
 }
 

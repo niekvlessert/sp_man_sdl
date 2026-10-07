@@ -1,6 +1,8 @@
 #include "play_timeline.hpp"
 #include "play_audio.hpp"
 #include "title_animation.hpp"
+#include "title_menu.hpp"
+#include "enhanced_ship.hpp"
 #include <SDL.h>
 #include <algorithm>
 #include <cstdio>
@@ -31,6 +33,8 @@ int main(int argc,char** argv) try {
     if(SDL_Init(SDL_INIT_VIDEO|SDL_INIT_EVENTS|SDL_INIT_AUDIO)!=0) throw std::runtime_error(SDL_GetError());
     const auto asset_root=std::filesystem::absolute(argv[1]).parent_path();
     sm::TitleAnimation title_animation(asset_root/"assets/title/title.anim");
+    sm::TitleMenu menu(rom);
+    sm::EnhancedShip enhanced_ship(asset_root/"assets/enhanced/player-hd-source.png");
     std::unique_ptr<sm::PlayAudio> audio;
     try {audio=std::make_unique<sm::PlayAudio>(asset_root/"assets/audio",argv[1]);audio->set_music_playing(false);}
     catch(const std::exception& e) {std::cerr<<"Audio unavailable: "<<e.what()<<"\nWAV assets are only required for sound effects; music is played live from the ROM through libkss.\n";}
@@ -49,14 +53,15 @@ int main(int argc,char** argv) try {
         SDL_TEXTUREACCESS_STREAMING,int(title_animation.width()),int(title_animation.height()));
     if(!texture || !title_texture) throw std::runtime_error(SDL_GetError());
     SDL_SetTextureScaleMode(texture,SDL_ScaleModeNearest);SDL_SetTextureScaleMode(title_texture,SDL_ScaleModeNearest);
-    std::cout<<"Space: start; Arrows: move; Z/Space: fire; M: rotate options; F10: mute; 0: fresh start; 1-9: jump + max weapons; Cmd/Ctrl-1/2: stage; W: max/no upgrades; Cmd/Ctrl-T: turbo 500%; Page Up/Down: pause and -/+100 frames; P: pause; R: restart; Esc: exit\n";
+    std::cout<<"Arrows: menu/move; Space/Enter: select; Esc in game: confirm return; Z/Space: fire; M: rotate options; F10: mute; 0: fresh start; 1-9: jump + max weapons; Cmd/Ctrl-1/2: stage; W: max/no upgrades; Cmd/Ctrl-T: turbo 500%; Page Up/Down: pause and -/+100 frames; P: pause; R: restart; Choose Back to leave submenus\n";
     unsigned audio_stage=0;
+    unsigned preview_track=999u;
     // VRAM/palette captures include the cartridge's full Konami/title sequence.
-    // Frame 344 is the first visible title drawing in the original VDP capture;
-    // the pack declares when the complete start prompt has appeared.
+    // The pack declares when the complete title has appeared; a press during
+    // either logo animation skips to the menu before a second press selects.
     const unsigned title_first_frame=0u,title_ready_frame=title_animation.ready_frame();
-    const unsigned title_start_frame=std::min(344u,title_ready_frame);
     bool running=true,started=false,paused=false,fire_pending=false,option_pending=false,muted=false,turbo=false;
+    bool confirm_exit=false,paused_before_confirm=false;
     double accumulator=0,title_elapsed=0;
     const double frequency=double(SDL_GetPerformanceFrequency());
     auto previous=SDL_GetPerformanceCounter();
@@ -69,8 +74,41 @@ int main(int argc,char** argv) try {
                 paused=true;reset_clock=true;fire_pending=false;option_pending=false;
             }
             if(event.type==SDL_KEYDOWN && !event.key.repeat) {
+                if(confirm_exit) {
+                    const auto key=event.key.keysym.sym;
+                    if(key==SDLK_y) {
+                        started=false;paused=false;confirm_exit=false;
+                        menu.page=sm::TitleMenu::Page::Main;menu.selected=menu.enhanced?1u:0u;
+                        menu.music_playing=false;
+                        title_elapsed=double(title_ready_frame)/double(title_animation.fps());
+                    } else if(key==SDLK_n) {confirm_exit=false;paused=paused_before_confirm;}
+                    reset_clock=true;fire_pending=false;option_pending=false;
+                    continue;
+                }
+                if(!started) {
+                    const auto key=event.key.keysym.sym;
+                    if(key==SDLK_ESCAPE) continue; // Back rows are the only menu exit.
+                    const bool menu_key=key==SDLK_UP || key==SDLK_DOWN || key==SDLK_LEFT ||
+                        key==SDLK_RIGHT || key==SDLK_SPACE || key==SDLK_RETURN;
+                    if(menu_key) {
+                        const auto title_frame=unsigned(title_elapsed*double(title_animation.fps()));
+                        if(key==SDLK_UP || key==SDLK_DOWN) menu.move(key==SDLK_UP?-1:1);
+                        else if(key==SDLK_LEFT || key==SDLK_RIGHT) menu.adjust(key==SDLK_LEFT?-1:1);
+                        else if(title_frame>=title_ready_frame || menu.page!=sm::TitleMenu::Page::Main) {
+                            if(menu.activate()) {
+                                started=true;timeline.reset();audio_stage=0;
+                                if(audio) {audio->set_stage(0);audio->seek(0);audio->set_speed(turbo?5:1);audio->set_music_playing(true);}
+                            }
+                        }
+                        title_elapsed=double(title_ready_frame)/double(title_animation.fps());
+                        paused=false;reset_clock=true;fire_pending=false;option_pending=false;
+                        continue;
+                    }
+                }
                 switch(event.key.keysym.sym) {
-                case SDLK_ESCAPE:running=false;break;
+                case SDLK_ESCAPE:
+                    confirm_exit=true;paused_before_confirm=paused;paused=true;
+                    reset_clock=true;fire_pending=false;option_pending=false;break;
                 case SDLK_p:paused=!paused;reset_clock=true;fire_pending=false;option_pending=false;break;
                 case SDLK_r:
                     if(!started) title_elapsed=0;
@@ -93,24 +131,7 @@ int main(int argc,char** argv) try {
                 case SDLK_w:if(started) timeline.toggle_upgrades();break;
                 case SDLK_m:if(started && !paused) option_pending=true;break;
                 case SDLK_F10:muted=!muted;if(audio) audio->mute(muted);break;
-                case SDLK_SPACE:
-                    if(!started) {
-                        const unsigned title_frame=std::min(title_animation.frame_count()-1u,
-                            title_first_frame+unsigned(title_elapsed*double(title_animation.fps())));
-                        if(title_frame<title_start_frame) {
-                            // Skip Konami to the complete title screen. A second
-                            // press starts play; key repeat cannot skip both.
-                            title_elapsed=double(title_ready_frame-title_first_frame)/double(title_animation.fps());
-                            paused=false;reset_clock=true;fire_pending=false;option_pending=false;
-                        } else {
-                            // Space also starts during the title's own reveal,
-                            // without waiting for the PUSH SPACE KEY drawing.
-                            started=true;paused=false;timeline.reset();audio_stage=0;
-                            if(audio) {audio->set_stage(0);audio->seek(0);audio->set_music_playing(true);}
-                            reset_clock=true;fire_pending=false;option_pending=false;
-                        }
-                    } else if(!paused) fire_pending=true;
-                    break;
+                case SDLK_SPACE:if(started && !paused) fire_pending=true;break;
                 case SDLK_z:if(started && !paused) fire_pending=true;break;
                 default:
                     if(event.key.keysym.sym>=SDLK_0 && event.key.keysym.sym<=SDLK_9) {
@@ -133,7 +154,14 @@ int main(int argc,char** argv) try {
         }
         if(audio) {
             if(started) {audio->set_boss_music(session_ptr().boss_music_active());audio->set_music_playing(session_ptr().music_playing());}
-            else audio->set_music_playing(false);
+            else {
+                if(menu.page==sm::TitleMenu::Page::Music) {
+                    if(preview_track!=menu.music_track()) {
+                        preview_track=menu.music_track();audio->set_music_track(preview_track);audio->set_speed(1);
+                    }
+                } else preview_track=999u;
+                audio->set_music_playing(menu.page==sm::TitleMenu::Page::Music && menu.music_playing);
+            }
             audio->pause(paused);
         }
         const auto now=SDL_GetPerformanceCounter();
@@ -144,7 +172,7 @@ int main(int argc,char** argv) try {
         const auto* keys=SDL_GetKeyboardState(nullptr);
         sm::PlayerInput input{bool(keys[SDL_SCANCODE_UP]),bool(keys[SDL_SCANCODE_DOWN]),
             bool(keys[SDL_SCANCODE_LEFT]),bool(keys[SDL_SCANCODE_RIGHT]),
-            bool(keys[SDL_SCANCODE_Z]||keys[SDL_SCANCODE_SPACE])};
+            bool(keys[SDL_SCANCODE_Z]||(menu.autofire && keys[SDL_SCANCODE_SPACE]))};
         while(started && accumulator>=1.0/60.0) {
             input.fire_pressed=fire_pending;fire_pending=false;
             input.option_mode_pressed=option_pending;option_pending=false;
@@ -165,12 +193,22 @@ int main(int argc,char** argv) try {
         if(!started) {
             const auto frame=std::min(title_animation.frame_count()-1u,
                 title_first_frame+unsigned(title_elapsed*double(title_animation.fps())));
-            const auto& pixels=title_animation.frame(frame);
+            auto pixels=title_animation.frame(frame);
+            if(frame>=title_ready_frame) menu.draw(pixels,bool(audio));
             SDL_UpdateTexture(title_texture,nullptr,pixels.data(),int(title_animation.width()*4u));
             SDL_RenderCopy(renderer,title_texture,nullptr,&dst);
-            SDL_SetWindowTitle(window,paused?"Space Manbow - title PAUSED":"Space Manbow - title - SPACE to start");
+            SDL_SetWindowTitle(window,paused?"Space Manbow - menu PAUSED":"Space Manbow");
         } else {
-            const auto pixels=session_ptr().render_continuous();SDL_UpdateTexture(texture,nullptr,pixels.data(),1024*4);
+            // Both graphics choices share the corrected camera/star/actor
+            // compositor. Enhanced adds scenery materials and the ship art.
+            auto pixels=session_ptr().render_continuous(!menu.enhanced,menu.enhanced);
+            if(menu.enhanced) {
+                enhanced_ship.draw_engine(pixels,session_ptr().state().player,
+                    session_ptr().frame(),session_ptr().stage_frame());
+                enhanced_ship.draw(pixels,session_ptr().state().player);
+            }
+            if(confirm_exit) menu.draw_exit_confirmation(pixels);
+            SDL_UpdateTexture(texture,nullptr,pixels.data(),1024*4);
             SDL_RenderCopy(renderer,texture,nullptr,&dst);
             char title[160];std::snprintf(title,sizeof(title),
                 "Space Manbow - native play - stage %u - frame %u%s%s%s",session_ptr().stage_index()+1u,session_ptr().frame(),paused?" PAUSED":"",turbo?" | TURBO 500%":"",

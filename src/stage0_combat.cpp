@@ -39,9 +39,10 @@ bool Stage0Combat::fire(const Rom& rom,const Entity64& source,const Entity64& ta
         b.set_y_fixed(std::uint16_t((source.y_fixed()&0xff00u)+yo*32));
         b.type()=0x67;b.state()=0;b.raw[5]=std::uint8_t(heading/2);b.flags15()=0x35;
         b.raw[0x17]=4;
-    } else if(source.type()==0x2cu) {
-        // Bank05 $8420 -> $9CB5 uses BC=0, therefore heading entry 0 from
-        // $9D0D. It shares the type-$67 projectile speed table with cannons.
+    } else if(source.type()==0x2cu || source.type()==0x17u) {
+        // $8420/$8106 -> $9CB5 use BC=0, therefore heading entry 0 from
+        // $9D0D. Stage-4 type $17 and the Stage-2 launcher share this
+        // type-$67 projectile path and its difficulty/2 speed table.
         constexpr unsigned heading=0u;
         const unsigned speed=rom.bank(5)[0x1d15u+difficulty/2u];
         rom_set_heading_velocity(rom,b,heading,speed);
@@ -267,6 +268,12 @@ void Stage0Combat::step(const Rom& rom,GameState& game,unsigned frame,int dx,int
             const unsigned speed=e.raw[0x26];e.raw[0x26]=0u;
             shot=fire(rom,e,game.player,game.difficulty,0,0,int(speed))||shot;
         }
+        if(e.type()==0x17u && e.raw[0x26]) {
+            // Stage-4 $8106->$9CB5. The enemy state machine owns the $20/8
+            // cadence; combat owns the original D460 projectile pool.
+            e.raw[0x26]=0u;
+            shot=fire(rom,e,game.player,game.difficulty)||shot;
+        }
         if(e.type()==0x2cu && e.raw[0x24]) {
             // $83EA->$8420 queues one fixed-heading shot. The enemy handler
             // owns the three-shot cadence; combat owns the projectile pool.
@@ -304,6 +311,13 @@ void Stage0Combat::step(const Rom& rom,GameState& game,unsigned frame,int dx,int
             // handler. Consume that queued speed exactly once.
             const unsigned speed=e.raw[0x26];e.raw[0x26]=0u;
             shot=fire(rom,e,game.player,game.difficulty,0,0,int(speed))||shot;
+        }
+        if(e.type()==0x44u && e.raw[0x26]) {
+            // Bank05 $8FCD: the Stage-6 wave child calls fixed $7143 once when
+            // its 15-tick attack delay expires. Queue/consume that aimed round
+            // through the native combat pool without inventing a reload.
+            e.raw[0x26]=0u;
+            shot=fire(rom,e,game.player,game.difficulty)||shot;
         }
         if(e.type()==0x1du && e.raw[0x26]) {
             // Bank06 $BB48 -> bank05 $9CAD/$9CDE. The return-turn shot uses

@@ -62,6 +62,63 @@ int main(int argc,char** argv) {
             assert(image[(28u+y)*4u*1024u+x]==session.video_.palette[c]);
         }
     }
+    // The $53 generator's $2A machines are sprite assemblies tied to the
+    // shaft's X coordinate. All six 16px components span exactly 48px; no
+    // duplicate at the old SAT +7 origin may survive the native pass.
+    for(unsigned phase=0;phase<4u;++phase) {
+        session.frame_=1988u+phase;
+        auto& machine=session.game_.enemies[0];machine.clear();machine.type()=0x2au;
+        machine.state()=1u;machine.set_x_fixed(0x0900u);machine.set_y_fixed(0x0800u);
+        const auto meta=sm::decode_spawn_type_metadata(rom,machine.type());
+        std::copy(meta.bytes.begin(),meta.bytes.end(),machine.raw.begin()+0x13);
+        machine.flags15()=0u;const auto hidden=session.render_continuous();
+        machine.flags15()=meta.bytes[2];const auto shown=session.render_continuous();
+        unsigned left=1024u,right=0u;
+        for(unsigned y=112u;y<848u;++y) for(unsigned x=0;x<1024u;++x)
+            if(shown[y*1024u+x]!=hidden[y*1024u+x]) {
+                left=std::min(left,x);right=std::max(right,x);
+            }
+        assert(left==72u*4u+(3u-phase)*2u);
+        assert(right-left+1u==48u*4u);
+    }
+    session.game_.enemies={};session.frame_=1991u;
+
+    // A $29 turret is a 16px tile assembly; its $62 explosion must stay
+    // centred on that footprint rather than acquire the SAT +7px border.
+    // Exercise both mounts, all explosion frames and every camera phase.
+    for(unsigned mount=0;mount<2u;++mount) for(unsigned phase=0;phase<4u;++phase) {
+        session.game_.enemies={};session.frame_=1988u+phase;
+        const auto empty=session.render_continuous();
+        auto& turret=session.game_.enemies[0];turret.type()=0x29u;turret.state()=1u;
+        const auto meta=sm::decode_spawn_type_metadata(rom,turret.type());
+        std::copy(meta.bytes.begin(),meta.bytes.end(),turret.raw.begin()+0x13);
+        turret.raw[6]=std::uint8_t(mount?4u:0u);
+        turret.set_x_fixed(0x0900u);turret.set_y_fixed(mount?0x0500u:0x0f00u);
+        const auto body=session.render_continuous();
+        auto centre=[&](const auto& image) {
+            unsigned left=1024u,right=0u,top=848u,bottom=0u;
+            for(unsigned y=112u;y<848u;++y) for(unsigned x=0;x<1024u;++x)
+                if(image[y*1024u+x]!=empty[y*1024u+x]) {
+                    left=std::min(left,x);right=std::max(right,x);
+                    top=std::min(top,y);bottom=std::max(bottom,y);
+                }
+            assert(left<=right && top<=bottom);
+            return std::pair(left+right,top+bottom);
+        };
+        const auto body_centre=centre(body);
+        assert(sm::apply_stage0_damage(rom,turret,255u)==sm::Stage0DamageResult::Destroyed);
+        assert(turret.type()==0x62u);turret.flags15()=0x2du;
+        for(unsigned frame=0;frame<4u;++frame) {
+            turret.raw[5]=std::uint8_t(frame);
+            const auto effect_centre=centre(session.render_continuous());
+            assert(effect_centre.first==body_centre.first);
+            // Ceiling art leaves its final scanline black, so its visible
+            // bounds are half a source pixel above the full 16px footprint.
+            assert(effect_centre.second==body_centre.second+(mount?4u:0u));
+        }
+    }
+    session.game_.enemies={};session.frame_=1991u;
+
     // $2B retains +3E=$04 through $7CC3 and becomes the original $6B
     // wreck. No part of the old two-row launcher may survive outside it.
     const auto scenery=session.render_continuous();
