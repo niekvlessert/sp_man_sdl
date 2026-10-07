@@ -61,6 +61,7 @@ int main(int argc,char** argv) {
     // continuous scroll. Its world-space texture must move on every frame.
     auto& state=const_cast<sm::GameState&>(session.state());state.enemies={};
     auto previous=session.render_continuous(false,true);
+    save("stage1-background",previous);
     auto previous_original=session.render_continuous(false);
     for(unsigned frame=0;frame<16u;++frame) {
         const auto raw=state.player.raw;const auto original=session.render_continuous(false);
