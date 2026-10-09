@@ -8,6 +8,7 @@ const { once } = require('node:events');
 (async () => {
   const root = path.resolve(process.argv[2]);
   const profile = process.env.SM_WEB_PROFILE === '1';
+  const pauseTest = process.env.SM_WEB_PAUSE_TEST === '1';
   const server = spawn('python3', ['-u', '-m', 'http.server', '0', '--bind', '127.0.0.1', '--directory', root]);
   let browser;
   try {
@@ -37,7 +38,7 @@ const { once } = require('node:events');
     page.on('pageerror', error => errors.push(error.message));
     page.on('console', message => console.log('Browser:', message.type(), message.text()));
     page.on('request', request => requests.push({ url: request.url(), method: request.method() }));
-    await page.goto(`http://127.0.0.1:${port}/${profile ? '?profile' : ''}`);
+    await page.goto(`http://127.0.0.1:${port}/${profile || pauseTest ? '?profile' : ''}`);
     assert(await page.locator('#start').isDisabled());
     assert(await page.locator('#player').isHidden());
     await page.locator('#rom').setInputFiles({ name: 'wrong.rom', mimeType: 'application/octet-stream', buffer: Buffer.from('wrong') });
@@ -112,7 +113,22 @@ const { once } = require('node:events');
       }
       await page.keyboard.press('p');
       await page.waitForFunction(() => /paused/i.test(document.title));
+      if (profile || pauseTest) {
+        await page.waitForTimeout(200);
+        const pausedFrame = await page.evaluate(() => {
+          window.spaceManbowPerf.renderMs = [];
+          return window.spaceManbowPerf.frame;
+        });
+        await page.waitForTimeout(1200);
+        const pausedMetrics = await page.evaluate(() => window.spaceManbowPerf);
+        assert.equal(pausedMetrics.frame, pausedFrame, 'Simulation advanced while paused');
+        assert.equal(pausedMetrics.renderMs.length, 0, 'Paused scene was unnecessarily rendered');
+        await page.setViewportSize({width: 1100, height: 900});
+        await page.waitForFunction(() => window.spaceManbowPerf.renderMs.length > 0);
+        console.log('Pause PASS: no simulation or rendering while idle; resize redraws');
+      }
       await page.keyboard.press('p');
+      if (profile || pauseTest) await page.waitForFunction(() => !/paused/i.test(document.title));
       await page.keyboard.press('Escape');
       await page.keyboard.press('y');
       await page.keyboard.press('ArrowDown'); // options

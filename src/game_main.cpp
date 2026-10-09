@@ -132,10 +132,12 @@ int main(int argc,char** argv) try {
     };
     const double frequency=double(SDL_GetPerformanceFrequency());
     auto previous=SDL_GetPerformanceCounter();
+    bool redraw=true;
     while(running) {
         bool reset_clock=false;
         SDL_Event event;
         while(SDL_PollEvent(&event)) {
+            redraw=true;
             if(event.type==SDL_QUIT) running=false;
             if(event.type==SDL_WINDOWEVENT && event.window.event==SDL_WINDOWEVENT_FOCUS_LOST
 #ifdef __EMSCRIPTEN__
@@ -344,6 +346,16 @@ int main(int argc,char** argv) try {
                 break;
             }
         }
+        // A paused scene has no animation. Keep the presented frame until
+        // input, resize or expose events require a new image.
+        if(paused && !redraw && !reset_clock) {
+#ifdef __EMSCRIPTEN__
+            wait_browser_frame();
+#else
+            SDL_Delay(30);
+#endif
+            continue;
+        }
         int w,h;SDL_GetRendererOutputSize(renderer,&w,&h);
         const int dw=std::min(w,h*256/212),dh=dw*212/256;
         SDL_Rect dst{(w-dw)/2,(h-dh)/2,dw,dh};
@@ -397,6 +409,7 @@ int main(int argc,char** argv) try {
         }
         if(debug.overlay) debug_overlay->draw(renderer,debug);
         SDL_RenderPresent(renderer);
+        redraw=false;
         // Present already blocks on the display when VSYNC is active. Sleeping
         // another millisecond afterwards occasionally pushes a frame over the
         // next refresh boundary and shows up as a small hitch. Only yield on
