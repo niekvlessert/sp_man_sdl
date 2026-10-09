@@ -18,6 +18,17 @@
 #include <cstdlib>
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
+EM_ASYNC_JS(void, wait_browser_frame, (), {
+    await new Promise(resolve => {
+        const tick = now => {
+            if (Module.nextRenderTime === undefined) Module.nextRenderTime = now;
+            if (now + 0.5 < Module.nextRenderTime) { requestAnimationFrame(tick); return; }
+            Module.nextRenderTime = Math.max(Module.nextRenderTime + 1000 / 60, now);
+            resolve();
+        };
+        requestAnimationFrame(tick);
+    });
+});
 #endif
 
 int main(int argc,char** argv) try {
@@ -49,6 +60,7 @@ int main(int argc,char** argv) try {
         return 0;
     }
     sm::Rom rom(argv[1]); sm::PlayTimeline timeline(rom);
+    timeline.set_recording(false);
     bool demo_running=false;
     auto session_ptr=[&]() -> sm::PlaySession& {return timeline.session();};
     if(argc>=4) {
@@ -63,6 +75,12 @@ int main(int argc,char** argv) try {
         if(!out) throw std::runtime_error("capture write failed");
         return 0;
     }
+#ifdef __EMSCRIPTEN__
+    // Own the browser yield: SDL's swap also sleeps with Asyncify by default,
+    // otherwise timer-driven swaps draw redundant frames between refreshes.
+    SDL_SetHint(SDL_HINT_EMSCRIPTEN_ASYNCIFY,"0");
+    const bool profile_web=EM_ASM_INT({return new URLSearchParams(location.search).has('profile');});
+#endif
     if(SDL_Init(SDL_INIT_VIDEO|SDL_INIT_EVENTS|SDL_INIT_AUDIO)!=0) throw std::runtime_error(SDL_GetError());
     sm::TitleAnimation title_animation(asset_root/"assets/title/title.anim");
     sm::TitleMenu menu(rom);
@@ -248,6 +266,7 @@ int main(int argc,char** argv) try {
                 }
             }
         }
+        timeline.set_recording(debug.enabled);
         if(audio) {
             if(ending_running) {audio->set_music_playing(ending->music_track()!=0u);}
             else if(demo_running) {audio->set_music_playing(presentation.track()!=0u);}
@@ -346,6 +365,9 @@ int main(int argc,char** argv) try {
             SDL_RenderCopy(renderer,title_texture,nullptr,&dst);
             SDL_SetWindowTitle(window,paused?"Space Manbow - menu PAUSED":"Space Manbow");
         } else {
+#ifdef __EMSCRIPTEN__
+            const auto render_start=profile_web?SDL_GetPerformanceCounter():0;
+#endif
             // Both graphics choices share the corrected camera/star/actor
             // compositor. Enhanced adds scenery materials and the ship art.
             auto pixels=session_ptr().render_continuous(!menu.enhanced || session_ptr().state().player.state()==1u,menu.enhanced);
@@ -357,6 +379,14 @@ int main(int argc,char** argv) try {
             }
             if(confirm_exit) menu.draw_exit_confirmation(pixels);
             if(session_ptr().game_over()) menu.draw_game_over(pixels);
+#ifdef __EMSCRIPTEN__
+            if(profile_web) EM_ASM({
+                const stats=window.spaceManbowPerf || (window.spaceManbowPerf={renderMs:[]});
+                stats.enhanced=!!$1;stats.frame=$2;
+                stats.renderMs.push($0);
+                if(stats.renderMs.length>600) stats.renderMs.shift();
+            },1000.0*double(SDL_GetPerformanceCounter()-render_start)/frequency,int(menu.enhanced),session_ptr().frame());
+#endif
             SDL_UpdateTexture(texture,nullptr,pixels.data(),1024*4);
             SDL_RenderCopy(renderer,texture,nullptr,&dst);
             char title[160];std::snprintf(title,sizeof(title),
@@ -372,8 +402,9 @@ int main(int argc,char** argv) try {
         // next refresh boundary and shows up as a small hitch. Only yield on
         // the non-vsync software fallback.
 #ifdef __EMSCRIPTEN__
-        // Return control for keyboard input, audio and browser rendering.
-        emscripten_sleep(0);
+        // Allow audio callbacks and paint between frames, capped at 60 Hz even
+        // on high-refresh displays. Simulation still follows elapsed time.
+        wait_browser_frame();
 #else
         if(!renderer_vsync) SDL_Delay(1);
 #endif

@@ -166,3 +166,18 @@ The latest screenshot fixes and their original-ROM comparisons are documented
 in `notes/sdl_feedback_fixes_2026-10-03.md`.
 Boss-ending/audio/60-Hz carrier fixes are documented in
 `notes/sdl_boss_audio_motion_fixes_2026-10-03.md`.
+
+## Web performance diagnostics
+
+Append `?profile` to the web URL, start a game, and inspect
+`window.spaceManbowPerf` in the browser console. `renderMs` retains the latest
+600 CPU render times, alongside the graphics mode and simulation frame.
+No profiling data is sent anywhere. For a local automated comparison:
+
+```sh
+SM_WEB_PROFILE=1 NODE_PATH=/tmp/manbow-web-test/node_modules node tools/test_web.cjs build-web space_manbow.rom
+```
+
+This prints original/enhanced render costs and browser audio callback gaps.
+Callback gaps indicate scheduling delays; they are not a measurement of actual
+audio output dropouts. Browser render time excludes GPU upload/presentation.

@@ -257,3 +257,6 @@ add_executable(space-manbow-stage-player-contact-test src/stage_player_contact_t
 target_link_libraries(space-manbow-stage-player-contact-test PRIVATE smcore)
 add_sm_test(stage-player-contact space-manbow-stage-player-contact-test ${SM_ROM} ${CMAKE_CURRENT_SOURCE_DIR}/notes/fixtures/stage-player-contact/rom-contacts.tsv ${CMAKE_CURRENT_SOURCE_DIR}/notes/fixtures/stage-player-contact/rom-terrain.tsv)
 add_sm_test(late-stage-player-contact space-manbow-stage-player-contact-test ${SM_ROM} ${CMAKE_CURRENT_SOURCE_DIR}/notes/fixtures/late-stage-player-contact/rom-contacts.tsv ${CMAKE_CURRENT_SOURCE_DIR}/notes/fixtures/late-stage-player-contact/rom-terrain.tsv)
+add_executable(space-manbow-enhanced-background-test src/enhanced_background_test.cpp)
+target_link_libraries(space-manbow-enhanced-background-test PRIVATE smcore)
+add_sm_test(enhanced-background space-manbow-enhanced-background-test)

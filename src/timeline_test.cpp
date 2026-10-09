@@ -58,5 +58,20 @@ int main(int argc,char** argv) {
     for(unsigned i=0;i<60;++i)normal.step_60hz({});
     for(unsigned i=0;i<60*5;++i)fast.step_60hz({});
     assert(fast.frame()==normal.frame()*5);
-    std::cout<<"Timeline: input/state replay, branching, bounds and shortcut loadouts PASS\n";
+    t.reset();t.set_recording(false);
+    sm::PlaySession direct(rom);
+    for(unsigned i=0;i<150;++i) {
+        const sm::PlayerInput input{false,false,false,i<30,i%20u==0};
+        t.step(input);direct.step_60hz(input);
+    }
+    assert(t.session().frame()==direct.frame());
+    assert(t.session().state().player.raw==direct.state().player.raw);
+    assert(t.session().render_smooth()==direct.render_smooth());
+    t.scrub(-100);assert(t.session().frame()==150u);
+    t.set_recording(true);
+    for(unsigned i=0;i<60;++i) t.step({});
+    const auto resumed=t.session().state().player.raw;
+    t.scrub(-1000);assert(t.session().frame()==150u);
+    t.scrub(60);assert(t.session().frame()==210u && t.session().state().player.raw==resumed);
+    std::cout<<"Timeline: replay, branching, bounds, loadouts and disabled/resumed recording PASS\n";
 }

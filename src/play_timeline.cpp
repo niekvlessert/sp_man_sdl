@@ -6,7 +6,17 @@ PlayTimeline::PlayTimeline(const Rom& rom):rom_(rom) {reset();}
 void PlayTimeline::reset(unsigned stage) {
     session_=std::make_unique<PlaySession>(rom_);session_->reset(stage);session_->set_invulnerable(invulnerable_);inputs_.clear();
     checkpoints_.clear();loadout_events_.clear();
-    checkpoints_[0]=std::make_unique<PlaySession>(*session_);
+    history_start_=0;
+    if(recording_) checkpoints_[0]=std::make_unique<PlaySession>(*session_);
+}
+void PlayTimeline::set_recording(bool enabled) {
+    if(recording_==enabled) return;
+    recording_=enabled;inputs_.clear();checkpoints_.clear();loadout_events_.clear();
+    history_start_=session_->frame();
+    if(enabled) {
+        inputs_.resize(history_start_);
+        checkpoints_[history_start_]=std::make_unique<PlaySession>(*session_);
+    }
 }
 void PlayTimeline::set_invulnerable(bool enabled) {
     invulnerable_=enabled;session_->set_invulnerable(enabled);
@@ -16,17 +26,20 @@ void PlayTimeline::toggle_upgrades() {
     const auto& u=session_->upgrades();
     const bool maximum=!(u.power==16 && u.speed==4 && u.options==2 && u.wave && u.missile);
     session_->set_test_loadout(maximum);
+    if(!recording_) return;
     const auto frame=session_->frame();inputs_.resize(frame);
     checkpoints_.erase(checkpoints_.upper_bound(frame),checkpoints_.end());
     loadout_events_.erase(loadout_events_.upper_bound(frame),loadout_events_.end());
     loadout_events_[frame]=maximum;checkpoints_[frame]=std::make_unique<PlaySession>(*session_);
 }
 void PlayTimeline::advance(PlayerInput input) {
+    if(!recording_) {session_->step_60hz(input);return;}
     inputs_.push_back(input);session_->step_60hz(input);
     if(session_->frame()%100u==0)
         checkpoints_[session_->frame()]=std::make_unique<PlaySession>(*session_);
 }
 void PlayTimeline::step(PlayerInput input) {
+    if(!recording_) {session_->step_60hz(input);return;}
     const auto frame=session_->frame();
     inputs_.resize(frame);
     checkpoints_.erase(checkpoints_.upper_bound(frame),checkpoints_.end());
@@ -42,7 +55,8 @@ void PlayTimeline::restore(unsigned frame) {
     }
 }
 void PlayTimeline::scrub(int frames) {
-    const auto target=unsigned(std::max(0ll,static_cast<long long>(session_->frame())+frames));
+    if(!recording_) return;
+    const auto target=unsigned(std::max(static_cast<long long>(history_start_),static_cast<long long>(session_->frame())+frames));
     if(target<=inputs_.size()) restore(target);
     else {
         restore(unsigned(inputs_.size()));
@@ -58,7 +72,7 @@ void PlayTimeline::jump(unsigned decile) {
     // 0 is a fresh game. Later shortcuts remain useful combat test fixtures.
     if(decile) {
         session_->set_max_test_loadout();loadout_events_[target]=true;
-        checkpoints_[target]=std::make_unique<PlaySession>(*session_);
+        if(recording_) checkpoints_[target]=std::make_unique<PlaySession>(*session_);
     }
 }
 }

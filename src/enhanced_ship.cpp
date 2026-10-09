@@ -50,12 +50,12 @@ void EnhancedShip::draw_engine(std::vector<std::uint32_t>& out,const Entity64& p
         const double envelope=std::pow(std::max(0.0,1.0-u),0.65);
         const double centre=nozzle_y+std::sin(distance*0.16-time)*1.5*u;
         const double radius=(4.2+2.0*pulse+entry*5.0)*envelope+0.5;
+        const double ripple=0.86+0.14*std::sin(distance*0.42+time*2.0);
         for(int y=std::max(112,int(centre)-28);y<=std::min(847,int(centre)+28);++y) {
             const double dy=y-centre;
             const double halo=std::exp(-dy*dy/(radius*radius*5.0))*envelope*0.42;
             const double flame=std::exp(-dy*dy/(radius*radius))*envelope;
             const double core=std::exp(-dy*dy/(radius*radius*0.18))*envelope;
-            const double ripple=0.86+0.14*std::sin(distance*0.42+time*2.0);
             glow(x,y,core*0.83+halo*0.18,core*0.94+flame*0.55*ripple,
                  halo+flame*0.94*ripple);
         }
@@ -81,6 +81,11 @@ void EnhancedShip::draw_options(std::vector<std::uint32_t>& out,std::span<const 
         const double cy=int(std::int16_t(option.y_fixed()))/8.0+116.0;
         const double angle=frame*0.105+index*3.141592653589793;
         const double ca=std::cos(angle),sa=std::sin(angle);
+        std::array<std::array<double,2>,3> nodes{};
+        for(unsigned node=0;node<nodes.size();++node) {
+            const double a=angle+node*2.094395102393195;
+            nodes[node]={24*std::cos(a),20*std::sin(a)};
+        }
         for(int y=int(cy)-36;y<=int(cy)+36;++y) for(int x=int(cx)-36;x<=int(cx)+36;++x) {
             if(x<0 || x>=1024 || y<112 || y>=848) continue;
             const double dx=x+0.5-cx,dy=y+0.5-cy,rad=std::hypot(dx,dy);
@@ -108,9 +113,8 @@ void EnhancedShip::draw_options(std::vector<std::uint32_t>& out,std::span<const 
             layer(edge,55+rim_light*170,70+rim_light*165,95+rim_light*150);
             const double inner=std::clamp(1.1-std::abs(ring-21.0),0.0,1.0);
             layer(inner,15,38,70);
-            for(unsigned node=0;node<3;++node) {
-                const double a=angle+node*2.094395102393195;
-                const double nx=24*std::cos(a),ny=20*std::sin(a);
+            for(const auto& node:nodes) {
+                const double nx=node[0],ny=node[1];
                 const double d=std::hypot(dx-nx,dy-ny);
                 layer(std::clamp(3.0-d,0.0,1.0),130,235,255);
             }

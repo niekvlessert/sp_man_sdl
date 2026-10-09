@@ -1,8 +1,10 @@
 #include "enhanced_background.hpp"
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstdint>
 #include <vector>
+#include <utility>
 
 namespace sm {
 namespace {
@@ -94,14 +96,47 @@ static std::vector<std::uint32_t> scale2x(const std::vector<std::uint32_t>& in,
     return out;
 }
 
+struct Phase { double sine, cosine; };
+using MaterialPhases=std::array<Phase,5>;
+static Phase phase(double angle) { return {std::sin(angle),std::cos(angle)}; }
+static double wave(const Phase& x,const Phase& y) {
+    return x.sine*y.cosine+x.cosine*y.sine;
+}
+static double highlight(double value,bool blue) {
+    value=std::max(0.0,value);
+    const double p2=value*value,p4=p2*p2,p8=p4*p4,p16=p8*p8;
+    return p16*p8*(blue?p2:p4); // fixed integer powers 26 and 28
+}
+struct RegionCache {
+    std::vector<std::uint32_t> hd,shaded;
+    unsigned camera=0,width=0,height=0;
+    int crop_x=0;
+    double strength=-1;
+};
+
 static void upscale_region(const std::vector<std::uint32_t>& source,
                            std::vector<std::uint32_t>& out,
                            unsigned y0,unsigned y1,
                            unsigned camera,
-                           double strength) {
+                           double strength,bool use_cache) {
     constexpr unsigned screen_w = 1024u;
     constexpr unsigned screen_h = 848u;
     constexpr int margin = 3;
+
+    // Material waves are separable in world X and screen Y. Evaluate their
+    // trigonometry per column/row rather than millions of times per frame.
+    static const auto rows=[] {
+        std::array<MaterialPhases,screen_h> result{};
+        for(unsigned y=0;y<screen_h;++y) result[y]={phase(y*0.19),phase(-double(y)*0.63),
+            phase(y*0.034),phase(y*0.017),phase(y*0.015)};
+        return result;
+    }();
+    std::array<MaterialPhases,screen_w> columns{};
+    for(unsigned x=0;x<screen_w;++x) {
+        const double wx=double(x+camera);
+        columns[x]={phase(wx*0.58),phase(wx*0.14),
+            phase(wx*0.019+std::sin(wx*0.004)*1.2),phase(wx*0.039),phase(wx*0.034)};
+    }
 
     const int logical_y0 = int(y0 / 4u) - margin;
     const int logical_y1 = int((y1 - 1u) / 4u) + margin + 1;
@@ -124,12 +159,26 @@ static void upscale_region(const std::vector<std::uint32_t>& source,
     }
 
     const auto x2 = scale2x(base, bw, bh);
-    const auto x4 = scale2x(x2, bw * 2u, bh * 2u);
+    auto x4 = scale2x(x2, bw * 2u, bh * 2u);
 
     const unsigned hw = bw * 4u;
     const unsigned hh = bh * 4u;
     const int crop_x = int(camera) - logical_x0 * 4;
     const int crop_y = int(y0) - logical_y0 * 4;
+    // The material is fixed to world coordinates. Keep only the previous
+    // visible region and reuse its shading when the exact local geometry
+    // agrees after scrolling. Palette changes and modified tiles invalidate
+    // affected pixels; strength changes invalidate the entire region.
+    static thread_local std::array<RegionCache,2> caches;
+    auto& cache=caches[y0==112u?0u:1u];
+    const int shift=int(camera)-int(cache.camera);
+    const bool reuse=use_cache && cache.strength==strength && cache.height==hh &&
+        !cache.hd.empty() && shift>-int(screen_w) && shift<int(screen_w);
+    auto previous_hd=[&](int x,int y) {
+        x=std::clamp(x,0,int(cache.width)-1);
+        y=std::clamp(y,0,int(cache.height)-1);
+        return cache.hd[unsigned(y)*cache.width+unsigned(x)];
+    };
 
     auto hd = [&](int x,int y) -> std::uint32_t {
         x = std::clamp(x,0,int(hw)-1);
@@ -145,6 +194,14 @@ static void upscale_region(const std::vector<std::uint32_t>& source,
 
             if(dark(c)) {
                 out[y * screen_w + x] = 0xff000000u;
+                continue;
+            }
+            const int old_x=int(x)+shift,old_hx=cache.crop_x+old_x;
+            if(reuse && old_x>=0 && old_x<int(screen_w) && c==previous_hd(old_hx,hy) &&
+                hd(hx-1,hy)==previous_hd(old_hx-1,hy) && hd(hx+1,hy)==previous_hd(old_hx+1,hy) &&
+                hd(hx,hy-1)==previous_hd(old_hx,hy-1) && hd(hx,hy+1)==previous_hd(old_hx,hy+1) &&
+                hd(hx-2,hy)==previous_hd(old_hx-2,hy) && hd(hx,hy-2)==previous_hd(old_hx,hy-2)) {
+                out[y*screen_w+x]=cache.shaded[(y-y0)*screen_w+unsigned(old_x)];
                 continue;
             }
 
@@ -178,9 +235,9 @@ static void upscale_region(const std::vector<std::uint32_t>& source,
             const double grain =
                 (int((h ^ (h >> 13)) & 7u) - 3) * 0.36;
 
-            const double brush =
-                std::sin(double(wx) * 0.58 + double(y) * 0.19) * 0.85 +
-                std::sin(double(wx) * 0.14 - double(y) * 0.63) * 0.48;
+            const auto& xp=columns[x];
+            const auto& yp=rows[y];
+            const double brush = wave(xp[0],yp[0])*0.85+wave(xp[1],yp[1])*0.48;
 
             const unsigned tx = wx >> 5u;
             const unsigned ty = y  >> 5u;
@@ -227,10 +284,7 @@ static void upscale_region(const std::vector<std::uint32_t>& source,
 
             const bool glow_core = glow_v || glow_h || micro_glow;
 
-            const double curve =
-                std::abs(std::sin(double(wx) * 0.019 +
-                                  double(y)  * 0.034 +
-                                  std::sin(double(wx) * 0.004) * 1.2));
+            const double curve = std::abs(wave(xp[2],yp[2]));
 
             const double groove =
                 curve < 0.05 ? -5.5 :
@@ -247,9 +301,7 @@ static void upscale_region(const std::vector<std::uint32_t>& source,
 
                 const double L = lum(c);
                 if(L > 64.0) {
-                    const double spec =
-                        std::pow(std::max(0.0,
-                            std::sin(double(wx) * 0.039 + double(y) * 0.017)), 26.0);
+                    const double spec = highlight(wave(xp[3],yp[3]),true);
 
                     nr += spec * 4.0;
                     ng += spec * 8.0;
@@ -277,9 +329,7 @@ static void upscale_region(const std::vector<std::uint32_t>& source,
                 ng = p.g + detail * 1.00;
                 nb = p.b + detail * 1.05;
 
-                const double spec =
-                    std::pow(std::max(0.0,
-                        std::sin(double(wx) * 0.034 + double(y) * 0.015)), 28.0);
+                const double spec = highlight(wave(xp[4],yp[4]),false);
                 nr += spec * 3.5;
                 ng += spec * 5.0;
                 nb += spec * 6.5;
@@ -314,6 +364,11 @@ static void upscale_region(const std::vector<std::uint32_t>& source,
                      p.b + (nb - p.b) * amount);
         }
     }
+    if(use_cache) {
+        cache.hd=std::move(x4);
+        cache.shaded.assign(out.begin()+y0*screen_w,out.begin()+y1*screen_w);
+        cache.camera=camera;cache.width=hw;cache.height=hh;cache.crop_x=crop_x;cache.strength=strength;
+    }
 }
 
 } // namespace
@@ -321,13 +376,13 @@ static void upscale_region(const std::vector<std::uint32_t>& source,
 void enhance_stage1_opening(std::vector<std::uint32_t>& pixels,
                             unsigned camera_samples,
                             unsigned ground_samples,
-                            double strength) {
+                            double strength,bool use_cache) {
     if(pixels.size() != 1024u * 848u || strength <= 0.0) return;
 
     const auto source = pixels;
 
-    upscale_region(source, pixels, 112u, 784u, camera_samples, strength);
-    upscale_region(source, pixels, 784u, 848u, ground_samples, strength);
+    upscale_region(source, pixels, 112u, 784u, camera_samples, strength,use_cache);
+    upscale_region(source, pixels, 784u, 848u, ground_samples, strength,use_cache);
 }
 
 } // namespace sm

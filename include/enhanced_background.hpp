@@ -4,5 +4,5 @@
 namespace sm {
 void enhance_stage1_opening(std::vector<std::uint32_t>& pixels,
                             unsigned camera_samples,unsigned ground_samples,
-                            double strength);
+                            double strength,bool use_cache=true);
 }

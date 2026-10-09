@@ -1,5 +1,6 @@
 #include "enhanced_weapons.hpp"
 #include <algorithm>
+#include <array>
 #include <cmath>
 namespace sm {
 namespace {
@@ -21,6 +22,10 @@ void composite_enhanced_weapons(std::vector<std::uint32_t>& image,
     const double cx=(l+r+1)*0.5,cy=(t+b+1)*0.5;
     const double hw=(r-l+1)*0.5,hh=(b-t+1)*0.5;
     const double phase=frame*0.22;
+    std::array<std::array<double,2>,5> sparks{};
+    if(look==WeaponLook::Wave) for(unsigned i=0;i<sparks.size();++i)
+        sparks[i]={-0.78+0.10*std::sin(phase+i*1.7),
+            (int(i)-2)*0.30+0.02*std::cos(phase+i)};
     auto surface=[&](double x,double y) {
         double u=(x-cx)/hw,v=(y-cy)/hh;
         if(direction==1) {u=(cy-y)/hh;v=(x-cx)/hw;}
@@ -36,9 +41,8 @@ void composite_enhanced_weapons(std::vector<std::uint32_t>& image,
             const double hot=std::exp(-d*d/0.0018);
             c={1.0,0.30+0.70*hot,0.04+0.84*hot,c.a};
             if(u<-0.85 || std::abs(v)>1.02) c.a=0;
-            for(int i=0;i<5;++i) {
-                const double sx=-0.78+0.10*std::sin(phase+i*1.7);
-                const double sy=(i-2)*0.30+0.02*std::cos(phase+i);
+            for(const auto& spark:sparks) {
+                const double sx=spark[0],sy=spark[1];
                 const double d2=std::hypot((u-sx)*hw,(v-sy)*hh);
                 if(d2<1.7) c={1,0.82,0.35,clamp(1.7-d2)};
             }
