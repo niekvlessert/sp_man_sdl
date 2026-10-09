@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Space Manbow</title>
+  <style>
+    :root { color-scheme: dark; font-family: system-ui, sans-serif; }
+    body { margin: 0; background: #080b17; color: #edf3ff; min-height: 100vh; display: grid; place-items: center; }
+    main { width: min(1024px, 96vw); text-align: center; padding: 24px 0; }
+    h1 { letter-spacing: .12em; font-size: clamp(24px, 5vw, 42px); }
+    p { color: #aebbd4; line-height: 1.6; }
+    #loader { max-width: 560px; margin: auto; padding: 24px; border: 1px solid #303b56; border-radius: 16px; background: #11172a; }
+    input { max-width: 100%; margin: 12px 0; }
+    button { padding: 12px 24px; border: 1px solid #76ddff; border-radius: 8px; background: #143956; color: #fff; cursor: pointer; font: inherit; }
+    button:disabled { opacity: .5; cursor: default; }
+    button:focus-visible, canvas:focus-visible { outline: 3px solid #ffdb59; outline-offset: 4px; }
+    canvas { display: block; width: min(100%, calc((100dvh - 180px) * 1024 / 848)); height: auto; margin: auto; background: #000; }
+    canvas:fullscreen { width: 100vw; height: 100vh; object-fit: contain; }
+    body.playing h1 { display: none; }
+    body.playing main { padding: 8px 0; }
+    #status:empty { display: none; }
+    [hidden] { display: none !important; }
+    #status { min-height: 1.5em; }
+    #fullscreen { margin-top: 16px; }
+  </style>
+</head>
+<body>
+<main>
+  <h1>SPACE MANBOW</h1>
+  <section id="loader">
+    <p>Choose your own Space Manbow ROM to play.</p>
+    <label for="rom">Space Manbow ROM (.rom)</label><br>
+    <input id="rom" type="file" accept=".rom,.bin,application/octet-stream"><br>
+    <button id="start" disabled>Start game</button>
+    <p>Your ROM stays in this browser. It is never sent to a server or saved.</p>
+  </section>
+  <p id="status" role="status" aria-live="polite">Choose a ROM to begin.</p>
+  <section id="player" hidden>
+    <canvas id="canvas" width="1024" height="848" tabindex="0" aria-label="Space Manbow game"></canvas>
+    <button id="fullscreen">Fullscreen</button>
+    <p>Arrow keys · Move &nbsp; Space / Z · Fire &nbsp; M · Options &nbsp; P · Pause<br>Escape · Return to menu (confirm with Y / N)</p>
+  </section>
+</main>
+<script src="game.js"></script>
+<script src="launcher.js"></script>
+</body>
+</html>

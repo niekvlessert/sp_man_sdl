@@ -1,0 +1,59 @@
+name: Web build and Pages
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: web-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install debug overlay font
+        run: sudo apt-get update && sudo apt-get install -y fonts-dejavu-core
+      - uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: '5.0.7'
+      - name: Configure web build (no ROM required)
+        run: emcmake cmake -S . -B build-web -DCMAKE_BUILD_TYPE=Release -DSM_WEB_FONT=/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf
+      - name: Build WebAssembly
+        run: cmake --build build-web --target space-manbow-game -j2
+      - name: Prepare Pages artifact
+        run: |
+          mkdir dist
+          cp build-web/{index.html,launcher.js,game.js,game.wasm,game.data} dist/
+          cp /usr/share/doc/fonts-dejavu-core/copyright dist/FONT-LICENSE.txt
+          touch dist/.nojekyll
+          python3 tools/check_web_artifact.py dist
+      - name: Test ROM upload gate in Chromium
+        run: |
+          npm install --prefix "$RUNNER_TEMP/web-test" playwright@1.58.2
+          "$RUNNER_TEMP/web-test/node_modules/.bin/playwright" install --with-deps chromium
+          NODE_PATH="$RUNNER_TEMP/web-test/node_modules" node tools/test_web.cjs dist
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    if: github.event_name != 'pull_request' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/configure-pages@v5
+      - name: Deploy Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

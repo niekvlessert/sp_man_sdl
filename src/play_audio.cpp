@@ -80,6 +80,17 @@ std::vector<std::uint8_t> make_kss_image(const std::filesystem::path& rom_path) 
         0xc9                          // RET
     };
     std::copy(wrapper.begin(),wrapper.end(),main_at(kKssInitAddress));
+    // A pending ending control is consumed by the original driver at its next
+    // vblank. This preserves the running tune and uses the ROM's own fade.
+    static constexpr std::array<std::uint8_t,25> play_wrapper{
+        0x3a,0x40,0x01,0xb7,0x28,0x0f, // LD A,count; OR A; JR Z,update
+        0x47,0xaf,0x32,0x40,0x01,     // LD B,A; clear count
+        0x21,0x41,0x01,              // LD HL,requests
+        0x7e,0xcd,0x03,0x60,0x23,    // request: LD A,(HL); CALL $6003; INC HL
+        0x10,0xf9,                   // DJNZ request (driver preserves BC/HL)
+        0xcd,0x06,0x60,0xc9          // update: CALL $6006; RET
+    };
+    std::copy(play_wrapper.begin(),play_wrapper.end(),main_at(kKssPlayAddress));
     std::copy(rom.begin(),rom.begin()+kRomBankSize,main_at(0x4000u));
     std::copy(rom.begin()+28u*kRomBankSize,rom.begin()+29u*kRomBankSize,main_at(0x6000u));
     std::copy(rom.begin(),rom.end(),image.begin()+std::ptrdiff_t(kKssHeaderSize+kKssLoadLength));
@@ -161,13 +172,31 @@ void PlayAudio::set_stage(unsigned stage) {
     SDL_UnlockAudioDevice(device_);
 }
 void PlayAudio::set_music_track(unsigned track) {
-    if(track<57u || track>68u) return;
+    // $49 is the original ending request, outside the stage/menu track range.
+    if((track<57u || track>68u) && track!=73u && track!=74u) return;
     SDL_LockAudioDevice(device_);
     boss_music_active_=false;current_track_=std::uint8_t(track);
     if(kss_player_) KSSPLAY_reset(kss_player_,current_track_,0u);
     music_position_=0u;voices_={};
     SDL_UnlockAudioDevice(device_);
 }
+void PlayAudio::request_music_control(unsigned request) {
+    if(request!=83u && request!=85u && request!=132u) return;
+    request_rom_audio(std::span<const unsigned>(&request,1u));
+}
+void PlayAudio::request_rom_audio(std::span<const unsigned> requests) {
+    SDL_LockAudioDevice(device_);
+    if(kss_player_) {
+        auto count=KSSPLAY_read_memory(kss_player_,0x0140u);
+        for(const auto request:requests) {
+            if(!request || (request>85u && request!=132u) || count>=16u) continue;
+            VM_write_memory(kss_player_->vm,0x0141u+count++,request);
+        }
+        VM_write_memory(kss_player_->vm,0x0140u,count);
+    }
+    SDL_UnlockAudioDevice(device_);
+}
+
 void PlayAudio::set_boss_music(bool active) {
     SDL_LockAudioDevice(device_);
     if(active!=boss_music_active_) {boss_music_active_=active;reset_music_unlocked();}
@@ -177,6 +206,9 @@ void PlayAudio::seek(double seconds) {
     SDL_LockAudioDevice(device_);seek_unlocked(seconds);voices_={};SDL_UnlockAudioDevice(device_);
 }
 void PlayAudio::play(PlaySound sound) {
+    if(sound==PlaySound::PlayerDeath) {
+        const unsigned request=0x4cu;request_rom_audio(std::span<const unsigned>(&request,1u));return;
+    }
     SDL_LockAudioDevice(device_);
     auto voice=std::find_if(voices_.begin(),voices_.end(),[](auto& v){return !v.active;});
     if(voice==voices_.end()) voice=voices_.begin();

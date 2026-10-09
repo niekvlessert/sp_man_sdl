@@ -152,7 +152,7 @@ int main(int argc,char** argv) {
     // Full native route: the real stage-8 stream must spawn $78, expose boss
     // music, accept fatal damage only in an open weak phase, and hand off to
     // stage index 8 (game Stage 9) through the normal session transition.
-    sm::PlaySession route(rom);route.reset(7u);
+    sm::PlaySession route(rom);route.set_invulnerable(true);route.reset(7u);
     sm::Entity64* live=nullptr;
     for(unsigned f=0;f<30000u && !live;++f) {
         route.step_60hz({});

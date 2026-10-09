@@ -32,6 +32,7 @@ struct GameState {
     std::array<Entity64,48> stage3_lattice{}; // native shadow of committed Stage-3 D988 A7 lines
     std::array<Entity64, 20> enemies{}; // original pool base: $CE80
     bool tower_destroyed=false, platform_chain_active=false; // CE4C/CE4D
+    std::uint8_t stage_index = 0, loop_count = 0; // CA10/CA04
     std::uint8_t difficulty = 1; // CA19 from the active weapon records
     std::uint8_t random_index = 0, random_value = 0; // C917/C918
     double camera_x = 0.0;

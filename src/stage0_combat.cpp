@@ -23,6 +23,7 @@ bool Stage0Combat::fire(const Rom& rom,const Entity64& source,const Entity64& ta
     if(it==bullets_.end()) return false;
     opening_bullets_[std::size_t(it-bullets_.begin())]=source.type()==0x10u || source.type()==0x12u || source.type()==0x15u || source.type()==0x18u;
     auto& b=*it;b.clear();b.type()=0x60;b.state()=0;b.raw[5]=0;b.flags15()=0x21;b.raw[0x17]=4;
+    b.raw[0x13]=b.raw[0x14]=4u; // $7110/$714A: original secondary-pool extents
     b.set_x_fixed(std::uint16_t(source.x_fixed()+xo*32));
     b.set_y_fixed(std::uint16_t(source.y_fixed()+yo*32));
     const auto bank=rom.bank(4);
@@ -61,6 +62,7 @@ bool Stage0Combat::fire_fixed_pattern(const Rom& rom,const Entity64& source,unsi
         opening_bullets_[std::size_t(it-bullets_.begin())]=false;
         auto& b=*it;b.clear();b.type()=0x60u;b.state()=0u;b.raw[5]=0u;
         b.flags15()=0x21u;b.raw[0x17]=4u;
+        b.raw[0x13]=b.raw[0x14]=4u;
         b.set_x_fixed(source.x_fixed());
         b.set_y_fixed(std::uint16_t(source.y_fixed()+y_cells*0x100));
         rom_set_heading_velocity(rom,b,heading,speed);
@@ -80,6 +82,7 @@ bool Stage0Combat::fire_type15_pair(const Entity64& source) {
         opening_bullets_[std::size_t(it-bullets_.begin())]=true;
         auto& b=*it;b.clear();b.type()=0x61;b.state()=0;b.raw[5]=0;
         b.flags15()=0x31;b.raw[0x17]=6;
+        b.raw[0x13]=b.raw[0x14]=4u;
         b.set_x_fixed(std::uint16_t(source.raw[0x0a])<<8u);
         b.set_y_fixed(std::uint16_t(source.raw[0x08])<<8u);
         entity_set_word(b,11,vy);entity_set_word(b,13,0);fired=true;
@@ -217,13 +220,31 @@ void Stage0Combat::step(const Rom& rom,GameState& game,unsigned frame,int dx,int
                 const int radius=(cells*4+2)*32;
                 return std::abs(int(std::int16_t(player-item))) <= radius;
             };
-            if(pickup_axis_hit(game.player.x_fixed(),e.x_fixed(),e.raw[0x14]) &&
+            if(game.player.active() && game.player.state()==0u &&
+               pickup_axis_hit(game.player.x_fixed(),e.x_fixed(),e.raw[0x14]) &&
                pickup_axis_hit(game.player.y_fixed(),e.y_fixed(),e.raw[0x13])) {
                 collect(rom,e.raw[3],game,sounds);e.clear();
             }
         }
         if(frame&3) continue;
         bool shot=false;
+        if(e.type()==0x0eu && e.raw[0x26]) {
+            // Fixed $4F9E/$4FB5: upper barriers fire from (+3,+6) cells,
+            // lower barriers from (+3,0). $7110 perturbs the player's coarse
+            // X and Y independently by -4..+3 before aiming each round.
+            const unsigned count=e.raw[0x26];e.raw[0x26]=0u;
+            const unsigned difficulty=count==3u?game.difficulty/2u:game.difficulty;
+            auto muzzle=e;
+            muzzle.set_x_fixed(std::uint16_t(e.x_fixed()+0x0300u));
+            if(!(e.raw[0x06]&4u))
+                muzzle.set_y_fixed(std::uint16_t(e.y_fixed()+0x0600u));
+            for(unsigned i=0;i<count;++i) {
+                auto target=game.player;
+                target.raw[0x0a]=std::uint8_t(target.raw[0x0a]+int(rom_random(rom,game)&7u)-4);
+                target.raw[0x08]=std::uint8_t(target.raw[0x08]+int(rom_random(rom,game)&7u)-4);
+                shot=fire(rom,muzzle,target,difficulty)||shot;
+            }
+        }
         if(e.type()==0x15u && e.state()==2u && e.raw[0x18]==3u) {
             // Bank05 $804E->$9BFA. The hover flyer fires the distinctive
             // vertical type-$61 pair exactly when its six-tick pause timer
@@ -332,8 +353,9 @@ void Stage0Combat::step(const Rom& rom,GameState& game,unsigned frame,int dx,int
                 for(auto offset:std::array<std::pair<int,int>,3>{{{-8,8},{16,0},{40,8}}})
                     shot=fire(rom,e,game.player,game.difficulty,offset.first,offset.second)||shot;
         }
-        if(e.type()==0x18u) {
-            // Fixed $5525-$5548. +17 is a 23-tick attack timer; at stage-0
+        if(e.type()==0x18u && e.state()==1u && game.loop_count &&
+           std::abs(entity_word(e,11))<int(raw_u16(e.raw,0x22u))) {
+            // Fixed $5525-$5548: CA04 gates this attack to repeat loops. +17 is a 23-tick attack timer; at stage-0
             // $750F accepts random selectors below the current CA19 value;
             // then $7143 creates a standard aimed type-$60 round.
             if(e.raw[0x17]>1u) --e.raw[0x17];
@@ -389,7 +411,7 @@ void Stage0Combat::step(const Rom& rom,GameState& game,unsigned frame,int dx,int
         // allocates/aims the projectile but does not queue an SFX request.
         // The generic native EnemyShot here made every sentry round audible,
         // unlike the original game.
-        if(shot && e.type()!=0x32u)
+        if(shot && e.type()!=0x32u && e.type()!=0x0eu)
             sounds.push_back(e.type()==0x1f ? PlaySound::CannonShot : PlaySound::EnemyShot);
     }
 }

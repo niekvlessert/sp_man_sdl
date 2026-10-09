@@ -156,7 +156,7 @@ int main(int argc,char** argv) {
 
     // Full Stage-4 death path: type $14 is a real boss damage target and its
     // $6A countdown must advance to Stage 5.
-    sm::PlaySession route4(rom);route4.reset(3u);
+    sm::PlaySession route4(rom);route4.set_invulnerable(true);route4.reset(3u);
     sm::Entity64* live4=nullptr;
     for(unsigned f=0;f<18000u && !live4;++f) {
         route4.step_60hz({});
@@ -203,7 +203,7 @@ int main(int argc,char** argv) {
     // records drops the parent's +37 count to zero; after the 16-tick arm
     // delay the $99-HP core becomes vulnerable.  Fatal damage then uses the
     // same $6A sequence and advances to Stage 6.
-    sm::PlaySession route5(rom);route5.reset(4u);
+    sm::PlaySession route5(rom);route5.set_invulnerable(true);route5.reset(4u);
     sm::Entity64* live5=nullptr;
     for(unsigned f=0;f<14000u && !live5;++f) {
         route5.step_60hz({});

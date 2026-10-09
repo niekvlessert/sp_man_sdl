@@ -104,7 +104,7 @@ int main(int argc,char** argv) {
     // Full route: the boss naturally enters at $2000/$0A00, reaches the
     // $1900 gate before state 1, activates boss music, then follows the custom
     // equal-HP/borrow rule and advances to stage 8 after 40+20 object ticks.
-    sm::PlaySession route(rom);route.reset(6u);
+    sm::PlaySession route(rom);route.set_invulnerable(true);route.reset(6u);
     sm::Entity64* live=nullptr;
     for(unsigned f=0;f<18000u && !live;++f) {
         route.step_60hz({});

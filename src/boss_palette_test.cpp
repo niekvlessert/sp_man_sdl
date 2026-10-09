@@ -16,7 +16,7 @@ int main(int argc,char** argv) {
     sm::Rom rom(argv[1]);
     for(unsigned stage:{0u,1u,2u,3u,4u,5u,7u}) {
         constexpr std::uint8_t types[]{0x64,0x7a,0x3e,0x14,0x77,0x7b,0x43,0x78};
-        sm::PlaySession session(rom);session.reset(stage);
+        sm::PlaySession session(rom);session.set_invulnerable(true);session.reset(stage);
         sm::Entity64* boss=nullptr;
         for(unsigned f=0;f<30000u;++f) {
             session.step_60hz({});

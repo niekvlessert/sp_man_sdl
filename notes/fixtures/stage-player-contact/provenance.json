@@ -1,0 +1,91 @@
+{
+  "rom_sha256": "bca5696ebbf4a3493bb226baa03ba8f8c5cc4876a4ad0eaa9722f583a42192b0",
+  "emulator_sha256": "ac3ec4e0baeb4dd29b03976f1bd07838182f75acf1066d41ef981f3d74c82a46",
+  "natural_trace_sha256": {
+    "stage-1.log": "be0fb23faac64bc66f55f60d51b1bfd662b9c3e610ea69df1887a1911f24653f",
+    "stage-2.log": "ac882d44cb32e3535b1ca9f4062d7a3f373003c47c245b569b84a912a01b45ab",
+    "stage-3.log": "2f2e039c093cc544325da0b623d7ce03fb2509d17250687222415f51cd6517b8"
+  },
+  "stages": {
+    "1": {
+      "types": [
+        3,
+        16,
+        17,
+        18,
+        21,
+        24,
+        30,
+        31,
+        32,
+        34,
+        36,
+        38,
+        61,
+        64,
+        81,
+        85,
+        86,
+        98,
+        100,
+        101,
+        104,
+        112
+      ],
+      "poses": 37,
+      "cases": 5733
+    },
+    "2": {
+      "types": [
+        3,
+        16,
+        18,
+        22,
+        24,
+        25,
+        39,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        49,
+        59,
+        60,
+        81,
+        83,
+        98,
+        122
+      ],
+      "poses": 35,
+      "cases": 5499
+    },
+    "3": {
+      "types": [
+        3,
+        19,
+        24,
+        28,
+        29,
+        39,
+        40,
+        50,
+        51,
+        53,
+        62,
+        63,
+        69,
+        81,
+        98,
+        114
+      ],
+      "poses": 22,
+      "cases": 3978
+    }
+  },
+  "total": 15210,
+  "method": "Unpatched bank07 $8039/$8280 execution; observed actor poses relocated for boundary sweeps; projectile metadata and launch flags; natural DE00 captures",
+  "limitations": "Synthetic boundary sweeps are not complete natural playthrough parity; terrain probe footprint uses ROM shapes and solid-property semantics"
+}

@@ -43,6 +43,17 @@ int main(int argc,char** argv) {
     target.set_x_fixed(0x0800u);target.set_y_fixed(0x0400u);
     assert(sm::rom_direction8(target,source)==2u);
 
+    // $6BC9 RLCA/$6BCE SRL undo each other after extracting the sign:
+    // the diagonal boundary is equal X/Y magnitude, not half X.
+    source.set_x_fixed(0x1000u);source.set_y_fixed(0x1000u);
+    for(int xsign:{-1,1}) for(int ysign:{-1,1}) for(int dy:{3,5,8,9}) {
+        target.set_x_fixed(std::uint16_t((16+xsign*8)*256));
+        target.set_y_fixed(std::uint16_t((16+ysign*dy)*256));
+        const unsigned base=xsign<0?(ysign<0?0u:6u):(ysign<0?2u:4u);
+        const bool increment=xsign==ysign?dy>=8:dy<8;
+        assert(sm::rom_direction8(target,source)==((base+unsigned(increment))&7u));
+    }
+
     // The shared aimed-velocity service must remain byte-identical to the
     // fixed-bank $71xx quarter-wave table calculation used by combat.
     target.set_x_fixed(0x1400u);target.set_y_fixed(0x0300u);

@@ -11,6 +11,7 @@ public:
     explicit PlayTimeline(const Rom& rom);
     PlaySession& session() noexcept { return *session_; }
     void reset(unsigned stage=0);
+    void set_invulnerable(bool enabled);
     void toggle_upgrades();
     void jump(unsigned decile);
     void step(PlayerInput input);
@@ -18,6 +19,7 @@ public:
 private:
     void advance(PlayerInput input);
     void restore(unsigned frame);
+    bool invulnerable_=false;
     const Rom& rom_;
     std::unique_ptr<PlaySession> session_;
     std::vector<PlayerInput> inputs_;

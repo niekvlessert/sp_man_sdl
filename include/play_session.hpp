@@ -1,6 +1,7 @@
 #pragma once
 #include "spawn.hpp"
 #include "runtime.hpp"
+#include "player_death.hpp"
 #include "stage0_enemies.hpp"
 #include "play_sound.hpp"
 #include <algorithm>
@@ -30,6 +31,7 @@ class PlaySession {
 public:
     explicit PlaySession(const Rom& rom);
     void reset(unsigned stage=0);
+    void reset_attract(unsigned stage,unsigned checkpoint);
     void seek_decile(unsigned step); // 0=start, 9=90% of the selected stage route
     void set_max_test_loadout() noexcept { combat_.set_max_test_loadout(); }
     void set_test_loadout(bool maximum) noexcept;
@@ -77,6 +79,10 @@ public:
                                [](const auto& e){return e.type()==0x79u;});
         return false;
     }
+    void set_invulnerable(bool enabled) noexcept { invulnerable_=enabled; }
+    bool invulnerable() const noexcept { return invulnerable_; }
+    unsigned lives() const noexcept { return lives_; }
+    bool game_over() const noexcept { return lives_==0 && !player_death_.active(); }
     unsigned camera_pixels() const noexcept { return camera_half_pixels_ / 2; }
     bool at_fight_gate() const noexcept { return background_.gated(); }
     std::span<const PlaySound> sound_events() const noexcept { return sound_events_; }
@@ -87,13 +93,21 @@ public:
     const Entity64& missile_shot() const noexcept { return missile_shot_; }
     bool scene_palette_active() const noexcept { return scene_palette_active_; }
     std::uint8_t scene_palette_phase() const noexcept { return scene_palette_phase_; }
+    std::uint8_t terrain_property(std::uint8_t tile) const noexcept;
 private:
     Entity64 present_carrier(const Entity64& source,unsigned frame) const;
     void begin_next_stage();
     unsigned stage_index_=0,stage_start_frame_=0;
+    PlayerDeath player_death_;
+    unsigned death_video_phase_=0,respawn_wait_=0;
+    bool invulnerable_=false;
+    unsigned lives_=3,respawn_protection_=90;
     bool music_playing_=true;
     bool boss_scene_active_=false;
     std::array<std::uint8_t,256> stage_terrain_properties_{},boss_terrain_properties_{};
+    std::array<std::uint8_t,256> vehicle_terrain_properties_{};
+    std::array<std::uint8_t,256> barrier_terrain_properties_{};
+    bool stage6_barrier_terrain_{};
     std::vector<std::uint32_t> render_early_presentation(unsigned x_samples,unsigned y_samples);
     std::vector<std::uint32_t> render_presentation(unsigned x_samples,unsigned y_samples);
     const Rom& rom_;

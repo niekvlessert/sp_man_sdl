@@ -155,7 +155,7 @@ int main(int argc,char** argv) {
     // Full native route: Stage 9 must really instantiate $79 from trigger
     // $1036, enable boss music, accept fatal pending damage only in selector
     // one, then leave the final boss/ending latch without inventing stage 10.
-    sm::PlaySession route(rom);route.reset(8u);
+    sm::PlaySession route(rom);route.set_invulnerable(true);route.reset(8u);
     sm::Entity64* live=nullptr;
     for(unsigned f=0;f<30000u && !live;++f) {
         route.step_60hz({});

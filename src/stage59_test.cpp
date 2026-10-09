@@ -160,13 +160,13 @@ int main(int argc,char** argv) {
     // All nine stages are public session targets and render without relying on
     // the stage-1/2 shortcut path.
     for(unsigned st=4;st<9;++st) {
-        sm::PlaySession session(rom);session.reset(st);
+        sm::PlaySession session(rom);session.set_invulnerable(true);session.reset(st);
         assert(session.stage_index()==st);
         for(unsigned i=0;i<60u;++i) session.step_60hz({});
         assert(session.render().size()==256u*212u);
     }
     bool rejected=false;
-    sm::PlaySession invalid(rom);
+    sm::PlaySession invalid(rom);invalid.set_invulnerable(true);
     try {invalid.reset(9);} catch(const std::invalid_argument&) {rejected=true;}
     assert(rejected);
 

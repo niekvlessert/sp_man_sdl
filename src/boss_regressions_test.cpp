@@ -32,7 +32,7 @@ std::uint32_t rgb(unsigned grb) {
 int main(int argc,char** argv) {
     if(argc!=2) return 2;
     sm::Rom rom(argv[1]);
-    sm::PlaySession tubes(rom);tubes.reset(4u);
+    sm::PlaySession tubes(rom);tubes.set_invulnerable(true);tubes.reset(4u);
     bool approaching=false;
     for(unsigned f=0;f<20000u;++f) {
         tubes.step_60hz({});
@@ -58,7 +58,7 @@ int main(int argc,char** argv) {
         previous=left;
     }
 
-    sm::PlaySession armour(rom);auto* core=enter(armour,4u,0x77u);
+    sm::PlaySession armour(rom);armour.set_invulnerable(true);auto* core=enter(armour,4u,0x77u);
     for(unsigned f=0;f<20u;++f) armour.step_60hz({});
     auto pipe=std::find_if(armour.game_.enemies.begin(),armour.game_.enemies.end(),[](const auto& e) {
         return e.type()==0x76u && e.raw[5]==2u && e.x_fixed()==0x0c00u && e.y_fixed()==0u;
@@ -88,7 +88,7 @@ int main(int argc,char** argv) {
         0x00,0xc0,0xf0,0x38,0x14,0x1c,0x0e,0x0a,0x1a,0x16,0x24,0xcc,0x98,0x70,0xc0,0x00};
     assert(std::equal(ball.begin(),ball.end(),video.vram.begin()+0xd680u));
 
-    sm::PlaySession warp(rom);auto* boss=enter(warp,6u,0x43u);
+    sm::PlaySession warp(rom);warp.set_invulnerable(true);auto* boss=enter(warp,6u,0x43u);
     const auto palette=sm::decode_stage_boss_palette(rom,6u);
     warp.render();
     for(unsigned i=0;i<16u;++i) if(i!=11u) assert(warp.video_.tower_palette[i]==rgb(palette[i]));

@@ -5,6 +5,7 @@
 #include <cstdint>
 #include <filesystem>
 #include <vector>
+#include <span>
 
 struct tagKSS;
 struct tagKSSPLAY;
@@ -25,6 +26,8 @@ public:
     void set_speed(unsigned speed);
     void set_music_playing(bool playing);
     void set_music_track(unsigned track);
+    void request_music_control(unsigned request);
+    void request_rom_audio(std::span<const unsigned> requests);
 private:
     struct Voice { unsigned clip=0;std::size_t position=0;bool active=false; };
     inline static constexpr std::array<std::uint8_t,9> stage_track_ids_{

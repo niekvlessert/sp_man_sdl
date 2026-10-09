@@ -6,7 +6,7 @@
 #include <iostream>
 int main(int argc,char** argv) {
     if(argc!=2) return 2;
-    sm::Rom rom(argv[1]);sm::PlayTimeline t(rom);
+    sm::Rom rom(argv[1]);sm::PlayTimeline t(rom);t.set_invulnerable(true);
     for(unsigned f=0;f<260;++f) {
         t.step({f<30,false,false,f<70,f%15==0,f%15==0});
         if(f%11==0) t.session().render_smooth();
@@ -52,7 +52,7 @@ int main(int argc,char** argv) {
     t.jump(0);const auto base=t.session().state().player.x_fixed();
     for(unsigned i=0;i<12;++i)t.step({false,false,false,true});
     assert(quick>t.session().state().player.x_fixed()-base);
-    sm::PlaySession normal(rom),fast(rom),moving(rom);
+    sm::PlaySession normal(rom),fast(rom),moving(rom);normal.set_invulnerable(true);fast.set_invulnerable(true);moving.set_invulnerable(true);
     for(unsigned i=0;i<60;++i) moving.step_60hz({false,false,false,true});
     assert(moving.upgrades().speed==0 && moving.state().player.x_fixed()==0x0f00);
     for(unsigned i=0;i<60;++i)normal.step_60hz({});

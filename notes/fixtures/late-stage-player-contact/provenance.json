@@ -1,0 +1,113 @@
+{
+  "rom_sha256": "bca5696ebbf4a3493bb226baa03ba8f8c5cc4876a4ad0eaa9722f583a42192b0",
+  "emulator_sha256": "ac3ec4e0baeb4dd29b03976f1bd07838182f75acf1066d41ef981f3d74c82a46",
+  "natural_trace_sha256": {
+    "stage-4.log": "194a02eceaddf374a837f6102fd41adcf240c237a0cf428b4192c9bbac337821",
+    "stage-5.log": "2830694aeaa5e2d98b9c91ce9b95af54d3c7bc0cfebc91f5ef6439e3d40be1da",
+    "stage-6.log": "fb0f4bf0443f7a6bf09f8ac6e3d97f4d17d5dbc7d21057bad732933f985de043",
+    "stage-7.log": "f1a75ae0a9352588165b98311fd59122891d46f11e3e34e6146c558ca506d90d",
+    "stage-8.log": "96b6ec40aeb3fcb18ccff41037e35a466e23fd2991d979383f45dd4f35ba8b75",
+    "stage-9.log": "c11cef9c5bfdc20065c76db300e5c0a29c978ff3d1d4970679b10c8992f0ff7a"
+  },
+  "stages": {
+    "4": {
+      "types": [
+        3,
+        20,
+        23,
+        25,
+        45,
+        55,
+        56,
+        57,
+        88,
+        98,
+        110,
+        111
+      ],
+      "poses": 22,
+      "cases": 3978
+    },
+    "5": {
+      "types": [
+        3,
+        19,
+        24,
+        33,
+        39,
+        65,
+        73,
+        81,
+        98,
+        118,
+        119
+      ],
+      "poses": 25,
+      "cases": 4329
+    },
+    "6": {
+      "types": [
+        3,
+        13,
+        14,
+        23,
+        47,
+        68,
+        72,
+        74,
+        77,
+        81,
+        98,
+        115,
+        123,
+        124
+      ],
+      "poses": 27,
+      "cases": 4563
+    },
+    "7": {
+      "types": [
+        3,
+        22,
+        26,
+        35,
+        67,
+        77,
+        79,
+        84,
+        98
+      ],
+      "poses": 15,
+      "cases": 3159
+    },
+    "8": {
+      "types": [
+        27,
+        66,
+        80,
+        98,
+        116,
+        120
+      ],
+      "poses": 13,
+      "cases": 2925
+    },
+    "9": {
+      "types": [
+        76,
+        78,
+        81,
+        90,
+        94,
+        98,
+        102,
+        121
+      ],
+      "poses": 18,
+      "cases": 3510
+    }
+  },
+  "total": 22464,
+  "method": "Unpatched bank07 $8039/$8280 execution; observed actor poses relocated for boundary sweeps; projectile metadata and launch flags; natural DE00 captures",
+  "limitations": "Synthetic boundary sweeps are not complete natural playthrough parity; terrain probe footprint uses ROM shapes and solid-property semantics"
+}

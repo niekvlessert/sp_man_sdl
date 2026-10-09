@@ -1,6 +1,7 @@
 #include "stage0_enemies.hpp"
 #include "stage0_combat.hpp"
 #include "spawn.hpp"
+#include "entity_runtime.hpp"
 #ifdef NDEBUG
 #undef NDEBUG
 #endif
@@ -177,6 +178,38 @@ int main(int argc,char** argv) {
             assert(e.state()==2u && e.raw[0x06]==(lower_half?6u:2u) && e.raw[0x17]==6u);
             for(unsigned t=56u;t<62u;++t) logic.step_15hz(rom,g,t,0,true,nullptr);
             assert(e.state()==3u && e.raw[0x06]==(lower_half?6u:2u));
+            // Live original-ROM $7110 entries occur at CA02 & $0B == 0.
+            // Check both muzzle families, target spread, cadence and the
+            // absence of firing during the closed/growing phases.
+            sm::Stage0Combat combat;std::vector<sm::PlaySound> sounds;
+            g.difficulty=12u;
+            e.set_x_fixed(0x1400u); // scrolling has brought the open barrier into view
+            const auto x=e.x_fixed(),y=e.y_fixed();
+            for(unsigned t=64u;t<80u;++t) {
+                logic.step_15hz(rom,g,t,0,true,nullptr);
+                const bool firing=(t&0x0bu)==0u;
+                assert(e.raw[0x26]==unsigned(firing));
+                const auto before=std::count_if(combat.bullets().begin(),combat.bullets().end(),
+                    [](const auto& b){return b.active();});
+                auto reference=g;auto target=g.player;
+                target.raw[0x0a]=std::uint8_t(target.raw[0x0a]+int(sm::rom_random(rom,reference)&7u)-4);
+                target.raw[0x08]=std::uint8_t(target.raw[0x08]+int(sm::rom_random(rom,reference)&7u)-4);
+                combat.step(rom,g,t*4u,0,0,sounds);
+                assert(e.raw[0x26]==0u && e.x_fixed()==x && e.y_fixed()==y);
+                const auto after=std::count_if(combat.bullets().begin(),combat.bullets().end(),
+                    [](const auto& b){return b.active();});
+                assert(after==before+unsigned(firing));
+                if(firing) {
+                    const auto& b=combat.bullets()[before];
+                    assert(b.type()==0x60u && b.x_fixed()==std::uint16_t(x+0x0300u));
+                    assert(b.y_fixed()==std::uint16_t(y+(lower_half?0u:0x0600u)));
+                    auto expected=b;
+                    sm::rom_set_aimed_velocity(rom,expected,target,rom.bank(4)[0x11a8u+12u]);
+                    assert(sw(b,11)==sw(expected,11) && sw(b,13)==sw(expected,13));
+                    assert(g.random_index==reference.random_index && g.random_value==reference.random_value);
+                }
+            }
+            assert(sounds.empty());
             const auto saved=e.raw[0x06],hp=e.raw[0x16];
             assert(sm::apply_stage0_damage(rom,e,std::uint8_t(hp+1u))==
                    sm::Stage0DamageResult::Destroyed);
@@ -186,6 +219,14 @@ int main(int argc,char** argv) {
             assert(e.state()==5u && e.raw[0x06]==9u);
             logic.step_15hz(rom,g,64u,0,true,nullptr);
             assert(e.state()==6u && e.raw[0x06]==std::uint8_t(saved+1u));
+            assert(e.raw[0x26]==3u);
+            combat.reset();
+            combat.step(rom,g,64u*4u,0,0,sounds);
+            assert(std::count_if(combat.bullets().begin(),combat.bullets().end(),
+                [](const auto& b){return b.active();})==3);
+            assert(e.raw[0x26]==0u && g.difficulty==12u && sounds.empty());
+            logic.step_15hz(rom,g,80u,0,true,nullptr);
+            assert(e.raw[0x26]==0u); // the wreck never resumes shooting
         }
     }
 

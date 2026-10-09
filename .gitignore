@@ -1,5 +1,7 @@
 # Build products
 /build/
+/build-web/
+/dist/
 
 # Original game ROM (required locally, never versioned)
 /space_manbow.rom

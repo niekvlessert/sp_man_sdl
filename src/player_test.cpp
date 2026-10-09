@@ -60,9 +60,9 @@ int main(int argc,char** argv) {
         }
         return input.eof()?0:1;
     }
-    sm::PlaySession session(rom);
+    sm::PlaySession session(rom);session.set_invulnerable(true);
     // A live shot must change rendered pixels, not just occupy a pool slot.
-    sm::PlaySession no_fire(rom);
+    sm::PlaySession no_fire(rom);no_fire.set_invulnerable(true);
     session.step_60hz({false,false,false,false,false,true});
     no_fire.step_60hz({});
     const auto fired=session.render(),unfired=no_fire.render();

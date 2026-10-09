@@ -8,59 +8,57 @@ cmake --build build -j4
 ./build/space-manbow-game space_manbow.rom
 ```
 
-Arrows move the ship. Z or Space fires once per press, matching the basic
-weapon's input edge. Key 0 starts fresh with the original base speed and weapons. Keys 1–9 jump to 10–90% of the stage-0 route and equip the maximum test loadout.
-M changes option positions, F10 mutes audio, P pauses, R restarts, Escape exits.
-Cmd-1 through Cmd-9 on macOS (Ctrl-1 through Ctrl-9 on Windows/Linux) directly select stages 1–9.
-Keys 0–9 then jump within the selected stage.
-W toggles between maximum reusable upgrades (including speed) and no upgrades.
-These changes are retained by rewind/replay. Stage 2's scenery, regular enemy
-families, controllers and boss have their current ROM-traced native restoration;
-see `notes/stage2_rom_audit_2026-10-03.md`. Stages 3 and 4 have selectable
-ROM-stream baselines (including stage 4's vertical mode-6 section). Stage 3's
-`$3E/$3F` boss and stage 4's `$14/$58` boss are now ROM-traced natively,
-including linked/attack scheduling and death/next-stage flow. Other new enemy
-families remain unported; see `notes/stage3_stage4_baseline_2026-10-04.md`.
-Stages 5–9 are likewise directly selectable with ROM-stream baselines; stage 5's
-`$77/$76/$5C` boss tree and stage 6's `$7B/$0D` boss cycle are restored, and
-stage 6 includes its original diagonal mode-5 and mode-3 scenery paths. Other
-stage-specific enemies/controllers remain future ROM-traced ports; see
-`notes/stage5_stage9_baseline_2026-10-04.md`.
-Cmd-T on macOS / Ctrl-T on Windows or Linux toggles 500% turbo, including audio.
-Page Up pauses and rewinds 100 simulation frames (clamped at the start).
-Page Down pauses and advances 100 frames, replaying recorded input where available;
-beyond recorded play it advances without input. P resumes; new play branches the history. Losing window focus
-pauses the game. The simulation advances at 60 Hz independently of rendering.
+The title waits for Space before showing Original graphics, Enhanced graphics,
+and Options. Options contains the KSS music player and held-Space autofire.
+Arrows move/select; Space or Enter selects; Space/Z fires; M rotates the
+satellites; P pauses; F10 mutes. Escape during play asks for Y/N confirmation
+before returning to the menu. Submenus use their Back row.
 
-The Konami and Space Manbow introductions play original ROM animation captured
-at 60 Hz from VDP memory, registers and palettes. Regenerate the title pack with
-`python3 tools/export_title_animation.py`. See
-`notes/sdl_logo_treads_cannon_fixes_2026-10-03.md` for the title, tread and cannon fixes.
-Space skips the Konami introduction to the complete title screen. On the title
-screen, including during its animation, Space starts the game immediately.
+Debug features are off by default, including invulnerability. Type `debug`
+while Options is open to enable the debug overlay. Close it with Escape or
+its cross. Stage selection, upgrades, turbo and rewind are gated by debug mode.
+Player collision/death and stages 1–9 have ROM-backed regression tests; the
+latest collision audit is in `notes/stage_player_contact_audit_2026-10-09.md`.
 
-ROM movement tables, ship animation, basic forward shots and resident sprite
-graphics run with the stage-0 background/scenery reconstruction. The upper
-ship position now accounts for the original sprite origin minus VDP R23.
-The original $51 wave records spawn flight types $10/$12/$15/$18, including
-the opening waves previously skipped before the stream anchor. Basic shots
-hit flyers and vehicle cannons using the ROM component hitboxes and damage table.
-Cannons fire, take damage and can drop pickups. Reward waves also drop pickups
-when completed. N selects normal fire, W selects three-way fire, O adds trailing
-options, and M adds the persistent ground-following missile. Red pickups
-increase power (shown in the top bar); the blue item arms a one-shot large
-bomb salvo for the next primary fire. N restores normal fire. Enemy HP,
-pending damage, loadout-dependent difficulty, large-cannon projectiles and
-the late boss/underbody/attack phases use their original ROM data and routines.
-The boss destruction sequence stops the music at the explosion, removes the
-final explosion image during the transition countdown, then advances into the
-next stage's background and music. That stage's own enemy families are not yet fully implemented.
-Player damage/death/respawn, HUD fidelity, natural RNG consumption and audio
-chip-channel priority remain incomplete.
+## Browser version and GitHub Pages
 
-Blue-section types $1E now use their original approach/vertical-travel/triple-shot behavior.
-The trailing platform blast and the constant-speed boss floor are covered by
-`notes/sdl_scroll_controls_fixes_2026-10-03.md`.
+`.github/workflows/ci.yml` builds the SDL game as WebAssembly with Emscripten
+5.0.7, checks the ROM upload screen in Chromium, and deploys the default branch
+to Pages. Pull requests build/test without deploying. In the GitHub repository,
+select **Settings → Pages → Build and deployment → Source: GitHub Actions**,
+then push to the default branch or run the workflow manually. See the
+[GitHub Pages workflow documentation](https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages).
+
+The website requires the visitor to choose their own 256 KiB Space Manbow ROM
+(SHA-256 `bca5696ebbf4a3493bb226baa03ba8f8c5cc4876a4ad0eaa9722f583a42192b0`).
+The cartridge is checked and placed in the browser's temporary virtual
+filesystem. It is never uploaded to a server, persisted, or included in the
+CI artifact. Refreshing the page requires choosing the ROM again. Existing
+visual/audio asset packs ship with the game. A keyboard and a current browser
+with WebAssembly/WebGL are required. Click the game to focus its keyboard input.
+
+To build locally, activate Emscripten and provide a redistributable TTF font:
+
+```sh
+emcmake cmake -S . -B build-web -DCMAKE_BUILD_TYPE=Release \
+  -DSM_WEB_FONT=/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf
+cmake --build build-web --target space-manbow-game -j4
+python3 -m http.server 8080 --directory build-web
+```
+
+Open `http://localhost:8080`. Serve via HTTP locally or HTTPS on Pages rather
+than opening the HTML as a file. CI uses DejaVu Sans for the debug overlay
+and includes its license. The web loop uses
+[Emscripten Asyncify](https://emscripten.org/docs/porting/asyncify.html) to yield
+for input, audio and browser presentation.
+
+The browser smoke test optionally accepts a local ROM for actual game startup:
+
+```sh
+npm install --prefix /tmp/manbow-web-test playwright@1.58.2
+/tmp/manbow-web-test/node_modules/.bin/playwright install chromium
+NODE_PATH=/tmp/manbow-web-test/node_modules node tools/test_web.cjs build-web space_manbow.rom
+```
 
 Native play uses a 1024×848 texture with quarter-pixel X/Y positions. Background,
 vehicle, stars and fast ground move between the original logic ticks, including

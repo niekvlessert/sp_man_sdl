@@ -32,7 +32,7 @@ void capture(const std::filesystem::path& p,const std::vector<std::uint32_t>& im
 }
 int main(int argc,char** argv) {
     if(argc<2 || argc>3) return 2;
-    sm::Rom rom(argv[1]);sm::PlaySession s(rom);
+    sm::Rom rom(argv[1]);sm::PlaySession s(rom);s.set_invulnerable(true);
     const std::filesystem::path out=argc==3?argv[2]:"";
     if(!out.empty()) std::filesystem::create_directories(out);
     unsigned checked=0;
@@ -110,7 +110,7 @@ int main(int argc,char** argv) {
     // coarse Y step must be distributed over all four 60-Hz frames. At 4x
     // presentation that is exactly one output sample downward per frame.
     {
-        sm::PlaySession vertical(rom);vertical.reset(3u);
+        sm::PlaySession vertical(rom);vertical.set_invulnerable(true);vertical.reset(3u);
         while(vertical.background_.mode()!=6u) vertical.step_60hz({});
         assert(vertical.camera_pixels()<3072u);
         assert(vertical.background_.x_velocity_fp()==0);
@@ -173,7 +173,7 @@ int main(int argc,char** argv) {
     // Compare the native matrix bounds to the original D988/R18 compositor,
     // rather than accepting the direct object anchor as a screen coordinate.
     {
-        sm::PlaySession machine(rom);machine.reset(3u);
+        sm::PlaySession machine(rom);machine.set_invulnerable(true);machine.reset(3u);
         while(machine.background_.mode()!=6u) machine.step_60hz({});
         clear_actors(machine,false);
         machine.frame_=(machine.frame_&~3u)+3u;
@@ -276,7 +276,7 @@ int main(int argc,char** argv) {
     // and require its isolated tile body to advance by exactly half a pixel on
     // every 60-Hz frame.
     {
-        sm::PlaySession cannon(rom);while(cannon.frame_<7055u) cannon.step_60hz({});
+        sm::PlaySession cannon(rom);cannon.set_invulnerable(true);while(cannon.frame_<7055u) cannon.step_60hz({});
         int previous_left=-1,previous_top=-1;unsigned cannon_frames=0;
         for(unsigned n=0;n<20u;++n) {
             cannon.step_60hz({});const auto saved=cannon.game_.enemies;int target=-1;
@@ -366,7 +366,7 @@ int main(int argc,char** argv) {
     // Stage 3 drifts stars in the opposite ROM direction. Isolate its sky
     // and verify each video frame, including coarse camera tile carries.
     {
-        sm::PlaySession sky(rom);sky.reset(2);
+        sm::PlaySession sky(rom);sky.set_invulnerable(true);sky.reset(2);
         while(sky.frame()<100u) sky.step_60hz({});
         auto clear_sky=[&] {clear_actors(sky,false);sky.background_.ring_.fill(0);};
         clear_sky();auto stars=sky.render_continuous();const auto color=sky.video_.palette[8];

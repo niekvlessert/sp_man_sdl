@@ -9,7 +9,7 @@
 #include <iostream>
 int main(int argc,char** argv) {
     assert(argc==3);sm::Rom rom(argv[1]);sm::EnhancedShip art(argv[2]);
-    sm::PlaySession session(rom);for(unsigned f=0;f<100;++f) session.step_60hz({});
+    sm::PlaySession session(rom);session.set_invulnerable(true);for(unsigned f=0;f<100;++f) session.step_60hz({});
     auto& player=const_cast<sm::GameState&>(session.state()).player;
     player.set_x_fixed(0x1000);player.set_y_fixed(0x0900);
     auto save=[&](const char* name,const auto& image) {
@@ -94,5 +94,25 @@ int main(int argc,char** argv) {
     }
     session.reset(1);
     assert(session.render_continuous(false,true)==session.render_continuous(false));
+    session.reset();session.set_max_test_loadout();
+    for(unsigned f=0;f<100;++f) session.step_60hz({});
+    std::array<sm::Entity64,2> satellites;
+    std::copy(session.options().begin(),session.options().end(),satellites.begin());
+    assert(satellites[0].active() && satellites[1].active());
+    const auto clean=session.render_continuous(false,true);
+    auto options_image=clean;art.draw_options(options_image,session.options(),session.frame());
+    auto rotated=clean;art.draw_options(rotated,session.options(),session.frame()+1u);
+    assert(options_image!=clean && rotated!=options_image);
+    auto paused=clean;art.draw_options(paused,session.options(),session.frame());
+    assert(paused==options_image);
+    for(unsigned i=0;i<2;++i) assert(session.options()[i].raw==satellites[i].raw);
+    for(unsigned i=0;i<112u*1024u;++i) assert(options_image[i]==clean[i]);
+    // Removing the original sprites must yield the exact same clean image;
+    // enhanced rendering must restore both option records afterwards.
+    for(const auto& option:session.options()) const_cast<sm::Entity64&>(option).clear();
+    assert(session.render_continuous(false,true)==clean);
+    std::copy(satellites.begin(),satellites.end(),const_cast<sm::Entity64*>(session.options().data()));
+    art.draw_engine(options_image,session.state().player,session.frame(),session.stage_frame());
+    art.draw(options_image,session.state().player);save("options",options_image);
     std::cout<<"Enhanced ship: 3 poses, original bounds/anchors, clean replacement and unchanged game state PASS\n";
 }

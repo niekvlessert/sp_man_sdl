@@ -60,6 +60,35 @@ int main(int argc,char** argv) try {
             sm::PlayAudio::callback(&audio,reinterpret_cast<Uint8*>(music.data()),int(music.size()*sizeof(Sint16)));
             assert(std::any_of(music.begin(),music.end(),[](auto s){return s!=0;}));
         }
+        // Ending uses request $49, then the original $84 fade control. The
+        // control mailbox must be consumed without restarting the melody.
+        audio.set_music_track(73u);assert(audio.current_track_==73u);
+        sm::PlayAudio::callback(&audio,reinterpret_cast<Uint8*>(music.data()),int(music.size()*sizeof(Sint16)));
+        assert(std::any_of(music.begin(),music.end(),[](auto s){return s!=0;}));
+        const auto ending_position=audio.music_position_;
+        audio.request_music_control(132u);
+        assert(KSSPLAY_read_memory(audio.kss_player_,0x0140u)==1u);
+        assert(KSSPLAY_read_memory(audio.kss_player_,0x0141u)==132u);
+        std::array<Sint16,4096> fade_output{};
+        sm::PlayAudio::callback(&audio,reinterpret_cast<Uint8*>(fade_output.data()),int(fade_output.size()*sizeof(Sint16)));
+        assert(KSSPLAY_read_memory(audio.kss_player_,0x0140u)==0u);
+        assert(KSSPLAY_read_memory(audio.kss_player_,0xc840u)&1u);
+        assert(audio.music_position_==ending_position+fade_output.size() && audio.current_track_==73u);
+        std::vector<Sint16> faded(44100u*10u);
+        sm::PlayAudio::callback(&audio,reinterpret_cast<Uint8*>(faded.data()),int(faded.size()*sizeof(Sint16)));
+        assert(!(KSSPLAY_read_memory(audio.kss_player_,0xc840u)&1u));
+
+        audio.set_music_track(74u);
+        const std::array<unsigned,3> intro_requests{78u,79u,80u};
+        audio.request_rom_audio(intro_requests);
+        assert(KSSPLAY_read_memory(audio.kss_player_,0x0140u)==3u);
+        assert(KSSPLAY_read_memory(audio.kss_player_,0x0141u)==78u);
+        assert(KSSPLAY_read_memory(audio.kss_player_,0x0142u)==79u);
+        assert(KSSPLAY_read_memory(audio.kss_player_,0x0143u)==80u);
+        sm::PlayAudio::callback(&audio,reinterpret_cast<Uint8*>(music.data()),int(music.size()*sizeof(Sint16)));
+        assert(KSSPLAY_read_memory(audio.kss_player_,0x0140u)==0u);
+        assert(audio.current_track_==74u);
+
         audio.set_music_playing(false);
         const auto stopped=audio.music_position_;
         sm::PlayAudio::callback(&audio,reinterpret_cast<Uint8*>(music.data()),int(music.size()*sizeof(Sint16)));
@@ -82,6 +111,11 @@ int main(int argc,char** argv) try {
         assert(audio.music_position_==turbo_before+short_output.size()*5u);
         audio.set_speed(1);
 
+        audio.play(sm::PlaySound::PlayerDeath);
+        assert(KSSPLAY_read_memory(audio.kss_player_,0x0140u)==1u);
+        assert(KSSPLAY_read_memory(audio.kss_player_,0x0141u)==0x4cu);
+        sm::PlayAudio::callback(&audio,reinterpret_cast<Uint8*>(short_output.data()),int(short_output.size()*sizeof(Sint16)));
+        assert(KSSPLAY_read_memory(audio.kss_player_,0x0140u)==0u);
         audio.pause(false);
         for(unsigned i=0;i<unsigned(sm::PlaySound::Count);++i) {audio.play(sm::PlaySound(i));SDL_Delay(30);}
         SDL_Delay(100);audio.pause(true);audio.mute(true);audio.pause(false);SDL_Delay(50);audio.mute(false);

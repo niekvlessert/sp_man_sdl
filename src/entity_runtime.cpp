@@ -42,7 +42,7 @@ std::uint8_t rom_direction8(const Entity64& target,const Entity64& source) noexc
     const auto [dy,above]=magnitude(target.raw[0x08],source.raw[0x08]);
     std::uint8_t c=left?(above?0u:6u):(above?2u:4u);
     const bool same=left==above;
-    if((dy>=(dx>>1u)&&same)||(dy<(dx>>1u)&&!same)) ++c;
+    if((dy>=dx&&same)||(dy<dx&&!same)) ++c;
     return std::uint8_t(c&7u);
 }
 

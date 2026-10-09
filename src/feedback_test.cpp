@@ -34,7 +34,7 @@ int main(int argc,char** argv) {
     // Original takeoff delays remain in the simulation. Presentation should
     // move on each of the 28 video frames between the first two tile heights,
     // including across 15-Hz boundaries, without changing the actor state.
-    sm::PlaySession carrier_session(rom);
+    sm::PlaySession carrier_session(rom);carrier_session.set_invulnerable(true);
     auto carrier=actor(rom,0x55);carrier.state()=2;carrier.raw[0x22]=16;
     carrier.set_y_fixed(0x0f00);carrier.raw[0x17]=7;
     int previous_y=carrier.y_fixed();
@@ -121,7 +121,7 @@ int main(int argc,char** argv) {
                     }
                 }
             } else if(kind=="bar") {
-                sm::PlaySession s(rom);s.set_max_test_loadout();const auto image=s.render();
+                sm::PlaySession s(rom);s.set_invulnerable(true);s.set_max_test_loadout();const auto image=s.render();
                 const auto c=image[4u*256u+89u+mode*8u];
                 values.push_back(c==0xffff2020u?1u:(c==0xffffff00u?2u:0u));
             } else return 2;
@@ -134,7 +134,7 @@ int main(int argc,char** argv) {
     const bool save=argc==4;
     const auto directory=save?std::filesystem::path(argv[3]):std::filesystem::path{};
     if(save) std::filesystem::create_directories(directory);
-    sm::PlaySession s(rom);s.set_max_test_loadout();s.step_60hz({});
+    sm::PlaySession s(rom);s.set_invulnerable(true);s.set_max_test_loadout();s.step_60hz({});
     assert(std::int16_t(s.options()[0].y_fixed()-s.state().player.y_fixed())==-0x1a0);
     assert(std::int16_t(s.options()[1].y_fixed()-s.state().player.y_fixed())==0x360);
     if(save) capture(directory/"options.ppm",s.render_smooth());

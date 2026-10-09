@@ -211,9 +211,8 @@ std::array<std::uint16_t, 16> apply_boss_palette_entries(
 }
 }
 
-std::array<std::uint8_t,256> decode_stage_terrain_properties(const Rom& rom,unsigned stage,
-                                                          bool boss_context) {
-    if(stage>=9u) throw std::out_of_range("stage terrain index");
+namespace {
+std::array<std::uint8_t,256> decode_terrain_properties(const Rom& rom,unsigned root) {
     std::array<std::uint8_t,256> out{};
     auto apply=[&](unsigned root) {
         // $8046 skips the command preamble, then $818F/$81C2 consume the
@@ -234,9 +233,32 @@ std::array<std::uint8_t,256> decode_stage_terrain_properties(const Rom& rom,unsi
         }
     };
     apply(0x83fdu); // $803B: shared weapon/actor tiles CE..E9 survive context loads.
-    const unsigned entry=(boss_context?0x8177u:0x8165u)+stage*2u;
-    apply(unsigned(bank10(rom,entry))|(unsigned(bank10(rom,entry+1u))<<8u));
+    apply(root);
     return out;
+}
+}
+std::array<std::uint8_t,256> decode_stage0_vehicle_terrain_properties(const Rom& rom) {
+    return decode_terrain_properties(rom,0x8666u);
+}
+std::array<std::uint8_t,256> decode_stage6_barrier_terrain_properties(const Rom& rom) {
+    // Type $0E constructor $4F1C loads extra encounter context 1 through
+    // $6C5C: bank10 pointer $818B, script $8E45. This persists until the
+    // next graphics context, including after the last barrier disappears.
+    return decode_terrain_properties(rom,
+        unsigned(bank10(rom,0x818bu))|(unsigned(bank10(rom,0x818cu))<<8u));
+}
+std::array<std::uint8_t,256> decode_stage_terrain_properties(const Rom& rom,unsigned stage,
+                                                          bool boss_context) {
+    if(stage>=9u) throw std::out_of_range("stage terrain index");
+    const unsigned entry=boss_context && stage==0u ? 0x8189u :
+        (boss_context?0x8177u:0x8165u)+stage*2u;
+    // Stage 1's terminal gate installs the separate property-only script at
+    // $8656 via the extra encounter pointer at $8189. The $8177 stage-0
+    // entry ($8649) is the earlier scenery context;
+    // it is not the final boss's DE00 map. Natural gate traces verify all 256
+    // bytes of this override, including the solid $0D..$8F body cells.
+    return decode_terrain_properties(rom,
+        unsigned(bank10(rom,entry))|(unsigned(bank10(rom,entry+1u))<<8u));
 }
 
 Stage0VideoAssets decode_stage0_video(const Rom& rom) { return decode_stage_video(rom,0); }

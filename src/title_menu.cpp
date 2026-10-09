@@ -93,4 +93,13 @@ void TitleMenu::draw_exit_confirmation(std::vector<std::uint32_t>& p) const {
         for(unsigned yy=0;yy<4;++yy) for(unsigned xx=0;xx<4;++xx)
             p[(y*4+yy)*1024+x*4+xx]=panel[y*256+x];
 }
+void TitleMenu::draw_game_over(std::vector<std::uint32_t>& p) const {
+    std::vector<std::uint32_t> panel(256u*212u,0u);
+    text(panel,92,96,"GAME OVER",0xffffffffu);
+    text(panel,76,116,"PRESS SPACE",0xffffff00u);
+    for(unsigned y=82;y<132;++y) for(unsigned x=56;x<200;++x)
+        for(unsigned yy=0;yy<4;++yy) for(unsigned xx=0;xx<4;++xx)
+            p[(y*4+yy)*1024+x*4+xx]=panel[y*256+x]?panel[y*256+x]:0xff000000u;
+}
+
 }

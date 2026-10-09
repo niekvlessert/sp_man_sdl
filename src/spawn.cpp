@@ -233,11 +233,10 @@ std::uint8_t stage0_direction8(const GameState& game, const Entity64& e) noexcep
     const auto [dx, left] = signed_mag(game.player.raw[0x0a], e.raw[0x0a]);
     const auto [dy, above] = signed_mag(game.player.raw[0x08], e.raw[0x08]);
     std::uint8_t c = left ? (above ? 0u : 6u) : (above ? 2u : 4u);
-    // $6BCE halves |dx| before comparing it with |dy|. The octant is
-    // incremented when the dominant axis crosses the same-sign/opp-sign rule.
-    const unsigned half_dx = dx >> 1u;
+    // RLCA followed by SRL restores the magnitude after extracting its sign;
+    // it does not halve X. The diagonal threshold is |dy| == |dx|.
     const bool same_sign = left == above;
-    if ((dy >= half_dx && same_sign) || (dy < half_dx && !same_sign)) ++c;
+    if ((dy >= dx && same_sign) || (dy < dx && !same_sign)) ++c;
     return std::uint8_t(c & 7u);
 }
 }

@@ -7,8 +7,12 @@ namespace sm {
 // Native opening-flight handlers, selected by the original $51 wave records.
 void initialize_stage0_flyer(const Rom& rom, Entity64& enemy,
     std::uint8_t parameter, unsigned ordinal, unsigned logic_tick,
-    const Entity64& player, std::uint8_t parameter2=0);
+    const Entity64& player, std::uint8_t parameter2=0, std::uint8_t stage_index=0);
 bool stage0_sprite_overlap(const Rom& rom, const Entity64& a, const Entity64& b);
+bool rom_player_object_contact(const Rom& rom,const Entity64& player,const Entity64& object);
+bool rom_player_bullet_contact(const Rom& rom,const Entity64& player,const Entity64& bullet);
+bool rom_player_terrain_contact(const Rom& rom,const Entity64& player,
+    const std::function<std::uint8_t(int,int)>& property);
 bool step_stage0_blue_enemy(GameState& game,Entity64& enemy);
 class Stage0Enemies {
 public:

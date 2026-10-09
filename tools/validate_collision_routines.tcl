@@ -13,6 +13,7 @@ namespace eval smcollision {
   lassign $current ident pc bank8000 bankA000 registers writes outputs
   foreach {port mirror bank} [list 0x7000 0xf0f1 4 0x9000 0xf0f2 $bank8000 0xb000 0xf0f3 $bankA000] {poke $port $bank;poke $mirror $bank}
   for {set i 0} {$i<0x500} {incr i} {poke [expr {0xce80+$i}] 0}
+  for {set i 0} {$i<0x240} {incr i} {poke [expr {0xd460+$i}] 0}
   for {set i 0} {$i<0x100} {incr i} {poke [expr {0xd700+$i}] 0}
   foreach {address value} $writes {poke $address $value}
   foreach name {AF BC DE HL AF2 BC2 DE2 HL2 IX IY} {reg $name 0}

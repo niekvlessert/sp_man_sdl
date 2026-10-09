@@ -122,14 +122,22 @@ void Stage0BackgroundStream::reset() {
 
 void Stage0BackgroundStream::reset_stage(unsigned stage) {
     if(stage==0u) {reset();return;}
+    reset_checkpoint(stage,0u);
+}
+void Stage0BackgroundStream::reset_checkpoint(unsigned stage,unsigned checkpoint) {
+    if(checkpoint>=6u) throw std::out_of_range("stage checkpoint");
     if(stage>=9u) throw std::out_of_range("stage index");
     reset();stage_index_=stage;ring_.fill(0);gated_=false;palette_fade_ticks_=0;palette_fade_active_=false;frame_service_seen_=false;
     const auto b=rom_.bank(9);
     auto word=[&](unsigned p){return unsigned(b[p])|(unsigned(b[p+1])<<8);};
-    const auto cp=word(0x1c8c+stage*2u)-0x6000u;
+    const auto cp=word(0x1c8c+stage*2u)-0x6000u+checkpoint*4u;
     source_=std::uint16_t(word(cp));trigger_cursor_=std::uint16_t(word(cp+2u));
     metatile_base_=word(0x1d76+stage*2u)-0x8000u;
-    x_fp_=y_fp_=0;macro_phase_=0;phase_accum_=0;
+    // Stage 1's existing compositor uses absolute level X. The other stages
+    // use checkpoint-local ring coordinates, as the cartridge initializer does.
+    const unsigned start_x=stage==0u && trigger_cursor_>=0x1000u
+        ? unsigned(trigger_cursor_&0x0fffu)*8u:0u;
+    x_fp_=int(start_x)<<8;y_fp_=0;macro_phase_=0;phase_accum_=0;
     // Stage 8 inherits Stage 7's R4=$13/R10=$02 atlas. Other stages
     // begin in context 0; FF13/FF1C can explicitly change the context.
     graphics_set_=stage==7u?2u:0u;palette_set_=0;
@@ -148,7 +156,7 @@ void Stage0BackgroundStream::reset_stage(unsigned stage) {
     stream_phase();
     --trigger_cursor_; // $7841-$7845: preload phase does not consume a spawn trigger.
     for(unsigned column=1;column<=31u;++column) {
-        x_fp_=int(column*8u)<<8;
+        x_fp_=int(start_x+column*8u)<<8;
         stream_phase();
     }
     suppress_prefetch_=false;object_raster_anchor_=false;

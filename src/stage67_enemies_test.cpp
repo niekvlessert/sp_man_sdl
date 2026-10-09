@@ -171,6 +171,8 @@ int main(int argc,char** argv) {
                launcher.raw[0x3d]==1u);
 
         for(unsigned t=0;t<24u;++t) logic.step_15hz(rom,g,t,0,true,nullptr);
+        assert(launcher.raw[0x26]==0u && launcher.raw[0x17]==0u);
+        logic.step_15hz(rom,g,24u,0,true,nullptr);
         assert(launcher.raw[0x26]==1u && launcher.raw[0x17]==0x18u);
 
         sm::Stage0Combat combat;combat.reset();
@@ -182,7 +184,7 @@ int main(int argc,char** argv) {
         assert(std::find(shot_sounds.begin(),shot_sounds.end(),
                          sm::PlaySound::EnemyShot)!=shot_sounds.end());
 
-        for(unsigned t=24u;t<31u;++t) logic.step_15hz(rom,g,t,0,true,nullptr);
+        for(unsigned t=25u;t<31u;++t) logic.step_15hz(rom,g,t,0,true,nullptr);
         auto child=std::find_if(g.enemies.begin(),g.enemies.end(),
                                 [](const auto& e){return e.type()==0x16u;});
         assert(child!=g.enemies.end());
@@ -270,7 +272,7 @@ int main(int argc,char** argv) {
     // Real route smoke tests: Stage 6 must reach two complete formations;
     // Stage 7 must instantiate launchers and live $1A children.
     {
-        sm::PlaySession s(rom);s.reset(5u);
+        sm::PlaySession s(rom);s.set_invulnerable(true);s.reset(5u);
         unsigned best48=0,best_parent=0;bool wave44=false;
         for(unsigned f=0;f<10000u;++f) {
             s.step_60hz({});
@@ -284,7 +286,7 @@ int main(int argc,char** argv) {
         assert(best48>=14u && best_parent>=2u && wave44);
     }
     {
-        sm::PlaySession s(rom);s.reset(6u);
+        sm::PlaySession s(rom);s.set_invulnerable(true);s.reset(6u);
         bool launcher=false,child=false,horizontal=false,launcher4f=false,child16=false;
         unsigned max4f=0u;
         for(unsigned f=0;f<9000u;++f) {

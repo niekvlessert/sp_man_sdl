@@ -14,6 +14,7 @@ public:
     bool activate(); // true when a graphics choice starts the game
     bool back(); // true at the root
     void draw(std::vector<std::uint32_t>& pixels,bool audio_available=true) const;
+    void draw_game_over(std::vector<std::uint32_t>& pixels) const;
     void draw_exit_confirmation(std::vector<std::uint32_t>& pixels) const;
     Page page=Page::Main;
     unsigned selected=1,track=0;

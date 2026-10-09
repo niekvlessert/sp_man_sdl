@@ -4,9 +4,13 @@
 namespace sm {
 PlayTimeline::PlayTimeline(const Rom& rom):rom_(rom) {reset();}
 void PlayTimeline::reset(unsigned stage) {
-    session_=std::make_unique<PlaySession>(rom_);session_->reset(stage);inputs_.clear();
+    session_=std::make_unique<PlaySession>(rom_);session_->reset(stage);session_->set_invulnerable(invulnerable_);inputs_.clear();
     checkpoints_.clear();loadout_events_.clear();
     checkpoints_[0]=std::make_unique<PlaySession>(*session_);
+}
+void PlayTimeline::set_invulnerable(bool enabled) {
+    invulnerable_=enabled;session_->set_invulnerable(enabled);
+    for(auto& [frame,checkpoint]:checkpoints_) checkpoint->set_invulnerable(enabled);
 }
 void PlayTimeline::toggle_upgrades() {
     const auto& u=session_->upgrades();
@@ -48,7 +52,9 @@ void PlayTimeline::scrub(int frames) {
 void PlayTimeline::jump(unsigned decile) {
     const unsigned stage=session_->stage_index();
     session_->seek_decile(decile);const auto target=session_->frame();
-    reset(stage);while(session_->frame()<target) advance({});
+    reset(stage);session_->set_invulnerable(true);
+    while(session_->frame()<target) advance({});
+    set_invulnerable(invulnerable_);
     // 0 is a fresh game. Later shortcuts remain useful combat test fixtures.
     if(decile) {
         session_->set_max_test_loadout();loadout_events_[target]=true;

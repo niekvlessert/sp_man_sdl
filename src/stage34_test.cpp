@@ -146,6 +146,20 @@ int main(int argc,char** argv) {
         });
     };
     {
+        // $817D-$8188: near the left edge, the shared Stage-3 homing actor
+        // reacquires every tick instead of waiting ten ticks or stopping aim.
+        const auto rec=find3(0x27u);assert(rec!=s3.records().end());
+        sm::GameState g;sm::Stage0Enemies logic;
+        assert(sm::instantiate_stage0_spawn(rom,*rec,g,1u));
+        auto& e=g.enemies[0];e.set_x_fixed(0x0100u);e.set_y_fixed(0x0800u);
+        e.raw[0x17]=9u;g.player.set_x_fixed(0x0800u);g.player.set_y_fixed(0x0400u);
+        logic.step_15hz(rom,g,0u,0u,false);
+        assert(e.raw[0x17]==10u && sm::entity_word(e,13)>0 && sm::entity_word(e,11)<0);
+        g.player.set_y_fixed(0x1000u);
+        logic.step_15hz(rom,g,1u,0u,false);
+        assert(e.raw[0x17]==10u && sm::entity_word(e,11)>0);
+    }
+    {
         // $983D/$67CE: Stage-3 type-$13 wave records end on the child type and
         // therefore have no ninth parameter byte. This exact 8-byte record was
         // previously rejected, making the first half of Stage 3 much too empty.
@@ -516,7 +530,7 @@ int main(int argc,char** argv) {
 
     // Full session route: stage 3 reaches the real boss, switches to boss
     // music, and the shared $6A death countdown advances cleanly to stage 4.
-    sm::PlaySession boss_route(rom);boss_route.reset(2u);
+    sm::PlaySession boss_route(rom);boss_route.set_invulnerable(true);boss_route.reset(2u);
     sm::Entity64* live_boss=nullptr;
     while(boss_route.stage_frame()<24000u && !live_boss) {
         boss_route.step_60hz({});
@@ -661,6 +675,32 @@ int main(int argc,char** argv) {
         quiet.step_15hz(rom,h,1u,0u,false);
         assert(std::none_of(h.enemies.begin(),h.enemies.end(),
             [](const auto& q){return q.type()==0x6fu;}));
+        // $8C6F-$8C83 selects the second probe in each ROM table pair
+        // while the large actor overlaps the top/left edge. Its visible edge
+        // still collides, but an out-of-window probe must not reverse it.
+        for(unsigned dir=0;dir<4u;++dir) {
+            for(bool edge:{false,true}) {
+                sm::GameState boundary;sm::Stage0Enemies move;
+                assert(sm::instantiate_stage0_spawn(rom,*rec,boundary,1u));
+                auto& q=boundary.enemies[0];q.state()=1u;q.raw[0x23]=1u;
+                q.raw[0x21]=std::uint8_t(dir);q.set_x_fixed(edge?0x0100u:0x0800u);
+                q.set_y_fixed(0x0800u);
+                unsigned probes=0;
+                const unsigned p=0x0d1bu+dir*4u+(edge?2u:0u);
+                sm::Stage0Enemies::TerrainProbe wall=[&](const auto&,int xo,int yo) {
+                    ++probes;
+                    assert(xo==int(std::int8_t(rom.bank(5)[p+1u]))*0x100);
+                    assert(yo==int(std::int8_t(rom.bank(5)[p]))*0x100);
+                    return std::uint8_t(1u);
+                };
+                move.step_15hz(rom,boundary,0u,0u,false,nullptr,wall,{});
+                assert(probes==1u && q.raw[0x21]==(dir^1u));
+                q.raw[0x21]=std::uint8_t(dir);
+                move.step_15hz(rom,boundary,1u,0u,false,nullptr,
+                    [](const auto&,int,int){return std::uint8_t(0xffu);},{});
+                assert(q.raw[0x21]==dir);
+            }
+        }
     }
     {
         const auto rec=find4(0x37u,0x1070u);assert(rec!=s4.records().end());
@@ -703,7 +743,7 @@ int main(int argc,char** argv) {
 
     // Public session/timeline entry points can now start stages 3 and 4
     // directly; this used to collapse every non-zero reset onto stage 2.
-    sm::PlaySession p3(rom);p3.reset(2);assert(p3.stage_index()==2u);
+    sm::PlaySession p3(rom);p3.set_invulnerable(true);p3.reset(2);assert(p3.stage_index()==2u);
     {
         const auto& g=p3.state();
         assert(g.enemies[0].type()==0x32u && g.enemies[0].x_fixed()==0x19e0u && g.enemies[0].raw[0x18]==1u);
@@ -718,7 +758,7 @@ int main(int argc,char** argv) {
         assert(g.enemies[2].x_fixed()==0x1dc0u && g.enemies[2].raw[0x18]==0x22u);
     }
     {
-        sm::PlaySession autofire(rom);autofire.reset(2u);autofire.set_max_test_loadout();
+        sm::PlaySession autofire(rom);autofire.set_invulnerable(true);autofire.reset(2u);autofire.set_max_test_loadout();
         sm::PlayerInput held{};held.fire=true;
         unsigned volleys=0;
         for(unsigned i=0;i<120u;++i) {
@@ -754,7 +794,7 @@ int main(int argc,char** argv) {
         }
         assert(isolated>=24u);
     }
-    sm::PlaySession p4(rom);p4.reset(3);assert(p4.stage_index()==3u);
+    sm::PlaySession p4(rom);p4.set_invulnerable(true);p4.reset(3);assert(p4.stage_index()==3u);
     for(unsigned i=0;i<120u;++i) {p3.step_60hz({});p4.step_60hz({});}
     assert(!p3.render().empty() && !p4.render().empty());
     bool rejected=false;

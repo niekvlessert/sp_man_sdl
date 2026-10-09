@@ -26,7 +26,7 @@ EnhancedShip::EnhancedShip(const std::filesystem::path& path) {
 }
 void EnhancedShip::draw_engine(std::vector<std::uint32_t>& out,const Entity64& player,
                                unsigned frame,unsigned stage_frame) const {
-    if(!player.active() || player.type()!=1u || out.size()!=1024u*848u) return;
+    if(!player.active() || player.type()!=1u || player.state()!=0u || player.raw[5]>=6u || out.size()!=1024u*848u) return;
     const unsigned pose=std::min<unsigned>(player.raw[5],2u);
     const int nozzle_x=int(std::int16_t(player.x_fixed()))/8+44;
     const double nozzle_y=int(std::int16_t(player.y_fixed()))/8+(pose==1u?139:pose==2u?149:144);
@@ -69,8 +69,61 @@ void EnhancedShip::draw_engine(std::vector<std::uint32_t>& out,const Entity64& p
             glow(x-tail,y,entry*0.28*(1-tail/12.0),entry*0.55*(1-tail/12.0),entry*(1-tail/12.0));
     }
 }
+void EnhancedShip::draw_options(std::vector<std::uint32_t>& out,std::span<const Entity64> options,
+                                unsigned frame) const {
+    if(out.size()!=1024u*848u) return;
+    for(unsigned index=0;index<options.size();++index) {
+        const auto& option=options[index];
+        if(!option.active() || option.type()!=2u) continue;
+        // The original option occupies a 16x16 SAT cell at +7,+21.
+        // Keep its centre, follow-mode position and shot origins intact.
+        const double cx=int(std::int16_t(option.x_fixed()))/8.0+60.0;
+        const double cy=int(std::int16_t(option.y_fixed()))/8.0+116.0;
+        const double angle=frame*0.105+index*3.141592653589793;
+        const double ca=std::cos(angle),sa=std::sin(angle);
+        for(int y=int(cy)-36;y<=int(cy)+36;++y) for(int x=int(cx)-36;x<=int(cx)+36;++x) {
+            if(x<0 || x>=1024 || y<112 || y>=848) continue;
+            const double dx=x+0.5-cx,dy=y+0.5-cy,rad=std::hypot(dx,dy);
+            double alpha=0,r=0,g=0,b=0;
+            auto layer=[&](double opacity,double red,double green,double blue) {
+                opacity=std::clamp(opacity,0.0,1.0);
+                r=red*opacity+r*(1-opacity);g=green*opacity+g*(1-opacity);b=blue*opacity+b*(1-opacity);
+                alpha=opacity+alpha*(1-opacity);
+            };
+            layer(std::exp(-rad*rad/480.0)*0.20,25,95,255);
+            // Spherical blue energy core, lit from the upper left.
+            if(rad<18.5) {
+                const double z=std::sqrt(std::max(0.0,1-rad*rad/(18.5*18.5)));
+                const double light=std::clamp(z*0.8-dx*0.025-dy*0.03,0.0,1.0);
+                const double spec=std::exp(-((dx+5)*(dx+5)+(dy+6)*(dy+6))/18.0);
+                layer(std::min(1.0,18.5-rad),18+light*45+spec*170,
+                    65+light*115+spec*90,140+light*110);
+            }
+            // Rotating titanium cage: front and back arcs have different
+            // lighting, with three cyan nodes that orbit at video cadence.
+            const double qx=dx*ca+dy*sa,qy=-dx*sa+dy*ca;
+            const double ring=std::sqrt(qx*qx+qy*qy/0.70);
+            const double edge=std::clamp(3.3-std::abs(ring-24.0),0.0,1.0);
+            const double rim_light=std::clamp(0.55-dy*0.015-dx*0.010+qy*0.012,0.2,1.0);
+            layer(edge,55+rim_light*170,70+rim_light*165,95+rim_light*150);
+            const double inner=std::clamp(1.1-std::abs(ring-21.0),0.0,1.0);
+            layer(inner,15,38,70);
+            for(unsigned node=0;node<3;++node) {
+                const double a=angle+node*2.094395102393195;
+                const double nx=24*std::cos(a),ny=20*std::sin(a);
+                const double d=std::hypot(dx-nx,dy-ny);
+                layer(std::clamp(3.0-d,0.0,1.0),130,235,255);
+            }
+            const auto bg=out[unsigned(y)*1024u+unsigned(x)];
+            auto channel=[&](double v,unsigned shift) {
+                return unsigned(std::clamp(std::lround(v+double((bg>>shift)&255u)*(1-alpha)),0l,255l));
+            };
+            out[unsigned(y)*1024u+unsigned(x)]=0xff000000u|(channel(r,16)<<16)|(channel(g,8)<<8)|channel(b,0);
+        }
+    }
+}
 void EnhancedShip::draw(std::vector<std::uint32_t>& out,const Entity64& player) const {
-    if(!player.active() || player.type()!=1u || out.size()!=1024u*848u) return;
+    if(!player.active() || player.type()!=1u || player.state()!=0u || player.raw[5]>=6u || out.size()!=1024u*848u) return;
     const unsigned pose=std::min<unsigned>(player.raw[5],2u);
     const auto crop=poses_[pose];
     // Exactly the ROM SAT bounds: +7 X, +24 Y, 19x20 pixels in neutral;

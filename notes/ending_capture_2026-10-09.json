@@ -1,0 +1,26 @@
+{
+  "rom_sha256": "bca5696ebbf4a3493bb226baa03ba8f8c5cc4876a4ad0eaa9722f583a42192b0",
+  "asset_sha256": "801460ebe171da78be77160802741a1ce6ef0a422edf9ba5d84a691dc98f60d2",
+  "width": 256,
+  "height": 212,
+  "fps": 60,
+  "frames": 14811,
+  "image_changes": 4355,
+  "events": [
+    "ENTRY 23.83773608098236",
+    "START 28.59706163772211",
+    "SOUND 1.0589208963709105 83",
+    "SOUND 2.6581540391306717 73",
+    "SOUND 235.75829442010087 132",
+    "END 275.467668935577 14811"
+  ],
+  "rgb_frame_sha256": {
+    "180": "8901697809329b8ada75403ca5c65018a682b102898aa18a77df25fbde869b4f",
+    "1800": "d379a64a530327b2b978271987479eee3c2163ef31c0aca9c83b0afd4a97f80e",
+    "4800": "f42e37633d5253d95cc24659737b15aa37dfd691b4383311533afc47c6294c06",
+    "9000": "ca768d12bf2ad41e6432ada34a0fe900ad53e68d4711d4108a6026fb06f7ef8c",
+    "13200": "c2f87ef3d1983a4e63c6538bac6025c4dd76ea5c9883a83a2d1334f09fa443d5",
+    "14810": "e46b5246bda293e09e199967b99ac352f931c04e2ad88e775b06a3b93ccb838c"
+  },
+  "intervention": "Final-stage selector, invincibility and logged lethal damage before $6440; all assistance stops at ending entry; no ROM patches."
+}

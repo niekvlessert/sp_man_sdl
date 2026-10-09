@@ -163,7 +163,7 @@ int main(int argc,char** argv) {
     // Full native route: Stage 6 must naturally spawn the boss before the
     // final scenery gate, switch to boss music, destroy through $6A, clean its
     // active ball and advance to Stage 7.
-    sm::PlaySession route(rom);route.reset(5u);
+    sm::PlaySession route(rom);route.set_invulnerable(true);route.reset(5u);
     sm::Entity64* live=nullptr;bool escorts=false;
     for(unsigned f=0;f<26000u && (!live || !escorts);++f) {
         route.step_60hz({});

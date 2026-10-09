@@ -61,7 +61,7 @@ int main(int argc,char** argv) {
     assert(background.x_velocity_fp()==0 && background.y_velocity_fp()==0);
 
     // A real shot through the open stage-2 entrance must reach the right edge.
-    sm::PlaySession session(rom);session.reset(1);
+    sm::PlaySession session(rom);session.set_invulnerable(true);session.reset(1);
     session.step_60hz({false,false,false,false,true,true});
     unsigned lifespan=0;std::uint16_t last_x=0;
     while(lifespan<100u && session.shots()[0].active()) {
@@ -222,7 +222,7 @@ int main(int argc,char** argv) {
     // pass, adding one extra bounce. By X=$04AC the first visible burst has
     // produced all three fixed-heading type-$67 rounds.
     {
-        sm::PlaySession route(rom);route.reset(1);
+        sm::PlaySession route(rom);route.set_invulnerable(true);route.reset(1);
         while(route.camera_pixels()<1536u+0x047cu && route.stage_frame()<4000u)
             route.step_60hz({});
         assert(route.camera_pixels()==1536u+0x047cu);
@@ -371,7 +371,7 @@ int main(int argc,char** argv) {
     // firing event is a three-round $60 fan; the first simultaneous event
     // therefore creates one three-round fan from each surface.
     {
-        sm::PlaySession runners(rom);runners.reset(1);
+        sm::PlaySession runners(rom);runners.set_invulnerable(true);runners.reset(1);
         while(runners.camera_pixels()<1536u+0x084eu && runners.stage_frame()<7000u)
             runners.step_60hz({});
         unsigned top=0,bottom=0;
@@ -417,7 +417,7 @@ int main(int argc,char** argv) {
             sm::GameState game;assert(!sm::instantiate_stage0_spawn(rom,record,game,1));
         }
         assert(total==9u && on==4u && off==4u && clear==1u);
-        sm::PlaySession control_run(rom);control_run.reset(1);
+        sm::PlaySession control_run(rom);control_run.set_invulnerable(true);control_run.reset(1);
         bool previous=control_run.scene_palette_active();unsigned transitions=0,max_phase=0;
         while(!control_run.at_fight_gate() && control_run.stage_frame()<20000u) {
             control_run.step_60hz({});
@@ -438,7 +438,7 @@ int main(int argc,char** argv) {
     // the already-tested ROM subtraction/death conversion directly so this
     // check is independent of player aim and weapon timing.
     {
-        sm::PlaySession completion(rom);completion.reset(1);
+        sm::PlaySession completion(rom);completion.set_invulnerable(true);completion.reset(1);
         sm::Entity64* boss=nullptr;
         while(completion.stage_frame()<20000u && !boss) {
             completion.step_60hz({});
@@ -553,7 +553,7 @@ int main(int argc,char** argv) {
     // Natural OpenMSX captures 101..134 hold the shifted $53 at X=$0D00
     // through direction 3. Check the actual session transition as well.
     {
-        sm::PlaySession session(rom);session.reset(1);bool shifted=false;
+        sm::PlaySession session(rom);session.set_invulnerable(true);session.reset(1);bool shifted=false;
         while(session.stage_frame()<8000u && !shifted) {
             session.step_60hz({});
             for(const auto& e:session.state().enemies) if(e.type()==0x53u && e.raw[0x20]) {
@@ -567,7 +567,7 @@ int main(int argc,char** argv) {
     // values pin the animation timer, attack timer/cursor and vulnerability
     // phase to the original rather than merely checking that the boss moves.
     {
-        sm::PlaySession traced(rom);traced.reset(1);
+        sm::PlaySession traced(rom);traced.set_invulnerable(true);traced.reset(1);
         struct BossPoint {std::uint16_t x;std::uint8_t f6,t17,t18,p20,p21;};
         constexpr std::array<BossPoint,5> points{{
             {0x1fc0u,4u,0x03u,0x18u,0x01u,0x00u},

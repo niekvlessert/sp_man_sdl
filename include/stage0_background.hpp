@@ -18,6 +18,7 @@ public:
     explicit Stage0BackgroundStream(const Rom& rom);
     void reset();
     void reset_stage(unsigned stage);
+    void reset_checkpoint(unsigned stage,unsigned checkpoint);
     void step_15hz();
     void step_60hz();
     void seek_world_x(unsigned x);

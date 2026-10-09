@@ -62,7 +62,7 @@ int main(int argc,char** argv) {
     }
     // Original $76A9: M delivers two pending damage units; primary W uses
     // its +06 value. Test the session's collision/service path, not HP helpers.
-    sm::PlaySession weapon(rom);
+    sm::PlaySession weapon(rom);weapon.set_invulnerable(true);
     auto& game=const_cast<sm::GameState&>(weapon.state());
     auto pickup=[&](unsigned kind) {
         auto& p=game.enemies[19];p.clear();p.type()=3;p.flags15()=0x56;p.raw[3]=std::uint8_t(kind);
@@ -147,7 +147,7 @@ int main(int argc,char** argv) {
     // initializer moves it to X=$28.  Native presentation must never interpolate
     // from that uninitialized state-0 coordinate, or the boss flashes on-screen
     // once before its real entrance.
-    sm::PlaySession entrance(rom);bool checked_hidden_entrance=false;
+    sm::PlaySession entrance(rom);entrance.set_invulnerable(true);bool checked_hidden_entrance=false;
     for(unsigned n=0;n<10000u && !checked_hidden_entrance;++n) {
         entrance.step_60hz({});
         for(std::size_t i=0;i<entrance.game_.enemies.size();++i) {
@@ -163,7 +163,7 @@ int main(int argc,char** argv) {
     // At the final $6A selector wrap the original cleanup removes the boss's
     // type-$40 rockets as a pool clear, not as individually destroyed enemies.
     // They therefore disappear silently.
-    sm::PlaySession cleanup(rom);cleanup.game_.enemies={};cleanup.enemies_.reset();
+    sm::PlaySession cleanup(rom);cleanup.set_invulnerable(true);cleanup.game_.enemies={};cleanup.enemies_.reset();
     cleanup.spawns_.skip_before_trigger(0xffffu);
     while((cleanup.frame_+1u)%3u) cleanup.step_60hz({});
     auto& death=cleanup.game_.enemies[0];death.type()=0x6au;death.state()=0u;death.raw[6]=7u;
@@ -175,7 +175,7 @@ int main(int argc,char** argv) {
                sound!=sm::PlaySound::TurretExplosion && sound!=sm::PlaySound::HeavyVehicleExplosion &&
                sound!=sm::PlaySound::LargeCannonExplosion);
 
-    sm::PlaySession session(rom);
+    sm::PlaySession session(rom);session.set_invulnerable(true);
     session.seek_decile(9);
     session.set_max_test_loadout();
     bool saw_child=false,saw_underbody=false,damaged=false,saw_burst=false,saw_silent_wait=false;
@@ -235,7 +235,7 @@ int main(int argc,char** argv) {
     // Independent original-ROM snapshot at stage1 X=544 (parity_stage1).
     assert(next_background.world_x()==544u && next_background.source_address()==0xa4cbu);
     assert(next_background.trigger_cursor()==0x1044u && next_background.fast_ground_phase()==0u);
-    session.reset();sm::PlaySession fresh(rom);
+    session.reset();sm::PlaySession fresh(rom);fresh.set_invulnerable(true);
     for(unsigned i=0;i<1800;++i) {session.step_60hz({});fresh.step_60hz({});}
     assert(session.render()==fresh.render());
     for(unsigned i=0;i<20;++i) assert(session.state().enemies[i].raw==fresh.state().enemies[i].raw);

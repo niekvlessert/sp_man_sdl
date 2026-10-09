@@ -41,7 +41,7 @@ int main(int argc,char** argv) {
     beam=sm::decode_stage0_tile_visuals(rom,head);
     assert(beam.size()==1 && beam[0].tile_y_offset==-4 && beam[0].rows==5);
 
-    sm::PlaySession session(rom);session.reset(1);
+    sm::PlaySession session(rom);session.set_invulnerable(true);session.reset(1);
     while(session.background_.world_x()<1242u) session.step_60hz({});
     assert(session.background_.world_x()==1242u);
     session.game_.enemies={};session.game_.player.clear();session.combat_.reset();

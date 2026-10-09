@@ -9,7 +9,7 @@
 
 int main(int argc,char** argv) {
     if(argc!=2) return 2;
-    sm::Rom rom(argv[1]);sm::PlaySession session(rom);
+    sm::Rom rom(argv[1]);sm::PlaySession session(rom);session.set_invulnerable(true);
     unsigned total=0;
     while(!session.at_fight_gate() && session.frame()<60000) session.step_60hz({});
     assert(session.at_fight_gate());total=session.frame();
@@ -38,7 +38,7 @@ int main(int argc,char** argv) {
     // The large vertical tower is type $56, not the terminal $64 gate. Its
     // visible upper section is a composed tile actor; max-loadout shots must
     // damage those exact tile cells during the natural late-stage route.
-    sm::PlaySession vertical(rom);
+    sm::PlaySession vertical(rom);vertical.set_invulnerable(true);
     while(vertical.frame()<7200u) vertical.step_60hz({});
     vertical.set_max_test_loadout();
     unsigned tower56_start=0; bool saw56=false,damaged56=false;
@@ -57,7 +57,7 @@ int main(int argc,char** argv) {
         session.seek_decile(digit);
         assert(session.frame()==total*digit/10);
         assert(session.sound_events().empty());
-        sm::PlaySession replay(rom);
+        sm::PlaySession replay(rom);replay.set_invulnerable(true);
         for(unsigned i=0;i<session.frame();++i) replay.step_60hz({});
         assert(session.state().player.raw==replay.state().player.raw);
         for(unsigned i=0;i<20;++i)
@@ -116,7 +116,7 @@ int main(int argc,char** argv) {
     // Sprite origin is D2-R23; an upward ship reaches the initial y=20 area.
     for(unsigned i=0;i<100;++i) session.step_60hz({true});
     assert(session.state().player.y_fixed()==0);
-    sm::PlaySession stationary(rom);
+    sm::PlaySession stationary(rom);stationary.set_invulnerable(true);
     for(unsigned i=0;i<100;++i) stationary.step_60hz({});
     const auto top=session.render(),middle=stationary.render();
     unsigned changed=0;
@@ -184,7 +184,7 @@ int main(int argc,char** argv) {
     // First red level uses the original upgraded primary frame/damage. Also
     // compare against an otherwise byte-identical no-fire session so an
     // invisible-but-active projectile cannot regress unnoticed.
-    sm::PlaySession red_base(rom);
+    sm::PlaySession red_base(rom);red_base.set_invulnerable(true);
     auto& rb=const_cast<sm::GameState&>(red_base.state());
     auto& ri=rb.enemies[19];ri.clear();ri.type()=3;ri.flags15()=0x56;ri.raw[3]=14;
     ri.raw[6]=rom.bank(4)[0x1049+14];ri.raw[0x13]=4;ri.raw[0x14]=4;

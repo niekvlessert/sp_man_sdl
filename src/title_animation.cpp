@@ -3,6 +3,7 @@
 #include <fstream>
 #include <iterator>
 #include <stdexcept>
+#include <zlib.h>
 
 namespace sm {
 namespace {
@@ -20,9 +21,18 @@ TitleAnimation::TitleAnimation(const std::filesystem::path& path) {
     std::ifstream in(path,std::ios::binary);
     if(!in) throw std::runtime_error("title animation asset missing: "+path.string());
     data_={std::istreambuf_iterator<char>(in),{}};
+    if(data_.size()>=8u && data_[0]=='S' && data_[1]=='M' && data_[2]=='T' && data_[3]=='Z') {
+        const auto size=u32(data_,4);
+        if(size>256u*1024u*1024u || size<18u) throw std::runtime_error("invalid packed animation size");
+        std::vector<std::uint8_t> unpacked(size);uLongf unpacked_size=size;
+        if(uncompress(unpacked.data(),&unpacked_size,data_.data()+8u,data_.size()-8u)!=Z_OK || unpacked_size!=size)
+            throw std::runtime_error("invalid compressed animation");
+        data_=std::move(unpacked);
+    }
     if(data_.size()<18u || data_[0]!='S' || data_[1]!='M' || data_[2]!='T' || data_[3]!='A')
         throw std::runtime_error("invalid title animation: "+path.string());
-    if(u16(data_,4)!=1u) throw std::runtime_error("unsupported title animation version");
+    const auto version=u16(data_,4);
+    if(version!=1u && version!=2u) throw std::runtime_error("unsupported title animation version");
     width_=u16(data_,6);height_=u16(data_,8);fps_=u16(data_,10);frame_count_=u16(data_,12);
     const unsigned colors=u16(data_,14);
     ready_frame_=u16(data_,16);
@@ -36,7 +46,11 @@ TitleAnimation::TitleAnimation(const std::filesystem::path& path) {
         palette_.push_back(0xff000000u|(std::uint32_t(data_[p])<<16u)|(std::uint32_t(data_[p+1])<<8u)|data_[p+2]);
     offsets_.reserve(frame_count_);
     for(unsigned f=0;f<frame_count_;++f) {
-        offsets_.push_back(p);const auto runs=u32(data_,p);p+=4u;
+        const auto frame_offset=p;const auto runs=u32(data_,p);p+=4u;
+        if(!runs && version==2u) {
+            if(!f) throw std::runtime_error("animation starts with a repeated frame");
+            offsets_.push_back(offsets_.back());
+        } else offsets_.push_back(frame_offset);
         const auto bytes=std::size_t(runs)*3u;
         if(p+bytes>data_.size()) throw std::runtime_error("truncated title frame");
         p+=bytes;

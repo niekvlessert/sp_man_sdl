@@ -116,7 +116,11 @@ int main(int argc,char** argv) {
     game.player.set_x_fixed(0x0500);game.player.set_y_fixed(0x0800);
     auto& attacker=game.enemies[0];attacker.type()=0x18;attacker.state()=1;attacker.raw[0x17]=1;
     attacker.set_x_fixed(0x1900);attacker.set_y_fixed(0x0600);
-    game.difficulty=15;
+    game.difficulty=15;attacker.raw[0x23]=1u;
+    combat.step(rom,game,0,0,0,sounds);
+    assert(attacker.raw[0x17]==1u);
+    assert(std::none_of(combat.bullets().begin(),combat.bullets().end(),[](const auto& b){return b.active();}));
+    game.loop_count=1u;
     combat.step(rom,game,0,0,0,sounds);
     auto it60=std::find_if(combat.bullets().begin(),combat.bullets().end(),[](const auto& b){return b.type()==0x60;});
     assert(it60!=combat.bullets().end() && it60->state()==0 && it60->flags15()==0x21 && it60->raw[0x17]==4);

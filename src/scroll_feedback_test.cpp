@@ -20,7 +20,7 @@ void capture(const std::filesystem::path& file,const std::vector<std::uint32_t>&
 }
 int main(int argc,char** argv) {
     if(argc<2 || argc>3) return 2;
-    sm::Rom rom(argv[1]);sm::PlaySession s(rom);
+    sm::Rom rom(argv[1]);sm::PlaySession s(rom);s.set_invulnerable(true);
     std::filesystem::path out=argc==3?argv[2]:"";
     if(!out.empty()) std::filesystem::create_directories(out);
     std::set<std::string> saved;std::set<unsigned> blue_slots;
