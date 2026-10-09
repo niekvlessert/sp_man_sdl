@@ -156,6 +156,10 @@ jobs:
           distribution: temurin
           java-version: '17'
       - uses: android-actions/setup-android@v3
+        with:
+          # The action defaults to 'tools platform-tools'; 'tools' was removed
+          # from the SDK repository. Install current build packages below.
+          packages: 'platform-tools'
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.11.1'
