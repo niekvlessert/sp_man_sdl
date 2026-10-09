@@ -109,9 +109,9 @@ Uint32 kmevent_gettimer(KMEVENT *kme, KMEVENT_ITEM_ID curid, Uint32 *time)
 	return 1;
 }
 
-void kmevent_setevent(KMEVENT *kme, KMEVENT_ITEM_ID curid, void (*proc)(), void *user)
+void kmevent_setevent(KMEVENT *kme, KMEVENT_ITEM_ID curid, void (*proc)(KMEVENT *, KMEVENT_ITEM_ID, void *), void *user)
 {
-	kme->item[curid].proc = (void (*)(KMEVENT *,Uint32 ,void *))proc;
+	kme->item[curid].proc = proc;
 	kme->item[curid].user = user;
 }
 

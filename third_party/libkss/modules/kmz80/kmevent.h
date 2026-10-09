@@ -36,7 +36,7 @@ KMEVENT_ITEM_ID kmevent_alloc(KMEVENT *kme);
 void kmevent_free(KMEVENT *kme, KMEVENT_ITEM_ID curid);
 void kmevent_settimer(KMEVENT *kme, KMEVENT_ITEM_ID curid, Uint32 time);
 Uint32 kmevent_gettimer(KMEVENT *kme, KMEVENT_ITEM_ID curid, Uint32 *time);
-void kmevent_setevent(KMEVENT *kme, KMEVENT_ITEM_ID curid, void (*proc)(), void *user);
+void kmevent_setevent(KMEVENT *kme, KMEVENT_ITEM_ID curid, void (*proc)(KMEVENT *, KMEVENT_ITEM_ID, void *), void *user);
 void kmevent_process(KMEVENT *kme, Uint32 cycles);
 
 #ifdef __cplusplus

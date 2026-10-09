@@ -163,7 +163,8 @@ static void exec_setup(VM *vm, uint32_t pc) {
 }
 
 /* Handler for KMEVENT */
-static void vsync(KMEVENT *event, KMEVENT_ITEM_ID curid, VM *vm) {
+static void vsync(KMEVENT *event, KMEVENT_ITEM_ID curid, void *user) {
+  VM *vm = (VM *)user;
   kmevent_settimer(&vm->kme, vm->vsync_id, vm->vsync_cycles);
   if (vm->context.regs8[REGID_HALTED])
     exec_setup(vm, vm->vsync_adr);
@@ -289,7 +290,7 @@ void VM_reset(VM *vm, uint32_t clock, uint32_t init_adr, uint32_t vsync_adr, dou
   LPDETECT_reset(vm->lpde);
 
   memset(vm->IO, 0, sizeof(vm->IO));
-  memset(vm->WIOPROC, 0, sizeof(vm->IO));
+  memset(vm->WIOPROC, 0, sizeof(vm->WIOPROC));
   vm->DA1 = 0;
   vm->DA8_enable = DA8;
 

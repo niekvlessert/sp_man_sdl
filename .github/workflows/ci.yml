@@ -123,15 +123,25 @@ jobs:
           if-no-files-found: error
 
   macos:
-    name: macOS ARM64
-    runs-on: macos-15
+    name: macOS ${{ matrix.arch }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: arm64
+            runner: macos-15
+            cmake_arch: arm64
+          - arch: x64
+            runner: macos-15-intel
+            cmake_arch: x86_64
+    runs-on: ${{ matrix.runner }}
     steps:
       - uses: actions/checkout@v4
       - name: Install dependencies
         run: brew install sdl2 sdl2_ttf libpng pkg-config dylibbundler
       - name: Build
         run: |
-          cmake -S . -B build-ci -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_ARCHITECTURES=arm64
+          cmake -S . -B build-ci -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_ARCHITECTURES=${{ matrix.cmake_arch }}
           cmake --build build-ci --target space-manbow-game -j3
       - name: Bundle and sign
         run: |
@@ -139,11 +149,11 @@ jobs:
           dylibbundler -od -b -x package/space-manbow-game -d package/lib -p @executable_path/lib/
           find package/lib -name '*.dylib' -exec codesign --force --sign - {} \;
           codesign --force --sign - package/space-manbow-game
-          tar -czf space-manbow-macos-arm64.tar.gz -C package .
+          tar -czf space-manbow-macos-${{ matrix.arch }}.tar.gz -C package .
       - uses: actions/upload-artifact@v4
         with:
-          name: space-manbow-macos-arm64
-          path: space-manbow-macos-arm64.tar.gz
+          name: space-manbow-macos-${{ matrix.arch }}
+          path: space-manbow-macos-${{ matrix.arch }}.tar.gz
           if-no-files-found: error
 
   android:
