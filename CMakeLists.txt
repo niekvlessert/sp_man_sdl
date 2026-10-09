@@ -260,3 +260,6 @@ add_sm_test(late-stage-player-contact space-manbow-stage-player-contact-test ${S
 add_executable(space-manbow-enhanced-background-test src/enhanced_background_test.cpp)
 target_link_libraries(space-manbow-enhanced-background-test PRIVATE smcore)
 add_sm_test(enhanced-background space-manbow-enhanced-background-test)
+add_executable(space-manbow-original-render-test src/original_render_test.cpp)
+target_link_libraries(space-manbow-original-render-test PRIVATE smcore)
+add_sm_test(original-render space-manbow-original-render-test ${SM_ROM})

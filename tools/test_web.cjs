@@ -9,6 +9,7 @@ const { once } = require('node:events');
   const root = path.resolve(process.argv[2]);
   const profile = process.env.SM_WEB_PROFILE === '1';
   const pauseTest = process.env.SM_WEB_PAUSE_TEST === '1';
+  const originalTest = process.env.SM_WEB_ORIGINAL_TEST === '1';
   const server = spawn('python3', ['-u', '-m', 'http.server', '0', '--bind', '127.0.0.1', '--directory', root]);
   let browser;
   try {
@@ -38,7 +39,7 @@ const { once } = require('node:events');
     page.on('pageerror', error => errors.push(error.message));
     page.on('console', message => console.log('Browser:', message.type(), message.text()));
     page.on('request', request => requests.push({ url: request.url(), method: request.method() }));
-    await page.goto(`http://127.0.0.1:${port}/${profile || pauseTest ? '?profile' : ''}`);
+    await page.goto(`http://127.0.0.1:${port}/${profile || pauseTest || originalTest ? '?profile' : ''}`);
     assert(await page.locator('#start').isDisabled());
     assert(await page.locator('#player').isHidden());
     await page.locator('#rom').setInputFiles({ name: 'wrong.rom', mimeType: 'application/octet-stream', buffer: Buffer.from('wrong') });
@@ -78,13 +79,33 @@ const { once } = require('node:events');
         await page.keyboard.press('ArrowUp'); await page.keyboard.press('Space'); // Back
         await page.keyboard.press('ArrowUp'); // enhanced
       }
-      await page.keyboard.press('Space'); // start enhanced game
+      if (originalTest && !profile) await page.keyboard.press('ArrowUp'); // original
+      await page.keyboard.press('Space'); // start selected game
       await page.keyboard.down('ArrowRight');
       await page.waitForTimeout(600);
       await page.keyboard.up('ArrowRight');
       await page.keyboard.press('Space');
       await page.waitForTimeout(1000);
       await page.screenshot({ path: '/tmp/manbow-web-game.png' });
+      if (originalTest && !profile) {
+        await page.waitForFunction(() => window.spaceManbowPerf?.width === 256);
+        await page.screenshot({ path: '/tmp/manbow-web-original.png' });
+        await page.evaluate(() => { window.spaceManbowPerf.renderMs = []; });
+        await page.waitForTimeout(3000);
+        const metrics = await page.evaluate(() => window.spaceManbowPerf);
+        assert.equal(metrics.height, 212);
+        console.log('Original CPU render mean ms:', metrics.renderMs.reduce((a,b) => a+b,0)/metrics.renderMs.length);
+        await page.keyboard.press('Escape');
+        await page.waitForFunction(() => /paused/i.test(document.title));
+        await page.screenshot({ path: '/tmp/manbow-web-original-confirm.png' });
+        await page.keyboard.press('n');
+        await page.waitForFunction(() => !/paused/i.test(document.title));
+        await page.keyboard.press('Escape'); await page.keyboard.press('y');
+        await page.keyboard.press('ArrowDown'); await page.keyboard.press('Space'); // enhanced
+        await page.waitForFunction(() => window.spaceManbowPerf?.width === 1024);
+        assert.equal(await page.evaluate(() => window.spaceManbowPerf.height), 848);
+        console.log('Resolution switch PASS: original 256x212, enhanced 1024x848; confirmation and resume');
+      }
       if (profile) {
         const measure = async label => {
           const firstFrame = await page.evaluate(() => {
@@ -113,7 +134,7 @@ const { once } = require('node:events');
       }
       await page.keyboard.press('p');
       await page.waitForFunction(() => /paused/i.test(document.title));
-      if (profile || pauseTest) {
+      if (profile || pauseTest || originalTest) {
         await page.waitForTimeout(200);
         const pausedFrame = await page.evaluate(() => {
           window.spaceManbowPerf.renderMs = [];
@@ -128,7 +149,7 @@ const { once } = require('node:events');
         console.log('Pause PASS: no simulation or rendering while idle; resize redraws');
       }
       await page.keyboard.press('p');
-      if (profile || pauseTest) await page.waitForFunction(() => !/paused/i.test(document.title));
+      if (profile || pauseTest || originalTest) await page.waitForFunction(() => !/paused/i.test(document.title));
       await page.keyboard.press('Escape');
       await page.keyboard.press('y');
       await page.keyboard.press('ArrowDown'); // options

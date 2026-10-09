@@ -83,23 +83,26 @@ void TitleMenu::draw(std::vector<std::uint32_t>& p,bool audio_available) const {
     }
 }
 void TitleMenu::draw_exit_confirmation(std::vector<std::uint32_t>& p) const {
-    if(p.size()!=1024u*848u) return;
+    const unsigned scale=p.size()==256u*212u?1u:4u;
+    if(p.size()!=256u*212u*scale*scale) return;
     std::vector<std::uint32_t> panel(256u*212u,0u);
     for(unsigned y=82;y<132;++y) for(unsigned x=56;x<200;++x)
         panel[y*256u+x]=(y==82 || y==131 || x==56 || x==199)?0xffffffffu:0xff000000u;
     text(panel,80,96,"ARE YOU SURE",0xffffffffu);
     text(panel,108,116,"Y   N",0xffffff00u);
     for(unsigned y=82;y<132;++y) for(unsigned x=56;x<200;++x)
-        for(unsigned yy=0;yy<4;++yy) for(unsigned xx=0;xx<4;++xx)
-            p[(y*4+yy)*1024+x*4+xx]=panel[y*256+x];
+        for(unsigned yy=0;yy<scale;++yy) for(unsigned xx=0;xx<scale;++xx)
+            p[(y*scale+yy)*256*scale+x*scale+xx]=panel[y*256+x];
 }
 void TitleMenu::draw_game_over(std::vector<std::uint32_t>& p) const {
+    const unsigned scale=p.size()==256u*212u?1u:4u;
+    if(p.size()!=256u*212u*scale*scale) return;
     std::vector<std::uint32_t> panel(256u*212u,0u);
     text(panel,92,96,"GAME OVER",0xffffffffu);
     text(panel,76,116,"PRESS SPACE",0xffffff00u);
     for(unsigned y=82;y<132;++y) for(unsigned x=56;x<200;++x)
-        for(unsigned yy=0;yy<4;++yy) for(unsigned xx=0;xx<4;++xx)
-            p[(y*4+yy)*1024+x*4+xx]=panel[y*256+x]?panel[y*256+x]:0xff000000u;
+        for(unsigned yy=0;yy<scale;++yy) for(unsigned xx=0;xx<scale;++xx)
+            p[(y*scale+yy)*256*scale+x*scale+xx]=panel[y*256+x]?panel[y*256+x]:0xff000000u;
 }
 
 }

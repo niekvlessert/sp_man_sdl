@@ -37,6 +37,8 @@ public:
     void set_test_loadout(bool maximum) noexcept;
     void step_60hz(PlayerInput input);
     std::vector<std::uint32_t> render();
+    // Corrected presentation at the original resolution; GPU scales the image.
+    std::vector<std::uint32_t> render_original(); // 256x212
     // 512x212 native presentation: two horizontal samples per logical pixel.
     // This allows the streamed world to move by 0.5 logical pixel per 60-Hz
     // frame while screen-space actors/HUD remain on the 256-pixel grid.

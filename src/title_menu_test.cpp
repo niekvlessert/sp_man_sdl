@@ -33,6 +33,15 @@ int main(int argc,char** argv) {
     assert(menu.page==sm::TitleMenu::Page::Options && !menu.music_playing && !menu.autofire);
     menu.selected=2;menu.activate();assert(menu.page==sm::TitleMenu::Page::Main);
     assert(menu.back());
+    // Both game resolutions must show identical confirmation/game-over panels.
+    for(bool game_over:{false,true}) {
+        std::vector<std::uint32_t> low(256u*212u,0xff123456u),high(1024u*848u,0xff123456u);
+        if(game_over) {menu.draw_game_over(low);menu.draw_game_over(high);}
+        else {menu.draw_exit_confirmation(low);menu.draw_exit_confirmation(high);}
+        assert(std::count(low.begin(),low.end(),0xffffffffu)>0);
+        for(unsigned y=0;y<848;++y) for(unsigned x=0;x<1024;++x)
+            assert(high[y*1024+x]==low[(y/4)*256+x/4]);
+    }
     // Optional previews for visual QA, rendered by the same menu used in SDL.
     if(const auto root=std::getenv("SM_MENU_PREVIEW")) {
         for(unsigned page=0;page<3;++page) {

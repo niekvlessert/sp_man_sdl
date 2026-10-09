@@ -90,7 +90,9 @@ npm install --prefix /tmp/manbow-web-test playwright@1.58.2
 NODE_PATH=/tmp/manbow-web-test/node_modules node tools/test_web.cjs build-web space_manbow.rom
 ```
 
-Native play uses a 1024×848 texture with quarter-pixel X/Y positions. Background,
+Original graphics compose a 256×212 texture, which the GPU enlarges with nearest
+neighbour scaling. Movement is quantized to original pixels. Enhanced graphics
+use a 1024×848 texture with quarter-pixel X/Y positions. Background,
 vehicle, stars and fast ground move between the original logic ticks, including
 the opening and diagonal/vertical sections. The fast ground has its own
 continuous clock; limited tread animation frames do not limit vehicle movement.
@@ -171,12 +173,16 @@ Boss-ending/audio/60-Hz carrier fixes are documented in
 
 Append `?profile` to the web URL, start a game, and inspect
 `window.spaceManbowPerf` in the browser console. `renderMs` retains the latest
-600 CPU render times, alongside the graphics mode and simulation frame.
+600 CPU render times, alongside the graphics mode, simulation frame and texture
+width/height.
 No profiling data is sent anywhere. For a local automated comparison:
 
 ```sh
 SM_WEB_PROFILE=1 NODE_PATH=/tmp/manbow-web-test/node_modules node tools/test_web.cjs build-web space_manbow.rom
 ```
+
+Use `SM_WEB_ORIGINAL_TEST=1` instead to check the 256×212 Original texture,
+switching to Enhanced, exit confirmation, resize and idle pause rendering.
 
 This prints original/enhanced render costs and browser audio callback gaps.
 Callback gaps indicate scheduling delays; they are not a measurement of actual

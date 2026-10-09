@@ -1985,6 +1985,7 @@ std::vector<std::uint32_t> PlaySession::render() {
     }
     return pixels;
 }
+std::vector<std::uint32_t> PlaySession::render_original() { return render_presentation(1,1); }
 std::vector<std::uint32_t> PlaySession::render_wide() { return render_presentation(2,1); }
 std::vector<std::uint32_t> PlaySession::render_smooth() { return render_presentation(2,4); }
 std::vector<std::uint32_t> PlaySession::render_continuous(bool include_player,bool enhanced_background) {

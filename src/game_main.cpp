@@ -380,9 +380,11 @@ int main(int argc,char** argv) try {
 #ifdef __EMSCRIPTEN__
             const auto render_start=profile_web?SDL_GetPerformanceCounter():0;
 #endif
-            // Both graphics choices share the corrected camera/star/actor
-            // compositor. Enhanced adds scenery materials and the ship art.
-            auto pixels=session_ptr().render_continuous(!menu.enhanced || session_ptr().state().player.state()==1u,menu.enhanced);
+            // Original is composed at MSX resolution and enlarged by the GPU.
+            // Enhanced retains quarter-pixel movement and its detailed effects.
+            auto pixels=menu.enhanced
+                ? session_ptr().render_continuous(session_ptr().state().player.state()==1u,true)
+                : session_ptr().render_original();
             if(menu.enhanced) {
                 enhanced_ship.draw_engine(pixels,session_ptr().state().player,
                     session_ptr().frame(),session_ptr().stage_frame());
@@ -394,13 +396,14 @@ int main(int argc,char** argv) try {
 #ifdef __EMSCRIPTEN__
             if(profile_web) EM_ASM({
                 const stats=window.spaceManbowPerf || (window.spaceManbowPerf={renderMs:[]});
-                stats.enhanced=!!$1;stats.frame=$2;
+                stats.enhanced=!!$1;stats.frame=$2;stats.width=$3;stats.height=$4;
                 stats.renderMs.push($0);
                 if(stats.renderMs.length>600) stats.renderMs.shift();
-            },1000.0*double(SDL_GetPerformanceCounter()-render_start)/frequency,int(menu.enhanced),session_ptr().frame());
+            },1000.0*double(SDL_GetPerformanceCounter()-render_start)/frequency,int(menu.enhanced),session_ptr().frame(),menu.enhanced?1024:256,menu.enhanced?848:212);
 #endif
-            SDL_UpdateTexture(texture,nullptr,pixels.data(),1024*4);
-            SDL_RenderCopy(renderer,texture,nullptr,&dst);
+            auto* game_texture=menu.enhanced?texture:title_texture;
+            SDL_UpdateTexture(game_texture,nullptr,pixels.data(),(menu.enhanced?1024:256)*4);
+            SDL_RenderCopy(renderer,game_texture,nullptr,&dst);
             char title[160];std::snprintf(title,sizeof(title),
                 "Space Manbow - %s - stage %u - frame %u%s%s%s",demo_running?"DEMO":"native play",session_ptr().stage_index()+1u,session_ptr().frame(),paused?" PAUSED":"",turbo?" | TURBO 500%":"",
                 session_ptr().campaign_complete()?" | complete":
