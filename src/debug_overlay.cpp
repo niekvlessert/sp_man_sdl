@@ -8,6 +8,9 @@ DebugOverlay::DebugOverlay() {
     if(TTF_Init()!=0) throw std::runtime_error(TTF_GetError());
 #ifdef __EMSCRIPTEN__
     const char* fonts[]={"/assets/fonts/debug.ttf"};
+#elif defined(__ANDROID__)
+    const std::string path=std::string(SDL_AndroidGetInternalStoragePath())+"/assets/fonts/debug.ttf";
+    const char* fonts[]={path.c_str()};
 #elif defined(__APPLE__)
     const char* fonts[]={"/System/Library/Fonts/SFNS.ttf","/System/Library/Fonts/Helvetica.ttc"};
 #elif defined(_WIN32)

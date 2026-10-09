@@ -15,6 +15,7 @@
 #include <iostream>
 #include <memory>
 #include <stdexcept>
+#include <cstdlib>
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
 #endif
@@ -25,7 +26,8 @@ int main(int argc,char** argv) try {
        !(argc==6 && std::string(argv[2])=="--capture-demo")) {
         std::cerr<<"usage: space-manbow-game <rom> [--capture frame.ppm | --capture-at ticks frame.ppm | --capture-step 0..9 frame.ppm | --capture-demo 0..2 ticks frame.ppm | --capture-ending ticks frame.ppm | --capture-story ticks frame.ppm]\n"; return 2;
     }
-    const auto asset_root=std::filesystem::absolute(argv[1]).parent_path();
+    const auto asset_root=std::getenv("SM_ASSET_ROOT") ?
+        std::filesystem::path(std::getenv("SM_ASSET_ROOT")) : std::filesystem::absolute(argv[1]).parent_path();
     if(argc==5 && std::string(argv[2])=="--capture-ending") {
         sm::EndingDemo ending(asset_root/"assets/ending");
         ending.advance(double(std::stoul(argv[3]))/ending.fps());

@@ -22,3 +22,14 @@
 
 # Generated diagnostic captures
 /captures/
+
+# Native CI and Android build products
+/build-ci/
+/package/
+/android/.gradle/
+/android/app/build/
+/android/app/.cxx/
+/android/local.properties
+/android/sdl-java/
+/android/game-assets/
+/android/sdl-source/

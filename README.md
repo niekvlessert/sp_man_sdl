@@ -29,6 +29,36 @@ select **Settings → Pages → Build and deployment → Source: GitHub Actions*
 then push to the default branch or run the workflow manually. See the
 [GitHub Pages workflow documentation](https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages).
 
+The workflow also uploads these independent native build artifacts:
+
+| Platform | Artifact | Runtime |
+| --- | --- | --- |
+| Windows x64 | ZIP | Included DLLs; run `play.cmd ROM-path` |
+| Linux x64 / ARM64 | tar.gz | System SDL2, SDL2_ttf, libpng and a UI font; run `play.sh ROM-path` |
+| macOS ARM64 | tar.gz | Bundled dylibs, ad-hoc signed; run `play.sh ROM-path` |
+| Android ARM64 / ARMv7 | Debug-signed APK | Local ROM picker; keyboard input required |
+
+Each native job runs independently. Pages depends only on the successful web
+job, with an explicit condition that permits deployment even if another build
+fails. Native failures remain visible in the workflow result. No platform
+artifact includes the ROM. The APK stores a selected ROM in private app storage.
+The desktop launchers set `SM_ASSET_ROOT`, so assets are found even when the ROM
+lives elsewhere. macOS builds are not notarized. Android touch/gamepad controls
+are not implemented; this APK uses the existing keyboard controls.
+
+For a local Android build, install JDK 17, Gradle 8.11.1, Android platform/build
+tools 35, NDK 27.0.12077973 and SDK CMake 3.22.1, then:
+
+```sh
+git clone --depth 1 --branch release-2.32.10 https://github.com/libsdl-org/SDL.git android/sdl-source
+python3 tools/prepare_android.py android/sdl-source /path/to/DejaVuSans.ttf /path/to/font-license.txt
+gradle -p android assembleDebug
+```
+
+SDL2, SDL2_ttf/Freetype and libpng dependency versions are pinned in
+`cmake/AndroidDependencies.cmake`. Android's Java wrapper opens the system file
+picker and verifies the same cartridge hash as the web launcher.
+
 The website requires the visitor to choose their own 256 KiB Space Manbow ROM
 (SHA-256 `bca5696ebbf4a3493bb226baa03ba8f8c5cc4876a4ad0eaa9722f583a42192b0`).
 The cartridge is checked and placed in the browser's temporary virtual
