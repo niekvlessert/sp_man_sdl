@@ -16,6 +16,7 @@
 #include <memory>
 #include <stdexcept>
 #include <cstdlib>
+#include "game_viewport.hpp"
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
 EM_ASYNC_JS(void, wait_browser_frame, (), {
@@ -357,7 +358,7 @@ int main(int argc,char** argv) try {
             continue;
         }
         int w,h;SDL_GetRendererOutputSize(renderer,&w,&h);
-        const int dw=std::min(w,h*256/212),dh=dw*212/256;
+        const auto [dw,dh]=sm::game_viewport_size(w,h,started && !menu.enhanced && !ending_running && !demo_running);
         SDL_Rect dst{(w-dw)/2,(h-dh)/2,dw,dh};
         SDL_SetRenderDrawColor(renderer,0,0,0,255);SDL_RenderClear(renderer);
         if(ending_running) {

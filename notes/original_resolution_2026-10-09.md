@@ -7,6 +7,14 @@ neighbour sampling. Enhanced continues to use 1024x848 and quarter-pixel motion.
 Original movement is quantized to whole original pixels, including stars and
 interpolated actor/camera positions. This is an intentional resolution tradeoff.
 
+Original presentation now uses integer physical-pixel scaling as well. For
+example, a 652x652 drawable presents a centred 512x424 image (2x) instead of
+652x539 (2.55x). Fractional nearest-neighbour scaling made a moving type-$12
+flyer's visible pixel columns alternate in width. Integer scaling keeps the
+sprite's pixel geometry fixed; margins absorb the unused space. Windows smaller
+than 256x212 still scale down to fit. Enhanced keeps its existing fit-to-window
+presentation. Viewport tests cover normal, resized and large window sizes.
+
 Exit confirmation and game-over panels support both resolutions. Paused scenes
 remain idle until input or window events require rendering. Gameplay state,
 collision, damage and audio are unchanged.

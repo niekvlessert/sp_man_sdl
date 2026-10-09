@@ -1,4 +1,5 @@
 #include "play_session.hpp"
+#include "game_viewport.hpp"
 #ifdef NDEBUG
 #undef NDEBUG
 #endif
@@ -8,6 +9,18 @@
 
 int main(int argc,char** argv) {
     assert(argc==2);
+    for(const auto [w,h]:{std::pair{652,652},std::pair{1100,900},std::pair{1918,1452}}) {
+        const auto [dw,dh]=sm::game_viewport_size(w,h,true);
+        assert(dw<=w && dh<=h && dw%256==0 && dh%212==0);
+        const int scale=dw/256;
+        assert(scale==dh/212);
+        // Every logical pixel and a moving 16px enemy keep exactly the same
+        // physical size, independent of the enemy's position in the viewport.
+        for(int x=0;x<240;++x) assert((x+16)*dw/256-x*dw/256==16*scale);
+    }
+    assert(sm::game_viewport_size(652,652,true)==std::pair(512,424));
+    assert(sm::game_viewport_size(652,652,false)==std::pair(652,539));
+    assert(sm::game_viewport_size(128,106,true)==std::pair(128,106));
     sm::Rom rom(argv[1]);
     double native_ms=0,previous_ms=0;
     unsigned captures=0;

@@ -91,7 +91,9 @@ NODE_PATH=/tmp/manbow-web-test/node_modules node tools/test_web.cjs build-web sp
 ```
 
 Original graphics compose a 256×212 texture, which the GPU enlarges with nearest
-neighbour scaling. Movement is quantized to original pixels. Enhanced graphics
+neighbour scaling at whole physical-pixel multiples, with black margins where
+needed to avoid moving sprites changing pixel widths. Movement is quantized to
+original pixels. Enhanced graphics
 use a 1024×848 texture with quarter-pixel X/Y positions. Background,
 vehicle, stars and fast ground move between the original logic ticks, including
 the opening and diagonal/vertical sections. The fast ground has its own
