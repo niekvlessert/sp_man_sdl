@@ -1,3 +1,4 @@
+#include <algorithm>
 #include "screen4.hpp"
 #include "assets.hpp"
 #include <fstream>

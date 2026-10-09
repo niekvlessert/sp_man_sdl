@@ -1,3 +1,4 @@
+#include <algorithm>
 #include "debug_overlay.hpp"
 #include <filesystem>
 #include <stdexcept>

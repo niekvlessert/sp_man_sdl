@@ -1,3 +1,4 @@
+#include <algorithm>
 #include "rom.hpp"
 #include "game_state.hpp"
 #include "level.hpp"

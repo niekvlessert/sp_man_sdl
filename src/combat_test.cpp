@@ -1,3 +1,4 @@
+#include <algorithm>
 #include "stage0_combat.hpp"
 #include "stage0_enemies.hpp"
 #ifdef NDEBUG

@@ -1,3 +1,4 @@
+#include <algorithm>
 #include "play_session.hpp"
 #include "assets.hpp"
 #ifdef NDEBUG

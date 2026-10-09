@@ -1,3 +1,4 @@
+#include <algorithm>
 #include "rom.hpp"
 #include "level.hpp"
 #define private public
